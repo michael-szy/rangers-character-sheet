@@ -95,7 +95,16 @@
     .ability-toggle.used { background: #2a2e35; border-color: #555; box-shadow: none; transform: scale(0.8); }
     .numbered-row.used select { text-decoration: line-through; opacity: 0.3; filter: grayscale(1); }
     .row-number { color: var(--accent-teal); font-family: var(--fantasy-font); font-weight: bold; width: 25px; text-align: center; }
-    .ability-desc { font-size: 0.85em; color: #a0a0a0; font-style: italic; margin-left: 65px; margin-top: 4px; }
+    .ability-desc { font-size: 0.85em; color: #a0a0a0; font-style: italic; margin-left: 65px; margin-top: 4px; display: none; }
+    .info-toggle {
+        width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--accent-teal);
+        background: rgba(22, 224, 189, 0.1); cursor: pointer; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9em; color: var(--accent-teal); transition: all 0.3s ease;
+        font-family: var(--fantasy-font); font-weight: bold;
+    }
+    .info-toggle:hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
+    .info-toggle.active { background: var(--accent-teal); color: #000; }
 
     .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
     .skill-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -156,23 +165,23 @@
                 <div class="section-header">Heroic Abilities & Spells</div>
                 <div id="abilities-list">
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><select id="ab1" class="save-field ab-select" onchange="updateDesc('ab1')"></select></div>
+                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><select id="ab1" class="save-field ab-select" onchange="updateDesc('ab1')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab1')">ℹ</div></div>
                         <div id="desc_ab1" class="ability-desc"></div>
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><select id="ab2" class="save-field ab-select" onchange="updateDesc('ab2')"></select></div>
+                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><select id="ab2" class="save-field ab-select" onchange="updateDesc('ab2')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab2')">ℹ</div></div>
                         <div id="desc_ab2" class="ability-desc"></div>
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><select id="ab3" class="save-field ab-select" onchange="updateDesc('ab3')"></select></div>
+                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><select id="ab3" class="save-field ab-select" onchange="updateDesc('ab3')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab3')">ℹ</div></div>
                         <div id="desc_ab3" class="ability-desc"></div>
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><select id="ab4" class="save-field ab-select" onchange="updateDesc('ab4')"></select></div>
+                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><select id="ab4" class="save-field ab-select" onchange="updateDesc('ab4')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab4')">ℹ</div></div>
                         <div id="desc_ab4" class="ability-desc"></div>
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><select id="ab5" class="save-field ab-select" onchange="updateDesc('ab5')"></select></div>
+                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><select id="ab5" class="save-field ab-select" onchange="updateDesc('ab5')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab5')">ℹ</div></div>
                         <div id="desc_ab5" class="ability-desc"></div>
                     </div>
                 </div>
@@ -471,6 +480,19 @@
     function toggleUse(id) {
         document.getElementById('row_' + id).classList.toggle('used');
         save();
+    }
+
+    function toggleDescVisibility(id) {
+        const descDiv = document.getElementById('desc_' + id);
+        const infoBtn = event.target;
+
+        if (descDiv.style.display === "block") {
+            descDiv.style.display = "none";
+            infoBtn.classList.remove('active');
+        } else {
+            descDiv.style.display = "block";
+            infoBtn.classList.add('active');
+        }
     }
 
     function save() {
