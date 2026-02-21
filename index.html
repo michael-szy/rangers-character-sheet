@@ -9,7 +9,7 @@
     :root {
         --bg-dark: #0a0c10;
         --card-bg: #14181f;
-        --accent-teal: #16e0bd; /* Angenehmes Grün-Türkis */
+        --accent-teal: #16e0bd;
         --accent-teal-glow: rgba(22, 224, 189, 0.3);
         --text-main: #e0d8c3;
         --input-bg: #1c2229;
@@ -24,61 +24,39 @@
         background: var(--bg-dark); 
         background-image: radial-gradient(circle at center, #1a1f26 0%, #0a0c10 100%);
         color: var(--text-main); 
-        padding: 20px 10px; 
-        margin: 0;
+        padding: 20px 10px; margin: 0;
     }
 
     h1 { 
-        text-align: center; 
-        font-family: var(--fantasy-font); 
-        color: var(--accent-teal); 
-        letter-spacing: 5px; 
-        text-transform: uppercase; 
-        margin: 0 0 20px 0;
-        text-shadow: 0 0 15px var(--accent-teal-glow);
-        font-size: 2.2em;
+        text-align: center; font-family: var(--fantasy-font); color: var(--accent-teal); 
+        letter-spacing: 5px; text-transform: uppercase; margin: 0 0 20px 0;
+        text-shadow: 0 0 15px var(--accent-teal-glow); font-size: 2.2em;
     }
 
     .sheet-container {
-        max-width: 900px;
-        margin: auto;
-        background: var(--card-bg);
-        border: 1px solid var(--border-col);
-        padding: 25px;
-        border-radius: 12px;
+        max-width: 900px; margin: auto; background: var(--card-bg);
+        border: 1px solid var(--border-col); padding: 25px; border-radius: 12px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.9);
     }
 
     .section-header {
         font-family: var(--fantasy-font);
         background: linear-gradient(90deg, rgba(22, 224, 189, 0.15) 0%, transparent 100%);
-        color: var(--accent-teal);
-        padding: 10px;
-        border-left: 3px solid var(--accent-teal);
-        margin-top: 25px;
-        text-transform: uppercase;
-        font-size: 1em;
+        color: var(--accent-teal); padding: 10px; border-left: 3px solid var(--accent-teal);
+        margin-top: 25px; text-transform: uppercase; font-size: 1em;
     }
 
-    /* Grids für Stats und Top Info */
     .grid-top { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
     .grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 15px; }
 
     .stat-box { 
-        background: rgba(0,0,0,0.3); 
-        border: 1px solid var(--border-col); 
-        text-align: center; 
-        border-radius: 6px; 
-        padding: 5px 0; 
+        background: rgba(0,0,0,0.3); border: 1px solid var(--border-col); 
+        text-align: center; border-radius: 6px; padding: 5px 0; 
     }
     
     .stat-label { 
-        font-family: var(--fantasy-font); 
-        font-size: 0.85em; 
-        color: var(--accent-teal); 
-        text-transform: uppercase; 
-        font-weight: bold;
-        margin-bottom: 2px;
+        font-family: var(--fantasy-font); font-size: 0.85em; color: var(--accent-teal); 
+        text-transform: uppercase; font-weight: bold; margin-bottom: 2px;
     }
 
     .stat-box input { 
@@ -88,25 +66,36 @@
     
     .current-hp { border: 2px solid var(--danger-red); background: rgba(192, 57, 43, 0.1); }
 
-    input, textarea {
+    input, textarea, select {
         background: var(--input-bg); border: 1px solid var(--border-col); color: #fff;
         padding: 10px; width: 100%; box-sizing: border-box; border-radius: 6px;
         font-family: var(--body-font); transition: all 0.3s ease;
     }
-    input:focus { border-color: var(--accent-teal); box-shadow: 0 0 8px var(--accent-teal-glow); outline: none; }
+    input:focus, select:focus { border-color: var(--accent-teal); box-shadow: 0 0 8px var(--accent-teal-glow); outline: none; }
 
-    /* Abilities mit Nummerierung und Magie-Effekt */
-    .numbered-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-    
+    /* Archetype Section */
+    .archetype-section { margin-top: 15px; border: 1px solid var(--border-col); border-radius: 8px; padding: 10px; background: rgba(0,0,0,0.2); }
+    .archetype-btn { 
+        background: transparent; color: var(--accent-teal); border: 1px solid var(--accent-teal); 
+        font-family: var(--fantasy-font); font-size: 0.75em; padding: 5px 10px; margin-top: 10px; cursor: pointer;
+    }
+    .archetype-details { display: none; margin-top: 10px; font-size: 0.9em; border-top: 1px solid var(--border-col); padding-top: 10px; }
+    .trait-list { list-style-type: none; padding-left: 0; }
+    .trait-item { margin-bottom: 8px; border-left: 2px solid var(--accent-teal); padding-left: 10px; }
+    .limit-item { margin-bottom: 8px; border-left: 2px solid var(--danger-red); padding-left: 10px; opacity: 0.8; }
+    .type-label { font-weight: bold; font-family: var(--fantasy-font); color: var(--accent-teal); font-size: 0.8em; }
+
+    /* Abilities & Skills */
+    .numbered-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
     .ability-toggle {
         width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent-teal);
         background: radial-gradient(circle, #2ecc71 0%, #16e0bd 100%); cursor: pointer;
         box-shadow: 0 0 10px var(--accent-teal-glow); transition: all 0.4s ease; flex-shrink: 0;
     }
     .ability-toggle.used { background: #2a2e35; border-color: #555; box-shadow: none; transform: scale(0.8); }
-
-    .numbered-row.used input { text-decoration: line-through; opacity: 0.3; filter: grayscale(1); }
+    .numbered-row.used select { text-decoration: line-through; opacity: 0.3; filter: grayscale(1); }
     .row-number { color: var(--accent-teal); font-family: var(--fantasy-font); font-weight: bold; width: 25px; text-align: center; }
+    .ability-desc { font-size: 0.85em; color: #a0a0a0; font-style: italic; margin-left: 65px; margin-top: 4px; }
 
     .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
     .skill-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -141,6 +130,16 @@
             <div class="stat-box"><div class="stat-label">Experience</div><input type="number" id="char_xp" class="save-field"></div>
         </div>
 
+        <div class="archetype-section">
+            <label class="stat-label">Archetype</label>
+            <select id="char_arch" class="save-field" onchange="updateArchetype()">
+                </select>
+            <div id="arch_toggle_container" style="display:none;">
+                <button class="archetype-btn" id="arch_btn" onclick="toggleArchDetails()">Show Archetype Details</button>
+                <div id="arch_details" class="archetype-details"></div>
+            </div>
+        </div>
+
         <div class="grid-8">
             <div class="stat-box"><div class="stat-label">Mov</div><input type="number" id="s_mov" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Fig</div><input type="number" id="s_fig" class="save-field"></div>
@@ -156,11 +155,26 @@
             <div>
                 <div class="section-header">Heroic Abilities & Spells</div>
                 <div id="abilities-list">
-                    <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><input type="text" id="ab1" class="save-field"></div>
-                    <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><input type="text" id="ab2" class="save-field"></div>
-                    <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><input type="text" id="ab3" class="save-field"></div>
-                    <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><input type="text" id="ab4" class="save-field"></div>
-                    <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><input type="text" id="ab5" class="save-field"></div>
+                    <div class="ability-group">
+                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><select id="ab1" class="save-field ab-select" onchange="updateDesc('ab1')"></select></div>
+                        <div id="desc_ab1" class="ability-desc"></div>
+                    </div>
+                    <div class="ability-group">
+                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><select id="ab2" class="save-field ab-select" onchange="updateDesc('ab2')"></select></div>
+                        <div id="desc_ab2" class="ability-desc"></div>
+                    </div>
+                    <div class="ability-group">
+                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><select id="ab3" class="save-field ab-select" onchange="updateDesc('ab3')"></select></div>
+                        <div id="desc_ab3" class="ability-desc"></div>
+                    </div>
+                    <div class="ability-group">
+                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><select id="ab4" class="save-field ab-select" onchange="updateDesc('ab4')"></select></div>
+                        <div id="desc_ab4" class="ability-desc"></div>
+                    </div>
+                    <div class="ability-group">
+                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><select id="ab5" class="save-field ab-select" onchange="updateDesc('ab5')"></select></div>
+                        <div id="desc_ab5" class="ability-desc"></div>
+                    </div>
                 </div>
 
                 <div class="section-header">Equipment</div>
@@ -204,30 +218,88 @@
     </div>
 
 <script>
+    // --- LIBRARIES ---
+    const ABILITY_LIBRARY = {
+        "": "Choose an Ability...",
+        "Parry": "Gain +3 Fight if attacked in this turn (melee only).",
+        "Powerful Blow": "+2 Damage on successful melee attack.",
+        "Hand of Fate": "Reroll any single die roll.",
+        "Frenzied Attack": "Perform two melee attacks this turn.",
+        "Roll with the Punch": "Reduce damage taken by 3 (min 1).",
+        "Heal": "Restore 5 Health to yourself or adjacent model."
+    };
+
+    const ARCHETYPE_LIBRARY = {
+        "": { traits: [], limits: [] },
+        "Red Hawk Knight": {
+            traits: [
+                "Heavy Armour Proficient: No -1 Move penalty for wearing heavy armour.",
+                "Deflect Arrows: +4 Fight against shooting attacks if armed with a shield.",
+                "Save the Children: +15 XP for scenarios where a child is rescued."
+            ],
+            limits: [
+                "Cannot Be a Spellcaster: No spells, scrolls, or spellbooks.",
+                "No Missile Weapons: Cannot use any weapons that generate shooting attacks.",
+                "Protect the Children: May not voluntarily leave table if a child is under threat."
+            ]
+        }
+    };
+
     const saveFields = document.querySelectorAll('.save-field');
-    const STORAGE_KEY = 'rosd_ranger_v_final_teal';
+    const STORAGE_KEY = 'rosd_ranger_v_archetypes';
 
-    function save() {
-        const data = {};
-        saveFields.forEach(f => data[f.id] = f.value);
-        for(let i=1; i<=5; i++) {
-            data['ab' + i + '_used'] = document.getElementById('row_ab' + i).classList.contains('used');
+    function populateDropdowns() {
+        const selects = document.querySelectorAll('.ab-select');
+        selects.forEach(sel => {
+            for (let key in ABILITY_LIBRARY) {
+                let opt = document.createElement('option');
+                opt.value = key; opt.innerHTML = key === "" ? ABILITY_LIBRARY[key] : key;
+                sel.appendChild(opt);
+            }
+        });
+
+        const archSel = document.getElementById('char_arch');
+        for (let key in ARCHETYPE_LIBRARY) {
+            let opt = document.createElement('option');
+            opt.value = key; opt.innerHTML = key === "" ? "None / Custom" : key;
+            archSel.appendChild(opt);
         }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
-    function load() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(raw) applyData(JSON.parse(raw));
+    function updateArchetype() {
+        const val = document.getElementById('char_arch').value;
+        const detailsDiv = document.getElementById('arch_details');
+        const container = document.getElementById('arch_toggle_container');
+        
+        if (val && val !== "") {
+            container.style.display = "block";
+            let html = '<div class="type-label">Traits:</div><ul class="trait-list">';
+            ARCHETYPE_LIBRARY[val].traits.forEach(t => html += `<li class="trait-item">${t}</li>`);
+            html += '</ul><div class="type-label" style="color:var(--danger-red)">Limitations:</div><ul class="trait-list">';
+            ARCHETYPE_LIBRARY[val].limits.forEach(l => html += `<li class="limit-item">${l}</li>`);
+            html += '</ul>';
+            detailsDiv.innerHTML = html;
+        } else {
+            container.style.display = "none";
+        }
+        save();
     }
 
-    function applyData(data) {
-        saveFields.forEach(f => { if(data[f.id] !== undefined) f.value = data[f.id]; });
-        for(let i=1; i<=5; i++) {
-            const row = document.getElementById('row_ab' + i);
-            if(data['ab' + i + '_used']) row.classList.add('used');
-            else row.classList.remove('used');
+    function toggleArchDetails() {
+        const div = document.getElementById('arch_details');
+        const btn = document.getElementById('arch_btn');
+        if (div.style.display === "block") {
+            div.style.display = "none";
+            btn.innerHTML = "Show Archetype Details";
+        } else {
+            div.style.display = "block";
+            btn.innerHTML = "Hide Archetype Details";
         }
+    }
+
+    function updateDesc(id) {
+        const val = document.getElementById(id).value;
+        document.getElementById('desc_' + id).innerHTML = val ? ABILITY_LIBRARY[val] : "";
         save();
     }
 
@@ -236,8 +308,34 @@
         save();
     }
 
+    function save() {
+        const data = {};
+        saveFields.forEach(f => data[f.id] = f.value);
+        for(let i=1; i<=5; i++) data['ab' + i + '_used'] = document.getElementById('row_ab' + i).classList.contains('used');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function applyData(data) {
+        saveFields.forEach(f => { 
+            if(data[f.id] !== undefined) f.value = data[f.id]; 
+            if(f.classList.contains('ab-select')) updateDesc(f.id);
+            if(f.id === 'char_arch') updateArchetype();
+        });
+        for(let i=1; i<=5; i++) {
+            const row = document.getElementById('row_ab' + i);
+            if(data['ab' + i + '_used']) row.classList.add('used');
+            else row.classList.remove('used');
+        }
+        save();
+    }
+
+    function load() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw) applyData(JSON.parse(raw));
+    }
+
     saveFields.forEach(f => f.addEventListener('input', save));
-    window.onload = load;
+    window.onload = () => { populateDropdowns(); load(); };
 
     function downloadJSON() {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -245,31 +343,21 @@
         const now = new Date();
         const dateStr = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
         const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
-        const filename = `RoSD_${name}_${dateStr}_${timeStr}.json`;
-
         const blob = new Blob([data], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
+        a.href = url; a.download = `RoSD_${name}_${dateStr}_${timeStr}.json`; a.click();
     }
 
     function importJSONFile(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
-            try { applyData(JSON.parse(e.target.result)); } 
-            catch (err) { alert("Fehlerhafte Datei!"); }
-        };
+        reader.onload = e => { try { applyData(JSON.parse(e.target.result)); } catch (err) { alert("Invalid File!"); } };
         reader.readAsText(file);
     }
 
-    function clearSheet() {
-        if(confirm("Diesen Ranger wirklich löschen?")) { localStorage.clear(); location.reload(); }
-    }
+    function clearSheet() { if(confirm("Obliterate this Ranger?")) { localStorage.clear(); location.reload(); } }
 </script>
 </body>
 </html>
