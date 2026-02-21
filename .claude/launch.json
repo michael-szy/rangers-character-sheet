@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rangers-sheet",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["python3", "-m", "http.server", "5500", "--directory", "/home/michael-szy/projects/rangers-character-sheet"],
+      "port": 5500
+    }
+  ]
+}
