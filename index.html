@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RoSD - Ranger Sheet</title>
+<title>RoSD - Ranger Terminal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -26,7 +26,6 @@
         color: var(--text-main); 
         padding: 20px 10px; 
         margin: 0;
-        line-height: 1.6;
     }
 
     h1 { 
@@ -47,31 +46,63 @@
         border: 1px solid var(--border-col);
         padding: 25px;
         border-radius: 12px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 100px rgba(0,0,0,0.5);
-        position: relative;
-        overflow: hidden;
-    }
-
-    /* Dekorative Ecken (Optionaler Style) */
-    .sheet-container::before {
-        content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        border: 1px solid rgba(212, 175, 55, 0.1); pointer-events: none; border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.9);
     }
 
     .section-header {
         font-family: var(--fantasy-font);
         background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, transparent 100%);
         color: var(--accent-gold);
-        font-weight: bold;
         padding: 10px;
         border-left: 3px solid var(--accent-gold);
         margin-top: 25px;
         text-transform: uppercase;
         font-size: 1em;
-        letter-spacing: 1px;
     }
 
-    label { font-family: var(--fantasy-font); font-size: 0.75em; color: var(--accent-gold); letter-spacing: 1px; }
+    /* Stats & Info Grid Styling */
+    .grid-8 {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+        margin-top: 15px;
+    }
+    .grid-top {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 10px;
+    }
+
+    .stat-box { 
+        background: rgba(0,0,0,0.3); 
+        border: 1px solid var(--border-col); 
+        text-align: center; 
+        border-radius: 6px; 
+        padding: 5px 0; 
+    }
+    
+    /* Größere Labels für bessere Lesbarkeit */
+    .stat-label { 
+        font-family: var(--fantasy-font); 
+        font-size: 0.85em; 
+        color: var(--accent-gold); 
+        text-transform: uppercase; 
+        margin-bottom: 2px;
+        font-weight: bold;
+    }
+
+    .stat-box input { 
+        border: none; 
+        background: transparent; 
+        text-align: center; 
+        font-size: 1.5em; 
+        font-weight: bold; 
+        height: 40px; 
+        width: 100%;
+        color: #fff; 
+    }
+    
+    .current-hp { border: 2px solid var(--danger-red); background: rgba(192, 57, 43, 0.1); }
 
     input, textarea {
         background: var(--input-bg);
@@ -84,63 +115,54 @@
         font-family: var(--body-font);
         transition: all 0.3s ease;
     }
-    input:focus { 
-        border-color: var(--accent-gold); 
-        background: #252b33; 
-        outline: none; 
-        box-shadow: 0 0 8px var(--accent-gold-glow);
-    }
-
-    .numbered-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-    .row-number { color: var(--accent-gold); font-family: var(--fantasy-font); font-weight: bold; width: 20px; text-align: center; opacity: 0.7; }
-
-    /* Stats Grid */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 6px;
-        margin-top: 15px;
-    }
-    .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border-col); text-align: center; border-radius: 6px; padding: 5px 0; }
-    .stat-label { font-family: var(--fantasy-font); font-size: 0.6em; color: var(--accent-gold); text-transform: uppercase; margin-bottom: 2px; }
-    .stat-box input { border: none; background: transparent; text-align: center; font-size: 1.5em; font-weight: bold; height: 40px; padding: 0; color: #fff; }
-    .current-hp { border: 2px solid var(--danger-red); background: rgba(192, 57, 43, 0.1); box-shadow: inset 0 0 10px rgba(192, 57, 43, 0.2); }
+    input:focus { border-color: var(--accent-gold); box-shadow: 0 0 8px var(--accent-gold-glow); outline: none; }
 
     .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+    .numbered-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+    .row-number { color: var(--accent-gold); font-family: var(--fantasy-font); font-weight: bold; width: 20px; text-align: center; }
 
-    .skill-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
+    .skill-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .skill-name { font-size: 0.95em; color: #cbd5e0; }
-    .skill-input { width: 60px !important; text-align: center; font-weight: bold; padding: 5px; color: var(--accent-gold); font-size: 1.1em; }
+    .skill-input { width: 60px !important; text-align: center; font-weight: bold; color: var(--accent-gold); font-size: 1.1em; }
 
-    .notes-area { height: 180px; margin-top: 15px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-col); line-height: 1.6; font-style: italic; color: #b0b8c4; }
+    .notes-area { height: 180px; margin-top: 15px; background: rgba(0,0,0,0.2); font-style: italic; }
 
     .footer-btns { margin-top: 40px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
     button { 
         background: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold);
         padding: 12px 24px; border-radius: 6px; cursor: pointer; font-family: var(--fantasy-font);
-        font-weight: bold; font-size: 0.85em; transition: all 0.3s; letter-spacing: 1px;
+        font-weight: bold; transition: all 0.3s;
     }
-    button:hover { background: var(--accent-gold); color: #000; box-shadow: 0 0 15px var(--accent-gold-glow); }
+    button:hover { background: var(--accent-gold); color: #000; }
 
     @media (max-width: 768px) {
-        .main-grid { grid-template-columns: 1fr; gap: 20px; }
-        .stats-grid { grid-template-columns: repeat(4, 1fr); }
-        h1 { font-size: 1.6em; }
+        .main-grid { grid-template-columns: 1fr; }
+        .grid-8 { grid-template-columns: repeat(4, 1fr); }
+        .grid-top { grid-template-columns: 1fr; }
     }
 </style>
 </head>
 <body>
 
-    <h1>Ranger Sheet</h1>
+    <h1>Ranger Terminal</h1>
 
     <div class="sheet-container">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
-            <div><label>Ranger Name</label><input type="text" id="char_name" class="save-field" placeholder="z.B. Verus"></div>
-            <div><label>Level</label><input type="number" id="char_lvl" class="save-field"></div>
-            <div><label>Experience</label><input type="number" id="char_xp" class="save-field"></div>
+        <div class="grid-top">
+            <div class="stat-box">
+                <div class="stat-label">Ranger Name</div>
+                <input type="text" id="char_name" class="save-field" placeholder="z.B. Verus">
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Level</div>
+                <input type="number" id="char_lvl" class="save-field">
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Experience</div>
+                <input type="number" id="char_xp" class="save-field">
+            </div>
         </div>
 
-        <div class="stats-grid">
+        <div class="grid-8">
             <div class="stat-box"><div class="stat-label">Mov</div><input type="number" id="s_mov" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Fig</div><input type="number" id="s_fig" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Sho</div><input type="number" id="s_sho" class="save-field"></div>
@@ -195,7 +217,7 @@
 
         <div class="footer-btns">
             <button onclick="downloadJSON()">💾 Save Character File</button>
-            <label for="import-file" style="cursor:pointer; background:transparent; color:var(--accent-gold); border:1px solid var(--accent-gold); padding:12px 24px; border-radius:6px; font-family:var(--fantasy-font); font-weight:bold; font-size:0.85em; letter-spacing:1px; display:inline-block;">📂 Load Character File</label>
+            <label for="import-file" style="cursor:pointer; border:1px solid var(--accent-gold); padding:12px 24px; border-radius:6px; font-family:var(--fantasy-font); font-weight:bold; font-size:0.85em;">📂 Load Character File</label>
             <input type="file" id="import-file" style="display:none" onchange="importJSONFile(event)">
             <button onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
         </div>
@@ -224,14 +246,23 @@
     saveFields.forEach(f => f.addEventListener('input', save));
     window.onload = load;
 
+    // --- OPTIMIERTER DATEINAME MIT DATUM UND ZEIT ---
     function downloadJSON() {
         const data = localStorage.getItem(STORAGE_KEY);
         const name = document.getElementById('char_name').value || 'Ranger';
+        
+        // Zeitstempel bauen
+        const now = new Date();
+        const dateStr = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        const filename = `RoSD_${name}_${dateStr}_${timeStr}.json`;
+
         const blob = new Blob([data], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${name}_RoSD_Sheet.json`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -244,16 +275,13 @@
             try {
                 const data = JSON.parse(e.target.result);
                 applyData(data);
-            } catch (err) { alert("Das ist keine gültige Ranger-Datei!"); }
+            } catch (err) { alert("Fehlerhafte Datei!"); }
         };
         reader.readAsText(file);
     }
 
     function clearSheet() {
-        if(confirm("Möchtest du diesen Ranger wirklich in die Schatten schicken? Alle Daten werden gelöscht.")) {
-            localStorage.clear();
-            location.reload();
-        }
+        if(confirm("Ranger löschen?")) { localStorage.clear(); location.reload(); }
     }
 </script>
 </body>
