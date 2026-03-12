@@ -93,18 +93,160 @@
         box-shadow: 0 0 10px var(--accent-teal-glow); transition: all 0.4s ease; flex-shrink: 0;
     }
     .ability-toggle.used { background: #2a2e35; border-color: #555; box-shadow: none; transform: scale(0.8); }
-    .numbered-row.used select { text-decoration: line-through; opacity: 0.3; filter: grayscale(1); }
+    .numbered-row.used .search-select-input { text-decoration: line-through; opacity: 0.3; filter: grayscale(1); }
     .row-number { color: var(--accent-teal); font-family: var(--fantasy-font); font-weight: bold; width: 25px; text-align: center; }
     .ability-desc { font-size: 0.85em; color: #a0a0a0; font-style: italic; margin-left: 65px; margin-top: 4px; display: none; }
     .info-toggle {
-        width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--accent-teal);
+        width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--accent-teal);
         background: rgba(22, 224, 189, 0.1); cursor: pointer; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
-        font-size: 0.9em; color: var(--accent-teal); transition: all 0.3s ease;
+        font-size: 1em; color: var(--accent-teal); transition: all 0.3s ease;
         font-family: var(--fantasy-font); font-weight: bold;
     }
     .info-toggle:hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
     .info-toggle.active { background: var(--accent-teal); color: #000; }
+    .top-utility {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    .save-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border-col);
+        background: rgba(0,0,0,0.25);
+        font-size: 0.85em;
+        color: #b8c3cf;
+    }
+    .save-status::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #6c757d;
+        box-shadow: 0 0 8px rgba(108, 117, 125, 0.5);
+    }
+    .save-status.saved::before { background: #2ecc71; box-shadow: 0 0 8px rgba(46, 204, 113, 0.6); }
+    .save-status.saving::before { background: #f39c12; box-shadow: 0 0 8px rgba(243, 156, 18, 0.6); }
+    .save-status.unsaved::before { background: var(--danger-red); box-shadow: 0 0 8px rgba(192, 57, 43, 0.6); }
+    .search-select {
+        position: relative;
+        flex: 1;
+    }
+    .search-select-input {
+        min-height: 46px;
+        padding-right: 14px;
+    }
+    .search-select-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        max-height: 280px;
+        overflow-y: auto;
+        background: #10151b;
+        border: 1px solid var(--border-col);
+        border-radius: 10px;
+        box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+        display: none;
+        z-index: 40;
+    }
+    .search-select.open .search-select-menu { display: block; }
+    .search-option {
+        padding: 10px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .search-option:last-child { border-bottom: none; }
+    .search-option:hover,
+    .search-option.active {
+        background: rgba(22, 224, 189, 0.12);
+    }
+    .search-option-title {
+        color: #fff;
+        font-size: 0.95em;
+    }
+    .search-option-meta {
+        margin-top: 4px;
+        font-size: 0.75em;
+        color: #91a0b0;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .selection-meta {
+        display: none;
+    }
+    .tag-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(22, 224, 189, 0.1);
+        border: 1px solid rgba(22, 224, 189, 0.25);
+        color: var(--accent-teal);
+        font-size: 0.72em;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-family: var(--fantasy-font);
+    }
+    .tag-badge.spell { color: #9bd3ff; border-color: rgba(155, 211, 255, 0.35); background: rgba(80, 150, 220, 0.12); }
+    .tag-badge.heroic,
+    .tag-badge.heroic-ability { color: #f5d48a; border-color: rgba(245, 212, 138, 0.35); background: rgba(180, 130, 40, 0.12); }
+    .tag-badge.magical-equipment { color: #ffb6f5; border-color: rgba(255, 182, 245, 0.35); background: rgba(170, 80, 150, 0.12); }
+    .tag-badge.weapon { color: #ffb3a7; border-color: rgba(255, 179, 167, 0.35); background: rgba(180, 80, 60, 0.12); }
+    .tag-badge.armour { color: #d5d9df; border-color: rgba(213, 217, 223, 0.35); background: rgba(120, 130, 145, 0.12); }
+    .tag-badge.custom { color: #e5c5ff; border-color: rgba(229, 197, 255, 0.35); background: rgba(120, 70, 160, 0.12); }
+    .equipment-group { margin-top: 12px; }
+    .equipment-group .numbered-row { margin-top: 0; }
+    .preview-panel {
+        display: none;
+        margin-top: 20px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-col);
+        border-radius: 12px;
+        padding: 16px;
+        background:
+            radial-gradient(circle at top right, rgba(22, 224, 189, 0.12), transparent 35%),
+            rgba(0,0,0,0.22);
+    }
+    .preview-panel.visible { display: block; }
+    .preview-label {
+        font-family: var(--fantasy-font);
+        color: var(--accent-teal);
+        font-size: 0.8em;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+    }
+    .preview-title {
+        font-size: 1.3em;
+        color: #fff;
+        margin-bottom: 10px;
+        min-height: 1.5em;
+    }
+    .preview-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+        min-height: 22px;
+    }
+    .preview-description {
+        color: #c2c8d0;
+        line-height: 1.55;
+        font-size: 0.95em;
+        min-height: 4.5em;
+    }
+    .preview-context {
+        color: #8fa1b2;
+        font-size: 0.8em;
+        margin-top: 12px;
+    }
 
     .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
     .skill-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -114,17 +256,53 @@
     .notes-area { height: 180px; margin-top: 15px; background: rgba(0,0,0,0.2); font-style: italic; }
 
     .footer-btns { margin-top: 40px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+    .footer-action {
+        cursor: pointer;
+        border: 1px solid var(--accent-teal);
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-family: var(--fantasy-font);
+        font-weight: bold;
+        font-size: 0.85em;
+        color: var(--accent-teal);
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        box-sizing: border-box;
+    }
     button { 
         background: transparent; color: var(--accent-teal); border: 1px solid var(--accent-teal);
         padding: 12px 24px; border-radius: 6px; cursor: pointer; font-family: var(--fantasy-font);
         font-weight: bold; transition: all 0.3s;
+        min-height: 48px;
     }
-    button:hover { background: var(--accent-teal); color: #000; }
+    button:hover, .footer-action:hover { background: var(--accent-teal); color: #000; }
 
     @media (max-width: 768px) {
+        body { padding: 14px 8px 110px; }
+        .sheet-container { padding: 18px 14px; }
         .main-grid { grid-template-columns: 1fr; }
         .grid-8 { grid-template-columns: repeat(4, 1fr); }
         .grid-top { grid-template-columns: 1fr; }
+        .numbered-row { gap: 8px; align-items: flex-start; }
+        .row-number { width: 20px; padding-top: 11px; }
+        .ability-desc { margin-left: 28px; }
+        .ability-toggle { width: 30px; height: 30px; margin-top: 8px; }
+        .info-toggle { width: 40px; height: 40px; }
+        .search-select-input { min-height: 50px; font-size: 16px; }
+        .footer-btns {
+            position: sticky;
+            bottom: 8px;
+            background: rgba(10, 12, 16, 0.94);
+            border: 1px solid var(--border-col);
+            border-radius: 12px;
+            padding: 10px;
+            gap: 10px;
+            box-shadow: 0 18px 32px rgba(0,0,0,0.45);
+        }
+        .footer-btns > * { flex: 1 1 100%; }
     }
 </style>
 </head>
@@ -133,8 +311,11 @@
     <h1>Ranger Sheet</h1>
 
     <div class="sheet-container">
+        <div class="top-utility">
+            <div id="save_status" class="save-status saved">Saved</div>
+        </div>
         <div class="grid-top">
-            <div class="stat-box"><div class="stat-label">Ranger Name</div><input type="text" id="char_name" class="save-field" placeholder="z.B. Verus"></div>
+            <div class="stat-box"><div class="stat-label">Ranger Name</div><input type="text" id="char_name" class="save-field" placeholder="Name the legend walking into the wilds"></div>
             <div class="stat-box"><div class="stat-label">Level</div><input type="number" id="char_lvl" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Experience</div><input type="number" id="char_xp" class="save-field"></div>
         </div>
@@ -160,39 +341,87 @@
             <div class="stat-box"><div class="stat-label">Recr</div><input type="number" id="s_rec" class="save-field"></div>
         </div>
 
+        <div class="preview-panel" id="selection_preview">
+            <div class="preview-label">Selection Preview</div>
+            <div id="preview_title" class="preview-title">No selection focused</div>
+            <div id="preview_badges" class="preview-badges"></div>
+            <div id="preview_description" class="preview-description">Focus or search an ability, spell, or equipment entry to inspect its details here.</div>
+            <div id="preview_context" class="preview-context">Use the search fields to filter long lists quickly.</div>
+        </div>
+
         <div class="main-grid">
             <div>
                 <div class="section-header">Heroic Abilities & Spells</div>
                 <div id="abilities-list">
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><select id="ab1" class="save-field ab-select" onchange="updateDesc('ab1')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab1')">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><div class="search-select" id="ab1_box"><input type="text" id="ab1_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab1')" onfocus="openSearchMenu('ab1')" onkeydown="handleSearchKeydown(event, 'ab1')" onblur="handleSearchBlur('ab1')"><div id="ab1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab1" onclick="toggleDescVisibility('ab1', this)">ℹ</div></div>
+                        <div id="meta_ab1" class="selection-meta"></div>
                         <div id="desc_ab1" class="ability-desc"></div>
+                        <input type="hidden" id="ab1" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><select id="ab2" class="save-field ab-select" onchange="updateDesc('ab2')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab2')">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><div class="search-select" id="ab2_box"><input type="text" id="ab2_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab2')" onfocus="openSearchMenu('ab2')" onkeydown="handleSearchKeydown(event, 'ab2')" onblur="handleSearchBlur('ab2')"><div id="ab2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab2" onclick="toggleDescVisibility('ab2', this)">ℹ</div></div>
+                        <div id="meta_ab2" class="selection-meta"></div>
                         <div id="desc_ab2" class="ability-desc"></div>
+                        <input type="hidden" id="ab2" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><select id="ab3" class="save-field ab-select" onchange="updateDesc('ab3')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab3')">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><div class="search-select" id="ab3_box"><input type="text" id="ab3_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab3')" onfocus="openSearchMenu('ab3')" onkeydown="handleSearchKeydown(event, 'ab3')" onblur="handleSearchBlur('ab3')"><div id="ab3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab3" onclick="toggleDescVisibility('ab3', this)">ℹ</div></div>
+                        <div id="meta_ab3" class="selection-meta"></div>
                         <div id="desc_ab3" class="ability-desc"></div>
+                        <input type="hidden" id="ab3" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><select id="ab4" class="save-field ab-select" onchange="updateDesc('ab4')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab4')">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><div class="search-select" id="ab4_box"><input type="text" id="ab4_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab4')" onfocus="openSearchMenu('ab4')" onkeydown="handleSearchKeydown(event, 'ab4')" onblur="handleSearchBlur('ab4')"><div id="ab4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab4" onclick="toggleDescVisibility('ab4', this)">ℹ</div></div>
+                        <div id="meta_ab4" class="selection-meta"></div>
                         <div id="desc_ab4" class="ability-desc"></div>
+                        <input type="hidden" id="ab4" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><select id="ab5" class="save-field ab-select" onchange="updateDesc('ab5')"></select><div class="info-toggle" onclick="toggleDescVisibility('ab5')">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><div class="search-select" id="ab5_box"><input type="text" id="ab5_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab5')" onfocus="openSearchMenu('ab5')" onkeydown="handleSearchKeydown(event, 'ab5')" onblur="handleSearchBlur('ab5')"><div id="ab5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab5" onclick="toggleDescVisibility('ab5', this)">ℹ</div></div>
+                        <div id="meta_ab5" class="selection-meta"></div>
                         <div id="desc_ab5" class="ability-desc"></div>
+                        <input type="hidden" id="ab5" class="save-field">
                     </div>
                 </div>
 
                 <div class="section-header">Equipment</div>
-                <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">1</span><input type="text" id="it1" class="save-field"></div>
-                <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">2</span><input type="text" id="it2" class="save-field"></div>
-                <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">3</span><input type="text" id="it3" class="save-field"></div>
-                <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">4</span><input type="text" id="it4" class="save-field"></div>
-                <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">5</span><input type="text" id="it5" class="save-field"></div>
-                <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">6</span><input type="text" id="it6" class="save-field"></div>
+                <div class="equipment-group">
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">1</span><div class="search-select" id="it1_box"><input type="text" id="it1_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it1')" onfocus="openSearchMenu('it1')" onkeydown="handleSearchKeydown(event, 'it1')" onblur="handleSearchBlur('it1')"><div id="it1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it1" onclick="toggleDescVisibility('it1', this)">ℹ</div></div>
+                    <div id="meta_it1" class="selection-meta"></div>
+                    <div id="desc_it1" class="ability-desc"></div>
+                    <input type="hidden" id="it1" class="save-field">
+                </div>
+                <div class="equipment-group">
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">2</span><div class="search-select" id="it2_box"><input type="text" id="it2_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it2')" onfocus="openSearchMenu('it2')" onkeydown="handleSearchKeydown(event, 'it2')" onblur="handleSearchBlur('it2')"><div id="it2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it2" onclick="toggleDescVisibility('it2', this)">ℹ</div></div>
+                    <div id="meta_it2" class="selection-meta"></div>
+                    <div id="desc_it2" class="ability-desc"></div>
+                    <input type="hidden" id="it2" class="save-field">
+                </div>
+                <div class="equipment-group">
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">3</span><div class="search-select" id="it3_box"><input type="text" id="it3_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it3')" onfocus="openSearchMenu('it3')" onkeydown="handleSearchKeydown(event, 'it3')" onblur="handleSearchBlur('it3')"><div id="it3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it3" onclick="toggleDescVisibility('it3', this)">ℹ</div></div>
+                    <div id="meta_it3" class="selection-meta"></div>
+                    <div id="desc_it3" class="ability-desc"></div>
+                    <input type="hidden" id="it3" class="save-field">
+                </div>
+                <div class="equipment-group">
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">4</span><div class="search-select" id="it4_box"><input type="text" id="it4_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it4')" onfocus="openSearchMenu('it4')" onkeydown="handleSearchKeydown(event, 'it4')" onblur="handleSearchBlur('it4')"><div id="it4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it4" onclick="toggleDescVisibility('it4', this)">ℹ</div></div>
+                    <div id="meta_it4" class="selection-meta"></div>
+                    <div id="desc_it4" class="ability-desc"></div>
+                    <input type="hidden" id="it4" class="save-field">
+                </div>
+                <div class="equipment-group">
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">5</span><div class="search-select" id="it5_box"><input type="text" id="it5_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it5')" onfocus="openSearchMenu('it5')" onkeydown="handleSearchKeydown(event, 'it5')" onblur="handleSearchBlur('it5')"><div id="it5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it5" onclick="toggleDescVisibility('it5', this)">ℹ</div></div>
+                    <div id="meta_it5" class="selection-meta"></div>
+                    <div id="desc_it5" class="ability-desc"></div>
+                    <input type="hidden" id="it5" class="save-field">
+                </div>
+                <div class="equipment-group">
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">6</span><div class="search-select" id="it6_box"><input type="text" id="it6_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it6')" onfocus="openSearchMenu('it6')" onkeydown="handleSearchKeydown(event, 'it6')" onblur="handleSearchBlur('it6')"><div id="it6_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it6" onclick="toggleDescVisibility('it6', this)">ℹ</div></div>
+                    <div id="meta_it6" class="selection-meta"></div>
+                    <div id="desc_it6" class="ability-desc"></div>
+                    <input type="hidden" id="it6" class="save-field">
+                </div>
             </div>
 
             <div>
@@ -215,12 +444,12 @@
             </div>
         </div>
 
-        <div class="section-header">Quest Chronicles</div>
-        <textarea id="quest_notes" class="save-field notes-area" placeholder="Schreibe deine Legende..."></textarea>
+        <div class="section-header">Quest Log</div>
+        <textarea id="quest_notes" class="save-field notes-area" placeholder="Record the omens, the scars, and the trophies of each expedition."></textarea>
 
         <div class="footer-btns">
             <button onclick="downloadJSON()">💾 Save Character File</button>
-            <label for="import-file" style="cursor:pointer; border:1px solid var(--accent-teal); padding:12px 24px; border-radius:6px; font-family:var(--fantasy-font); font-weight:bold; font-size:0.85em; color:var(--accent-teal);">📂 Load Character File</label>
+            <label for="import-file" class="footer-action">📂 Load Character File</label>
             <input type="file" id="import-file" style="display:none" onchange="importJSONFile(event)">
             <button onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
         </div>
@@ -402,35 +631,93 @@
         }
     };
 
+    const EQUIPMENT_CUSTOM_VALUE = "__custom__";
+    const EQUIPMENT_LIBRARY = {
+        "Basic Weapons": {
+            "Bow": "The favoured missile weapon of rangers, bows may be loaded and fired in a single action. Maximum range is 24\". Bows have no damage modifier. A figure must also carry a quiver, or some type of magic ammunition, to use a bow.",
+            "Crossbow": "Crossbows take one action to load and one action to fire. A figure may replace his movement action with a reload action. Crossbows have a +2 damage modifier and a maximum range of 24\". All crossbows start the game loaded and ready to fire. A figure must also carry a quiver, or some type of magic ammunition, to use a crossbow.",
+            "Dagger": "A knife that is not balanced for throwing. Daggers have a -1 damage modifier. The first dagger or throwing knife carried by a ranger does not take up an item slot.",
+            "Hand Weapon": "Includes all purpose-forged weapons commonly wielded in one hand, such as swords, clubs, axes, maces, and spears. These weapons have no modifiers in combat.",
+            "Staff": "Staffs have a -1 damage modifier, but also give the opponent a -1 damage modifier in hand-to-hand combat. The staff does not provide this modifier against shooting attacks.",
+            "Throwing Knife": "Includes any kind of small throwing weapon such as knives, axes, and light javelins. A figure may make one shooting attack per game for each knife carried. Maximum range is 8\" and does -1 damage. A throwing knife can also be used as a back-up melee weapon, but with a -2 damage modifier in hand-to-hand combat. The first dagger or throwing knife carried by a ranger does not take up an item slot.",
+            "Two-Handed Weapon": "Includes all heavy melee weapons that require two hands to wield, such as two-handed swords, battle axes, polearms, and large flails. These weapons have a +2 damage modifier. Two-handed weapons carried by rangers take up two item slots.",
+            "Unarmed": "A figure that is unarmed may still fight as normal, but suffers -2 Fight and -2 Damage. This penalty never applies to creatures that have no weapons listed in their notes."
+        },
+        "Basic Armour": {
+            "Heavy Armour": "Represents any type of heavy armour mostly constructed out of metal. A figure wearing heavy armour receives +2 to its Armour, but -1 to its Move.",
+            "Light Armour": "Represents any type of lighter armour mostly constructed out of leather or other non-metal materials. A figure wearing light armour receives +1 to its Armour.",
+            "Shield": "A figure carrying a shield receives +1 to its Armour. It may not also carry a two-handed weapon or a staff."
+        },
+        "Basic Equipment": {
+            "Quiver": "A figure must be equipped with a quiver to make normal shooting attacks with a bow or crossbow. A figure with a quiver may also carry one piece of magic ammunition without that ammunition taking up an item slot.",
+            "Rope": "Whenever a figure carrying rope is standing at the top of a vertical structure, it may spend an action to set a rope. Any figure may then use this rope to climb the structure without suffering any movement penalties. A figure may set one rope per game for each rope item carried."
+        },
+        "Magical Equipment": {
+            "Focusing Crystal": "If a figure carrying this crystal casts a spell that forces the target to make a Will Roll, the Target Number for that Will Roll is increased by 2. For example, Hold Creature would require a Will Roll of TN18 instead of the normal TN16.",
+            "Holy Icon": "Whenever a figure carrying a holy icon casts Heal, the target recovers 6 points of Health instead of the normal 5. Whenever it casts Burning Light it makes +4 shooting attacks instead of +3, and whenever it casts Shield of Light all shooting attacks against the target are at -4 instead of -3.",
+            "Spellbook": "If a figure carrying a spellbook reaches the end of a scenario with uncast spells, it may select one to be saved in the spellbook. This spell may then be cast in a future scenario following the normal rules. Once the spell is cast, it is removed from the spellbook. A spellbook can never hold more than one spell at any given time.",
+            "Wand": "While carrying a wand, a figure can add +1 to the roll for any shooting attack generated by a spell it cast. For example, a figure carrying a wand that casts Fireball generates a +4 shooting attack instead of the normal +3.",
+            "Wizard's Staff": "This item follows all of the rules for the staff weapon, with the following additions. If a figure makes a Will Roll while carrying this staff, it may trade its own Health to increase its roll on a one-for-one basis. Additionally, whenever a figure carrying a wizard's staff is activated, it may spend one point of Health to make the staff count as a magic weapon until its next activation."
+        }
+    };
+
     const saveFields = document.querySelectorAll('.save-field');
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
+    const SEARCHABLE_STATE = {};
+    let activePreviewId = null;
+    let saveTimer = null;
+
+    function buildAbilityOptions() {
+        const options = [];
+
+        for (let key in ABILITY_LIBRARY.heroic) {
+            options.push({
+                value: key,
+                label: key,
+                desc: ABILITY_LIBRARY.heroic[key],
+                badges: ['Heroic Ability'],
+                group: 'Heroic Abilities'
+            });
+        }
+
+        for (let key in ABILITY_LIBRARY.spells) {
+            options.push({
+                value: key,
+                label: key,
+                desc: ABILITY_LIBRARY.spells[key],
+                badges: ['Spell'],
+                group: 'Spells'
+            });
+        }
+
+        return options;
+    }
+
+    function buildEquipmentOptions() {
+        const groupBadges = {
+            'Basic Weapons': ['Equipment', 'Weapon'],
+            'Basic Armour': ['Equipment', 'Armour'],
+            'Basic Equipment': ['Equipment'],
+            'Magical Equipment': ['Equipment', 'Magical Equipment']
+        };
+        const options = [];
+
+        for (let group in EQUIPMENT_LIBRARY) {
+            for (let key in EQUIPMENT_LIBRARY[group]) {
+                options.push({
+                    value: key,
+                    label: key,
+                    desc: EQUIPMENT_LIBRARY[group][key],
+                    badges: groupBadges[group] || ['Equipment'],
+                    group
+                });
+            }
+        }
+
+        return options;
+    }
 
     function populateDropdowns() {
-        const selects = document.querySelectorAll('.ab-select');
-        selects.forEach(sel => {
-            const emptyOpt = document.createElement('option');
-            emptyOpt.value = ""; emptyOpt.innerHTML = "Choose an Ability or Spell...";
-            sel.appendChild(emptyOpt);
-
-            const heroicGroup = document.createElement('optgroup');
-            heroicGroup.label = 'Heroic Abilities';
-            for (let key in ABILITY_LIBRARY.heroic) {
-                let o = document.createElement('option');
-                o.value = key; o.innerHTML = key;
-                heroicGroup.appendChild(o);
-            }
-            sel.appendChild(heroicGroup);
-
-            const spellGroup = document.createElement('optgroup');
-            spellGroup.label = 'Spells';
-            for (let key in ABILITY_LIBRARY.spells) {
-                let o = document.createElement('option');
-                o.value = key; o.innerHTML = key;
-                spellGroup.appendChild(o);
-            }
-            sel.appendChild(spellGroup);
-        });
-
         const archSel = document.getElementById('char_arch');
         for (let key in ARCHETYPE_LIBRARY) {
             let opt = document.createElement('option');
@@ -439,7 +726,86 @@
         }
     }
 
-    function updateArchetype() {
+    function initSearchables() {
+        const abilityOptions = buildAbilityOptions();
+        const equipmentOptions = buildEquipmentOptions();
+        const roman = ['I', 'II', 'III', 'IV', 'V'];
+
+        for (let i = 1; i <= 5; i++) {
+            SEARCHABLE_STATE['ab' + i] = {
+                id: 'ab' + i,
+                options: abilityOptions,
+                allowCustom: false,
+                slotLabel: `Ability Slot ${roman[i - 1]}`,
+                renderedOptions: [],
+                selectedOption: null,
+                selectedValue: '',
+                highlightIndex: -1
+            };
+        }
+
+        for (let i = 1; i <= 6; i++) {
+            SEARCHABLE_STATE['it' + i] = {
+                id: 'it' + i,
+                options: equipmentOptions,
+                allowCustom: true,
+                slotLabel: `Equipment Slot ${i}`,
+                renderedOptions: [],
+                selectedOption: null,
+                selectedValue: '',
+                highlightIndex: -1
+            };
+        }
+    }
+
+    function normalizeSearchValue(value) {
+        return (value || '').toLowerCase().trim();
+    }
+
+    function escapeHtml(value) {
+        return (value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function badgeClass(label) {
+        return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    function renderBadges(target, badges) {
+        target.innerHTML = (badges || [])
+            .map(badge => `<span class="tag-badge ${badgeClass(badge)}">${escapeHtml(badge)}</span>`)
+            .join('');
+    }
+
+    function setSaveStatus(state, text) {
+        const status = document.getElementById('save_status');
+        status.className = `save-status ${state}`;
+        status.textContent = text;
+    }
+
+    function scheduleSave() {
+        setSaveStatus('unsaved', 'Unsaved');
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+            setSaveStatus('saving', 'Saving...');
+            saveNow();
+        }, 180);
+    }
+
+    function saveNow() {
+        clearTimeout(saveTimer);
+        const data = {};
+        saveFields.forEach(f => data[f.id] = f.value);
+        for (let i = 1; i <= 5; i++) data['ab' + i + '_used'] = document.getElementById('row_ab' + i).classList.contains('used');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        setSaveStatus('saved', 'Saved');
+    }
+
+    function updateArchetype(skipSave = false) {
         const val = document.getElementById('char_arch').value;
         const detailsDiv = document.getElementById('arch_details');
         const container = document.getElementById('arch_toggle_container');
@@ -455,7 +821,7 @@
         } else {
             container.style.display = "none";
         }
-        save();
+        if (!skipSave) scheduleSave();
     }
 
     function toggleArchDetails() {
@@ -470,50 +836,306 @@
         }
     }
 
-    function updateDesc(id) {
-        const val = document.getElementById(id).value;
-        const desc = val ? (ABILITY_LIBRARY.heroic[val] || ABILITY_LIBRARY.spells[val] || "") : "";
-        document.getElementById('desc_' + id).innerHTML = desc;
-        save();
+    function getEquipmentDescription(value) {
+        for (let group in EQUIPMENT_LIBRARY) {
+            if (EQUIPMENT_LIBRARY[group][value]) return EQUIPMENT_LIBRARY[group][value];
+        }
+        return "";
+    }
+
+    function setDescription(id, desc) {
+        const descDiv = document.getElementById('desc_' + id);
+        const infoBtn = document.querySelector(`[data-info-for="${id}"]`);
+
+        descDiv.innerHTML = desc;
+
+        if (!desc) {
+            descDiv.style.display = "none";
+            if (infoBtn) infoBtn.classList.remove('active');
+        }
+
+        if (activePreviewId === id) renderPreviewPanel(id);
+    }
+
+    function getSearchInput(id) {
+        return document.getElementById(id + '_search');
+    }
+
+    function getSearchBox(id) {
+        return document.getElementById(id + '_box');
+    }
+
+    function findOptionByValue(id, value) {
+        return SEARCHABLE_STATE[id].options.find(option => option.value === value) || null;
+    }
+
+    function findOptionByLabel(id, label) {
+        const normalized = normalizeSearchValue(label);
+        return SEARCHABLE_STATE[id].options.find(option => normalizeSearchValue(option.label) === normalized) || null;
+    }
+
+    function buildCustomOption(label, id) {
+        return {
+            value: label,
+            label,
+            desc: '',
+            badges: ['Equipment', 'Custom'],
+            group: `Custom Entry for ${SEARCHABLE_STATE[id].slotLabel}`,
+            isCustom: true
+        };
+    }
+
+    function getSearchPreviewOption(id) {
+        const inputValue = getSearchInput(id).value.trim();
+        if (!inputValue) return SEARCHABLE_STATE[id].selectedOption;
+
+        const exactOption = findOptionByLabel(id, inputValue);
+        if (exactOption) return exactOption;
+        if (SEARCHABLE_STATE[id].allowCustom) return buildCustomOption(inputValue, id);
+        return SEARCHABLE_STATE[id].selectedOption;
+    }
+
+    function hidePreviewPanel() {
+        activePreviewId = null;
+        document.getElementById('selection_preview').classList.remove('visible');
+    }
+
+    function renderPreviewPanel(id) {
+        const state = SEARCHABLE_STATE[id];
+        const option = getSearchPreviewOption(id);
+        const panel = document.getElementById('selection_preview');
+        const title = document.getElementById('preview_title');
+        const badges = document.getElementById('preview_badges');
+        const description = document.getElementById('preview_description');
+        const context = document.getElementById('preview_context');
+
+        if (!state || !option) {
+            hidePreviewPanel();
+            return;
+        }
+
+        panel.classList.add('visible');
+        title.textContent = option.label;
+        renderBadges(badges, option.badges);
+        description.textContent = option.desc || 'Custom entry without a linked rule text.';
+        context.textContent = `${state.slotLabel}${option.group ? ' • ' + option.group : ''}`;
+    }
+
+    function setActivePreview(id) {
+        activePreviewId = id;
+        renderPreviewPanel(id);
+    }
+
+    function renderSelectionMeta(id, option) {
+        const meta = document.getElementById('meta_' + id);
+        meta.innerHTML = '';
+    }
+
+    function applySearchableValue(id, value, skipSave = true, showPreview = false) {
+        const state = SEARCHABLE_STATE[id];
+        const hiddenField = document.getElementById(id);
+        const input = getSearchInput(id);
+        const previousValue = state.selectedValue;
+        let option = findOptionByValue(id, value);
+
+        if (!option && state.allowCustom && value) option = buildCustomOption(value, id);
+
+        state.selectedOption = option;
+        state.selectedValue = option ? option.value : '';
+        hiddenField.value = state.selectedValue;
+        input.value = option ? option.label : '';
+        renderSelectionMeta(id, option);
+        setDescription(id, option ? option.desc : '');
+
+        if (showPreview && option) setActivePreview(id);
+        else if (activePreviewId === id) renderPreviewPanel(id);
+        if (!skipSave && previousValue !== state.selectedValue) scheduleSave();
+    }
+
+    function closeSearchMenu(id) {
+        const box = getSearchBox(id);
+        SEARCHABLE_STATE[id].highlightIndex = -1;
+        box.classList.remove('open');
+    }
+
+    function getFilteredOptions(id, query) {
+        const normalized = normalizeSearchValue(query);
+        const state = SEARCHABLE_STATE[id];
+        if (!normalized) return state.options.slice();
+
+        return state.options.filter(option => {
+            const haystack = [
+                option.label,
+                option.group,
+                ...(option.badges || [])
+            ].join(' ');
+            return normalizeSearchValue(haystack).includes(normalized);
+        });
+    }
+
+    function renderSearchMenu(id) {
+        const state = SEARCHABLE_STATE[id];
+        const menu = document.getElementById(id + '_menu');
+        const query = getSearchInput(id).value.trim();
+        const filtered = getFilteredOptions(id, query);
+        const exactMatch = query ? filtered.some(option => normalizeSearchValue(option.label) === normalizeSearchValue(query)) : false;
+
+        state.renderedOptions = filtered.slice();
+        if (state.allowCustom && query && !exactMatch) {
+            state.renderedOptions.unshift({
+                value: query,
+                label: query,
+                desc: '',
+                badges: ['Equipment', 'Custom'],
+                group: 'Use as custom entry',
+                isCustom: true
+            });
+        }
+
+        if (!state.renderedOptions.length) {
+            menu.innerHTML = '<div class="search-option"><div class="search-option-title">No matches found</div></div>';
+            return;
+        }
+
+        if (state.highlightIndex < 0 || state.highlightIndex >= state.renderedOptions.length) state.highlightIndex = 0;
+
+        menu.innerHTML = '';
+        state.renderedOptions.forEach((option, index) => {
+            const item = document.createElement('div');
+            item.className = `search-option${index === state.highlightIndex ? ' active' : ''}`;
+            item.innerHTML = `
+                <div class="search-option-title">${escapeHtml(option.label)}</div>
+                <div class="search-option-meta">
+                    <span>${escapeHtml(option.group || '')}</span>
+                    ${(option.badges || []).map(badge => `<span>${escapeHtml(badge)}</span>`).join('')}
+                </div>
+            `;
+            item.addEventListener('mousedown', event => {
+                event.preventDefault();
+                applySearchableValue(id, option.value, false, true);
+                closeSearchMenu(id);
+            });
+            menu.appendChild(item);
+        });
+    }
+
+    function openSearchMenu(id) {
+        Object.keys(SEARCHABLE_STATE).forEach(otherId => {
+            if (otherId !== id) closeSearchMenu(otherId);
+        });
+        getSearchBox(id).classList.add('open');
+        renderSearchMenu(id);
+    }
+
+    function commitSearchInput(id, showPreview = false) {
+        const inputValue = getSearchInput(id).value.trim();
+        const state = SEARCHABLE_STATE[id];
+
+        if (!inputValue) {
+            applySearchableValue(id, '', false, false);
+            return;
+        }
+
+        const exact = findOptionByLabel(id, inputValue);
+        if (exact) {
+            applySearchableValue(id, exact.value, false, showPreview);
+            return;
+        }
+
+        if (state.allowCustom) {
+            applySearchableValue(id, inputValue, false, showPreview);
+            return;
+        }
+
+        applySearchableValue(id, state.selectedValue || '', true);
+    }
+
+    function handleSearchInput(id) {
+        openSearchMenu(id);
+        renderSearchMenu(id);
+    }
+
+    function handleSearchBlur(id) {
+        window.setTimeout(() => {
+            commitSearchInput(id, false);
+            closeSearchMenu(id);
+        }, 120);
+    }
+
+    function handleSearchKeydown(event, id) {
+        const state = SEARCHABLE_STATE[id];
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            openSearchMenu(id);
+            state.highlightIndex = Math.min(state.highlightIndex + 1, Math.max(state.renderedOptions.length - 1, 0));
+            renderSearchMenu(id);
+            return;
+        }
+
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            openSearchMenu(id);
+            state.highlightIndex = Math.max(state.highlightIndex - 1, 0);
+            renderSearchMenu(id);
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (state.renderedOptions.length && state.highlightIndex >= 0) {
+                applySearchableValue(id, state.renderedOptions[state.highlightIndex].value, false, true);
+                closeSearchMenu(id);
+            } else {
+                commitSearchInput(id, true);
+            }
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            applySearchableValue(id, state.selectedValue || '', true);
+            closeSearchMenu(id);
+        }
     }
 
     function toggleUse(id) {
         document.getElementById('row_' + id).classList.toggle('used');
-        save();
+        scheduleSave();
     }
 
-    function toggleDescVisibility(id) {
+    function toggleDescVisibility(id, infoBtn) {
         const descDiv = document.getElementById('desc_' + id);
-        const infoBtn = event.target;
+        const button = infoBtn || document.querySelector(`[data-info-for="${id}"]`);
+        setActivePreview(id);
+
+        if (!descDiv.innerHTML.trim()) return;
 
         if (descDiv.style.display === "block") {
             descDiv.style.display = "none";
-            infoBtn.classList.remove('active');
+            if (button) button.classList.remove('active');
         } else {
             descDiv.style.display = "block";
-            infoBtn.classList.add('active');
+            if (button) button.classList.add('active');
         }
     }
 
-    function save() {
-        const data = {};
-        saveFields.forEach(f => data[f.id] = f.value);
-        for(let i=1; i<=5; i++) data['ab' + i + '_used'] = document.getElementById('row_ab' + i).classList.contains('used');
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-
     function applyData(data) {
-        saveFields.forEach(f => { 
-            if(data[f.id] !== undefined) f.value = data[f.id]; 
-            if(f.classList.contains('ab-select')) updateDesc(f.id);
-            if(f.id === 'char_arch') updateArchetype();
+        saveFields.forEach(f => {
+            if (SEARCHABLE_STATE[f.id]) return;
+            if(data[f.id] !== undefined) f.value = data[f.id];
+            if(f.id === 'char_arch') updateArchetype(true);
         });
+
+        for (let i = 1; i <= 5; i++) applySearchableValue('ab' + i, data['ab' + i] || '', true);
+        for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, data['it' + i] || '', true);
+
         for(let i=1; i<=5; i++) {
             const row = document.getElementById('row_ab' + i);
             if(data['ab' + i + '_used']) row.classList.add('used');
             else row.classList.remove('used');
         }
-        save();
+        saveNow();
     }
 
     function load() {
@@ -521,10 +1143,33 @@
         if(raw) applyData(JSON.parse(raw));
     }
 
-    saveFields.forEach(f => f.addEventListener('input', save));
-    window.onload = () => { populateDropdowns(); load(); };
+    function handleDocumentClick(event) {
+        const clickedPreviewTrigger = event.target.closest('.search-select') || event.target.closest('.info-toggle') || event.target.closest('.preview-panel');
+        Object.keys(SEARCHABLE_STATE).forEach(id => {
+            if (!getSearchBox(id).contains(event.target)) closeSearchMenu(id);
+        });
+        if (!clickedPreviewTrigger) hidePreviewPanel();
+    }
+
+    function attachSaveListeners() {
+        saveFields.forEach(f => {
+            if (SEARCHABLE_STATE[f.id]) return;
+            f.addEventListener('input', scheduleSave);
+            f.addEventListener('change', scheduleSave);
+        });
+    }
+
+    window.onload = () => {
+        populateDropdowns();
+        initSearchables();
+        attachSaveListeners();
+        load();
+        document.addEventListener('click', handleDocumentClick);
+        hidePreviewPanel();
+    };
 
     function downloadJSON() {
+        saveNow();
         const data = localStorage.getItem(STORAGE_KEY);
         const name = document.getElementById('char_name').value || 'Ranger';
         const now = new Date();
