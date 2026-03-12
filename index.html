@@ -95,12 +95,23 @@
     .ability-toggle.used { background: #2a2e35; border-color: #555; box-shadow: none; transform: scale(0.8); }
     .numbered-row.used .search-select-input { text-decoration: line-through; opacity: 0.3; filter: grayscale(1); }
     .row-number { color: var(--accent-teal); font-family: var(--fantasy-font); font-weight: bold; width: 25px; text-align: center; }
-    .ability-desc { font-size: 0.85em; color: #a0a0a0; font-style: italic; margin-left: 65px; margin-top: 4px; display: none; }
+    .ability-desc {
+        display: none;
+        margin-left: 56px;
+        margin-top: 8px;
+        padding: 10px 12px;
+        border-left: 2px solid rgba(22, 224, 189, 0.45);
+        background: rgba(255,255,255,0.03);
+        color: #d4dbe4;
+        font-size: 0.9em;
+        line-height: 1.55;
+        font-style: normal;
+    }
     .info-toggle {
         width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--accent-teal);
         background: rgba(22, 224, 189, 0.1); cursor: pointer; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
-        font-size: 1em; color: var(--accent-teal); transition: all 0.3s ease;
+        font-size: 1.1em; color: var(--accent-teal); transition: all 0.3s ease;
         font-family: var(--fantasy-font); font-weight: bold;
     }
     .info-toggle:hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
@@ -136,6 +147,10 @@
     .search-select {
         position: relative;
         flex: 1;
+    }
+    .search-select.preview-active .search-select-input {
+        border-color: var(--accent-teal);
+        box-shadow: 0 0 10px var(--accent-teal-glow);
     }
     .search-select-input {
         min-height: 46px;
@@ -281,27 +296,17 @@
     button:hover, .footer-action:hover { background: var(--accent-teal); color: #000; }
 
     @media (max-width: 768px) {
-        body { padding: 14px 8px 110px; }
+        body { padding: 14px 8px 20px; }
         .sheet-container { padding: 18px 14px; }
         .main-grid { grid-template-columns: 1fr; }
         .grid-8 { grid-template-columns: repeat(4, 1fr); }
         .grid-top { grid-template-columns: 1fr; }
         .numbered-row { gap: 8px; align-items: flex-start; }
         .row-number { width: 20px; padding-top: 11px; }
-        .ability-desc { margin-left: 28px; }
+        .ability-desc { margin-left: 20px; }
         .ability-toggle { width: 30px; height: 30px; margin-top: 8px; }
         .info-toggle { width: 40px; height: 40px; }
         .search-select-input { min-height: 50px; font-size: 16px; }
-        .footer-btns {
-            position: sticky;
-            bottom: 8px;
-            background: rgba(10, 12, 16, 0.94);
-            border: 1px solid var(--border-col);
-            border-radius: 12px;
-            padding: 10px;
-            gap: 10px;
-            box-shadow: 0 18px 32px rgba(0,0,0,0.45);
-        }
         .footer-btns > * { flex: 1 1 100%; }
     }
 </style>
@@ -354,31 +359,31 @@
                 <div class="section-header">Heroic Abilities & Spells</div>
                 <div id="abilities-list">
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><div class="search-select" id="ab1_box"><input type="text" id="ab1_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab1')" onfocus="openSearchMenu('ab1')" onkeydown="handleSearchKeydown(event, 'ab1')" onblur="handleSearchBlur('ab1')"><div id="ab1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab1" onclick="toggleDescVisibility('ab1', this)">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><div class="search-select" id="ab1_box" onclick="activatePreview('ab1')"><input type="text" id="ab1_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab1')" onfocus="openSearchMenu('ab1')" onkeydown="handleSearchKeydown(event, 'ab1')" onblur="handleSearchBlur('ab1')"><div id="ab1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab1" onclick="toggleDescVisibility('ab1', this)">ℹ</div></div>
                         <div id="meta_ab1" class="selection-meta"></div>
                         <div id="desc_ab1" class="ability-desc"></div>
                         <input type="hidden" id="ab1" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><div class="search-select" id="ab2_box"><input type="text" id="ab2_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab2')" onfocus="openSearchMenu('ab2')" onkeydown="handleSearchKeydown(event, 'ab2')" onblur="handleSearchBlur('ab2')"><div id="ab2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab2" onclick="toggleDescVisibility('ab2', this)">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><div class="search-select" id="ab2_box" onclick="activatePreview('ab2')"><input type="text" id="ab2_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab2')" onfocus="openSearchMenu('ab2')" onkeydown="handleSearchKeydown(event, 'ab2')" onblur="handleSearchBlur('ab2')"><div id="ab2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab2" onclick="toggleDescVisibility('ab2', this)">ℹ</div></div>
                         <div id="meta_ab2" class="selection-meta"></div>
                         <div id="desc_ab2" class="ability-desc"></div>
                         <input type="hidden" id="ab2" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><div class="search-select" id="ab3_box"><input type="text" id="ab3_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab3')" onfocus="openSearchMenu('ab3')" onkeydown="handleSearchKeydown(event, 'ab3')" onblur="handleSearchBlur('ab3')"><div id="ab3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab3" onclick="toggleDescVisibility('ab3', this)">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><div class="search-select" id="ab3_box" onclick="activatePreview('ab3')"><input type="text" id="ab3_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab3')" onfocus="openSearchMenu('ab3')" onkeydown="handleSearchKeydown(event, 'ab3')" onblur="handleSearchBlur('ab3')"><div id="ab3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab3" onclick="toggleDescVisibility('ab3', this)">ℹ</div></div>
                         <div id="meta_ab3" class="selection-meta"></div>
                         <div id="desc_ab3" class="ability-desc"></div>
                         <input type="hidden" id="ab3" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><div class="search-select" id="ab4_box"><input type="text" id="ab4_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab4')" onfocus="openSearchMenu('ab4')" onkeydown="handleSearchKeydown(event, 'ab4')" onblur="handleSearchBlur('ab4')"><div id="ab4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab4" onclick="toggleDescVisibility('ab4', this)">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><div class="search-select" id="ab4_box" onclick="activatePreview('ab4')"><input type="text" id="ab4_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab4')" onfocus="openSearchMenu('ab4')" onkeydown="handleSearchKeydown(event, 'ab4')" onblur="handleSearchBlur('ab4')"><div id="ab4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab4" onclick="toggleDescVisibility('ab4', this)">ℹ</div></div>
                         <div id="meta_ab4" class="selection-meta"></div>
                         <div id="desc_ab4" class="ability-desc"></div>
                         <input type="hidden" id="ab4" class="save-field">
                     </div>
                     <div class="ability-group">
-                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><div class="search-select" id="ab5_box"><input type="text" id="ab5_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab5')" onfocus="openSearchMenu('ab5')" onkeydown="handleSearchKeydown(event, 'ab5')" onblur="handleSearchBlur('ab5')"><div id="ab5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab5" onclick="toggleDescVisibility('ab5', this)">ℹ</div></div>
+                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><div class="search-select" id="ab5_box" onclick="activatePreview('ab5')"><input type="text" id="ab5_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab5')" onfocus="openSearchMenu('ab5')" onkeydown="handleSearchKeydown(event, 'ab5')" onblur="handleSearchBlur('ab5')"><div id="ab5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab5" onclick="toggleDescVisibility('ab5', this)">ℹ</div></div>
                         <div id="meta_ab5" class="selection-meta"></div>
                         <div id="desc_ab5" class="ability-desc"></div>
                         <input type="hidden" id="ab5" class="save-field">
@@ -387,37 +392,37 @@
 
                 <div class="section-header">Equipment</div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">1</span><div class="search-select" id="it1_box"><input type="text" id="it1_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it1')" onfocus="openSearchMenu('it1')" onkeydown="handleSearchKeydown(event, 'it1')" onblur="handleSearchBlur('it1')"><div id="it1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it1" onclick="toggleDescVisibility('it1', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">1</span><div class="search-select" id="it1_box" onclick="activatePreview('it1')"><input type="text" id="it1_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it1')" onfocus="openSearchMenu('it1')" onkeydown="handleSearchKeydown(event, 'it1')" onblur="handleSearchBlur('it1')"><div id="it1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it1" onclick="toggleDescVisibility('it1', this)">ℹ</div></div>
                     <div id="meta_it1" class="selection-meta"></div>
                     <div id="desc_it1" class="ability-desc"></div>
                     <input type="hidden" id="it1" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">2</span><div class="search-select" id="it2_box"><input type="text" id="it2_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it2')" onfocus="openSearchMenu('it2')" onkeydown="handleSearchKeydown(event, 'it2')" onblur="handleSearchBlur('it2')"><div id="it2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it2" onclick="toggleDescVisibility('it2', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">2</span><div class="search-select" id="it2_box" onclick="activatePreview('it2')"><input type="text" id="it2_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it2')" onfocus="openSearchMenu('it2')" onkeydown="handleSearchKeydown(event, 'it2')" onblur="handleSearchBlur('it2')"><div id="it2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it2" onclick="toggleDescVisibility('it2', this)">ℹ</div></div>
                     <div id="meta_it2" class="selection-meta"></div>
                     <div id="desc_it2" class="ability-desc"></div>
                     <input type="hidden" id="it2" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">3</span><div class="search-select" id="it3_box"><input type="text" id="it3_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it3')" onfocus="openSearchMenu('it3')" onkeydown="handleSearchKeydown(event, 'it3')" onblur="handleSearchBlur('it3')"><div id="it3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it3" onclick="toggleDescVisibility('it3', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">3</span><div class="search-select" id="it3_box" onclick="activatePreview('it3')"><input type="text" id="it3_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it3')" onfocus="openSearchMenu('it3')" onkeydown="handleSearchKeydown(event, 'it3')" onblur="handleSearchBlur('it3')"><div id="it3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it3" onclick="toggleDescVisibility('it3', this)">ℹ</div></div>
                     <div id="meta_it3" class="selection-meta"></div>
                     <div id="desc_it3" class="ability-desc"></div>
                     <input type="hidden" id="it3" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">4</span><div class="search-select" id="it4_box"><input type="text" id="it4_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it4')" onfocus="openSearchMenu('it4')" onkeydown="handleSearchKeydown(event, 'it4')" onblur="handleSearchBlur('it4')"><div id="it4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it4" onclick="toggleDescVisibility('it4', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">4</span><div class="search-select" id="it4_box" onclick="activatePreview('it4')"><input type="text" id="it4_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it4')" onfocus="openSearchMenu('it4')" onkeydown="handleSearchKeydown(event, 'it4')" onblur="handleSearchBlur('it4')"><div id="it4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it4" onclick="toggleDescVisibility('it4', this)">ℹ</div></div>
                     <div id="meta_it4" class="selection-meta"></div>
                     <div id="desc_it4" class="ability-desc"></div>
                     <input type="hidden" id="it4" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">5</span><div class="search-select" id="it5_box"><input type="text" id="it5_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it5')" onfocus="openSearchMenu('it5')" onkeydown="handleSearchKeydown(event, 'it5')" onblur="handleSearchBlur('it5')"><div id="it5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it5" onclick="toggleDescVisibility('it5', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">5</span><div class="search-select" id="it5_box" onclick="activatePreview('it5')"><input type="text" id="it5_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it5')" onfocus="openSearchMenu('it5')" onkeydown="handleSearchKeydown(event, 'it5')" onblur="handleSearchBlur('it5')"><div id="it5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it5" onclick="toggleDescVisibility('it5', this)">ℹ</div></div>
                     <div id="meta_it5" class="selection-meta"></div>
                     <div id="desc_it5" class="ability-desc"></div>
                     <input type="hidden" id="it5" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">6</span><div class="search-select" id="it6_box"><input type="text" id="it6_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it6')" onfocus="openSearchMenu('it6')" onkeydown="handleSearchKeydown(event, 'it6')" onblur="handleSearchBlur('it6')"><div id="it6_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it6" onclick="toggleDescVisibility('it6', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">6</span><div class="search-select" id="it6_box" onclick="activatePreview('it6')"><input type="text" id="it6_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it6')" onfocus="openSearchMenu('it6')" onkeydown="handleSearchKeydown(event, 'it6')" onblur="handleSearchBlur('it6')"><div id="it6_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it6" onclick="toggleDescVisibility('it6', this)">ℹ</div></div>
                     <div id="meta_it6" class="selection-meta"></div>
                     <div id="desc_it6" class="ability-desc"></div>
                     <input type="hidden" id="it6" class="save-field">
@@ -848,10 +853,14 @@
         const infoBtn = document.querySelector(`[data-info-for="${id}"]`);
 
         descDiv.innerHTML = desc;
+        descDiv.style.display = "none";
+        if (infoBtn) {
+            infoBtn.classList.remove('active');
+            infoBtn.textContent = 'ℹ';
+        }
 
         if (!desc) {
             descDiv.style.display = "none";
-            if (infoBtn) infoBtn.classList.remove('active');
         }
 
         if (activePreviewId === id) renderPreviewPanel(id);
@@ -897,6 +906,7 @@
 
     function hidePreviewPanel() {
         activePreviewId = null;
+        document.querySelectorAll('.search-select.preview-active').forEach(node => node.classList.remove('preview-active'));
         document.getElementById('selection_preview').classList.remove('visible');
     }
 
@@ -922,8 +932,19 @@
     }
 
     function setActivePreview(id) {
+        document.querySelectorAll('.search-select.preview-active').forEach(node => node.classList.remove('preview-active'));
         activePreviewId = id;
+        getSearchBox(id).classList.add('preview-active');
         renderPreviewPanel(id);
+    }
+
+    function activatePreview(id) {
+        const state = SEARCHABLE_STATE[id];
+        if (!state || !state.selectedOption) {
+            hidePreviewPanel();
+            return;
+        }
+        setActivePreview(id);
     }
 
     function renderSelectionMeta(id, option) {
@@ -1107,16 +1128,21 @@
     function toggleDescVisibility(id, infoBtn) {
         const descDiv = document.getElementById('desc_' + id);
         const button = infoBtn || document.querySelector(`[data-info-for="${id}"]`);
-        setActivePreview(id);
 
         if (!descDiv.innerHTML.trim()) return;
 
         if (descDiv.style.display === "block") {
             descDiv.style.display = "none";
-            if (button) button.classList.remove('active');
+            if (button) {
+                button.classList.remove('active');
+                button.textContent = 'ℹ';
+            }
         } else {
             descDiv.style.display = "block";
-            if (button) button.classList.add('active');
+            if (button) {
+                button.classList.add('active');
+                button.textContent = '^';
+            }
         }
     }
 
