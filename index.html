@@ -375,6 +375,12 @@
         .stepper-btn:active {
             transform: scale(0.93);
         }
+        /* Prevent persistent focus glow after tap */
+        .stepper-btn:focus {
+            outline: none;
+            background: rgba(22, 224, 189, 0.08);
+            color: var(--accent-teal);
+        }
         /* Stat-box layout: buttons stack vertically with tighter sizing */
         .stat-box .num-stepper {
             flex-direction: column;
@@ -404,9 +410,21 @@
         .skill-row .num-stepper input[type=number] {
             width: 44px;
         }
-        /* General (grid-top stat boxes like Level/XP) */
-        .grid-top .num-stepper {
+        /* grid-top (Level/XP): inline row layout, overrides vertical stat-box */
+        .grid-top .stat-box .num-stepper {
+            flex-direction: row;
             gap: 4px;
+            align-items: center;
+        }
+        .grid-top .stat-box .stepper-btn {
+            width: 28px;
+            height: 28px;
+            min-height: 28px;
+            font-size: 1.1em;
+        }
+        .grid-top .stat-box .num-stepper input[type=number] {
+            height: 36px;
+            flex: 1;
         }
     }
 </style>
@@ -1436,6 +1454,7 @@
                 input.value = val - step;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                btnMinus.blur();
             });
 
             const btnPlus = document.createElement('button');
@@ -1449,6 +1468,7 @@
                 input.value = val + step;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                btnPlus.blur();
             });
 
             // Insert wrapper before the input, then move input inside, add buttons
