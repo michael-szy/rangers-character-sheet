@@ -368,18 +368,20 @@
             touch-action: manipulation;
             user-select: none;
         }
-        .stepper-btn:hover, .stepper-btn:active {
+        /* Only highlight during the actual press – NOT on hover (hover sticks on touch) */
+        .stepper-btn:active {
             background: var(--accent-teal);
             color: #000;
-        }
-        .stepper-btn:active {
             transform: scale(0.93);
         }
-        /* Prevent persistent focus glow after tap */
-        .stepper-btn:focus {
+        /* Reset every post-tap persistent state back to default appearance */
+        .stepper-btn:hover,
+        .stepper-btn:focus,
+        .stepper-btn:focus-visible {
             outline: none;
             background: rgba(22, 224, 189, 0.08);
             color: var(--accent-teal);
+            transform: none;
         }
         /* Stat-box layout: buttons stack vertically with tighter sizing */
         .stat-box .num-stepper {
@@ -1445,6 +1447,7 @@
 
             const btnMinus = document.createElement('button');
             btnMinus.type = 'button';
+            btnMinus.tabIndex = -1;
             btnMinus.className = 'stepper-btn stepper-minus';
             btnMinus.textContent = '−';
             btnMinus.setAttribute('aria-label', 'Decrease');
@@ -1459,6 +1462,7 @@
 
             const btnPlus = document.createElement('button');
             btnPlus.type = 'button';
+            btnPlus.tabIndex = -1;
             btnPlus.className = 'stepper-btn stepper-plus';
             btnPlus.textContent = '+';
             btnPlus.setAttribute('aria-label', 'Increase');
