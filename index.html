@@ -323,6 +323,92 @@
         flex-shrink: 0; align-self: center;
     }
     .remove-slot-btn:hover { color: var(--danger-red); }
+
+    /* --- Mobile number stepper --- */
+    .num-stepper {
+        display: contents; /* transparent wrapper by default */
+    }
+    /* Only show stepper buttons on touch/coarse-pointer devices (tablets, phones) */
+    @media (pointer: coarse) {
+        .num-stepper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        /* Hide the native spin arrows on touch devices */
+        .num-stepper input[type=number]::-webkit-inner-spin-button,
+        .num-stepper input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .num-stepper input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+            text-align: center;
+            flex: 1;
+            min-width: 0;
+        }
+        .stepper-btn {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            min-height: 36px;
+            padding: 0;
+            border: 1px solid var(--border-col);
+            background: rgba(22, 224, 189, 0.08);
+            color: var(--accent-teal);
+            font-size: 1.3em;
+            line-height: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .stepper-btn:hover, .stepper-btn:active {
+            background: var(--accent-teal);
+            color: #000;
+        }
+        .stepper-btn:active {
+            transform: scale(0.93);
+        }
+        /* Stat-box layout: buttons stack vertically with tighter sizing */
+        .stat-box .num-stepper {
+            flex-direction: column;
+            gap: 2px;
+        }
+        .stat-box .stepper-btn {
+            width: 100%;
+            height: 26px;
+            min-height: 26px;
+            font-size: 1em;
+        }
+        .stat-box .num-stepper input[type=number] {
+            height: 40px;
+            width: 100%;
+        }
+        /* Skill-row layout: inline, compact */
+        .skill-row .num-stepper {
+            gap: 3px;
+            width: auto;
+        }
+        .skill-row .stepper-btn {
+            width: 30px;
+            height: 30px;
+            min-height: 30px;
+            font-size: 1.1em;
+        }
+        .skill-row .num-stepper input[type=number] {
+            width: 44px;
+        }
+        /* General (grid-top stat boxes like Level/XP) */
+        .grid-top .num-stepper {
+            gap: 4px;
+        }
+    }
 </style>
 </head>
 <body>
@@ -1327,11 +1413,58 @@
         });
     }
 
+    // --- Mobile stepper buttons for number inputs ---
+    function initNumberSteppers() {
+        // Only activate on coarse-pointer (touch) devices
+        if (!window.matchMedia('(pointer: coarse)').matches) return;
+
+        document.querySelectorAll('input[type=number]').forEach(input => {
+            // Avoid double-wrapping
+            if (input.closest('.num-stepper')) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'num-stepper';
+
+            const btnMinus = document.createElement('button');
+            btnMinus.type = 'button';
+            btnMinus.className = 'stepper-btn stepper-minus';
+            btnMinus.textContent = '−';
+            btnMinus.setAttribute('aria-label', 'Decrease');
+            btnMinus.addEventListener('click', () => {
+                const step = parseFloat(input.step) || 1;
+                const val = parseFloat(input.value) || 0;
+                input.value = val - step;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            const btnPlus = document.createElement('button');
+            btnPlus.type = 'button';
+            btnPlus.className = 'stepper-btn stepper-plus';
+            btnPlus.textContent = '+';
+            btnPlus.setAttribute('aria-label', 'Increase');
+            btnPlus.addEventListener('click', () => {
+                const step = parseFloat(input.step) || 1;
+                const val = parseFloat(input.value) || 0;
+                input.value = val + step;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            // Insert wrapper before the input, then move input inside, add buttons
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(btnMinus);
+            wrapper.appendChild(input);
+            wrapper.appendChild(btnPlus);
+        });
+    }
+
     window.onload = () => {
         populateDropdowns();
         initSearchables();
         attachSaveListeners();
         load();
+        initNumberSteppers();
         document.addEventListener('click', handleDocumentClick);
         hidePreviewPanel();
     };
