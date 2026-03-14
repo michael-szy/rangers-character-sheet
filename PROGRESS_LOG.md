@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-03-14
+
+### Completed Today
+- Added dynamic "Heroic Abilities & Spells" slots, easily expandable by clicking `+ Add Ability Slot`.
+- Implemented a dedicated "Innate Spells & Abilities" section directly above the selection preview.
+- Enabled custom text entering for innate spell/ability slots (with independent tracking).
+- Added a collapsible toggle for the "Innate Spells & Abilities" section (default hidden) to save screen space depending on character archetype.
+- Upgraded save/load system to support exact serialization and preservation of dynamically added slot limits and their visual states across reloads.
+
 ## 2026-03-12
 
 ### Project

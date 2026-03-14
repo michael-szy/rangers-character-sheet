@@ -309,6 +309,20 @@
         .search-select-input { min-height: 50px; font-size: 16px; }
         .footer-btns > * { flex: 1 1 100%; }
     }
+    .add-slot-btn { 
+        background: transparent; color: #91a0b0; border: 1px dashed #555; 
+        width: 100%; border-radius: 6px; padding: 10px; margin-top: 15px; 
+        font-family: var(--fantasy-font); cursor: pointer; transition: all 0.3s;
+        text-transform: uppercase; font-size: 0.8em; letter-spacing: 1px;
+        min-height: auto; display: block; box-sizing: border-box;
+    }
+    .add-slot-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(22, 224, 189, 0.05); }
+    .remove-slot-btn {
+        background: transparent; border: none; color: #555; font-size: 1.1em; cursor: pointer;
+        padding: 0 4px; line-height: 1; transition: color 0.2s;
+        flex-shrink: 0; align-self: center;
+    }
+    .remove-slot-btn:hover { color: var(--danger-red); }
 </style>
 </head>
 <body>
@@ -346,6 +360,15 @@
             <div class="stat-box"><div class="stat-label">Recr</div><input type="number" id="s_rec" class="save-field"></div>
         </div>
 
+        <div id="innate-container" style="margin-top: 25px;">
+            <button class="add-slot-btn" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
+            <div id="innate-section" style="display: none;">
+                <div class="section-header" style="margin-top: 0;">Innate Spells & Abilities</div>
+                <div id="innate-list"></div>
+                <button class="add-slot-btn" onclick="addInnateSlot()">+ Add Innate Slot</button>
+            </div>
+        </div>
+
         <div class="preview-panel" id="selection_preview">
             <div class="preview-label">Selection Preview</div>
             <div id="preview_title" class="preview-title">No selection focused</div>
@@ -357,38 +380,8 @@
         <div class="main-grid">
             <div>
                 <div class="section-header">Heroic Abilities & Spells</div>
-                <div id="abilities-list">
-                    <div class="ability-group">
-                        <div class="numbered-row" id="row_ab1"><div class="ability-toggle" onclick="toggleUse('ab1')"></div><span class="row-number">I</span><div class="search-select" id="ab1_box" onclick="activatePreview('ab1')"><input type="text" id="ab1_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab1')" onfocus="openSearchMenu('ab1')" onkeydown="handleSearchKeydown(event, 'ab1')" onblur="handleSearchBlur('ab1')"><div id="ab1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab1" onclick="toggleDescVisibility('ab1', this)">ℹ</div></div>
-                        <div id="meta_ab1" class="selection-meta"></div>
-                        <div id="desc_ab1" class="ability-desc"></div>
-                        <input type="hidden" id="ab1" class="save-field">
-                    </div>
-                    <div class="ability-group">
-                        <div class="numbered-row" id="row_ab2"><div class="ability-toggle" onclick="toggleUse('ab2')"></div><span class="row-number">II</span><div class="search-select" id="ab2_box" onclick="activatePreview('ab2')"><input type="text" id="ab2_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab2')" onfocus="openSearchMenu('ab2')" onkeydown="handleSearchKeydown(event, 'ab2')" onblur="handleSearchBlur('ab2')"><div id="ab2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab2" onclick="toggleDescVisibility('ab2', this)">ℹ</div></div>
-                        <div id="meta_ab2" class="selection-meta"></div>
-                        <div id="desc_ab2" class="ability-desc"></div>
-                        <input type="hidden" id="ab2" class="save-field">
-                    </div>
-                    <div class="ability-group">
-                        <div class="numbered-row" id="row_ab3"><div class="ability-toggle" onclick="toggleUse('ab3')"></div><span class="row-number">III</span><div class="search-select" id="ab3_box" onclick="activatePreview('ab3')"><input type="text" id="ab3_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab3')" onfocus="openSearchMenu('ab3')" onkeydown="handleSearchKeydown(event, 'ab3')" onblur="handleSearchBlur('ab3')"><div id="ab3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab3" onclick="toggleDescVisibility('ab3', this)">ℹ</div></div>
-                        <div id="meta_ab3" class="selection-meta"></div>
-                        <div id="desc_ab3" class="ability-desc"></div>
-                        <input type="hidden" id="ab3" class="save-field">
-                    </div>
-                    <div class="ability-group">
-                        <div class="numbered-row" id="row_ab4"><div class="ability-toggle" onclick="toggleUse('ab4')"></div><span class="row-number">IV</span><div class="search-select" id="ab4_box" onclick="activatePreview('ab4')"><input type="text" id="ab4_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab4')" onfocus="openSearchMenu('ab4')" onkeydown="handleSearchKeydown(event, 'ab4')" onblur="handleSearchBlur('ab4')"><div id="ab4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab4" onclick="toggleDescVisibility('ab4', this)">ℹ</div></div>
-                        <div id="meta_ab4" class="selection-meta"></div>
-                        <div id="desc_ab4" class="ability-desc"></div>
-                        <input type="hidden" id="ab4" class="save-field">
-                    </div>
-                    <div class="ability-group">
-                        <div class="numbered-row" id="row_ab5"><div class="ability-toggle" onclick="toggleUse('ab5')"></div><span class="row-number">V</span><div class="search-select" id="ab5_box" onclick="activatePreview('ab5')"><input type="text" id="ab5_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('ab5')" onfocus="openSearchMenu('ab5')" onkeydown="handleSearchKeydown(event, 'ab5')" onblur="handleSearchBlur('ab5')"><div id="ab5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="ab5" onclick="toggleDescVisibility('ab5', this)">ℹ</div></div>
-                        <div id="meta_ab5" class="selection-meta"></div>
-                        <div id="desc_ab5" class="ability-desc"></div>
-                        <input type="hidden" id="ab5" class="save-field">
-                    </div>
-                </div>
+                <div id="abilities-list"></div>
+                <button class="add-slot-btn" onclick="addHeroicSlot()">+ Add Ability Slot</button>
 
                 <div class="section-header">Equipment</div>
                 <div class="equipment-group">
@@ -671,6 +664,20 @@
     const SEARCHABLE_STATE = {};
     let activePreviewId = null;
     let saveTimer = null;
+    let heroicSlotsCount = 0;
+    let innateSlotsCount = 0;
+
+    function toRoman(num) {
+        const lookup = {M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};
+        let roman = '';
+        for (let i in lookup) {
+            while (num >= lookup[i]) {
+                roman += i;
+                num -= lookup[i];
+            }
+        }
+        return roman;
+    }
 
     function buildAbilityOptions() {
         const options = [];
@@ -732,22 +739,7 @@
     }
 
     function initSearchables() {
-        const abilityOptions = buildAbilityOptions();
         const equipmentOptions = buildEquipmentOptions();
-        const roman = ['I', 'II', 'III', 'IV', 'V'];
-
-        for (let i = 1; i <= 5; i++) {
-            SEARCHABLE_STATE['ab' + i] = {
-                id: 'ab' + i,
-                options: abilityOptions,
-                allowCustom: false,
-                slotLabel: `Ability Slot ${roman[i - 1]}`,
-                renderedOptions: [],
-                selectedOption: null,
-                selectedValue: '',
-                highlightIndex: -1
-            };
-        }
 
         for (let i = 1; i <= 6; i++) {
             SEARCHABLE_STATE['it' + i] = {
@@ -761,6 +753,93 @@
                 highlightIndex: -1
             };
         }
+    }
+
+    function addHeroicSlot() {
+        heroicSlotsCount++;
+        const i = heroicSlotsCount;
+        const id = 'ab' + i;
+        const roman = toRoman(i);
+        
+        SEARCHABLE_STATE[id] = {
+            id: id,
+            options: buildAbilityOptions(),
+            allowCustom: false,
+            slotLabel: `Ability Slot ${roman}`,
+            renderedOptions: [],
+            selectedOption: null,
+            selectedValue: '',
+            highlightIndex: -1
+        };
+
+        const isExtra = i > 5;
+        const container = document.getElementById('abilities-list');
+        const html = `
+            <div class="ability-group" id="group_${id}">
+                <div class="numbered-row" id="row_${id}">
+                    <div class="ability-toggle" onclick="toggleUse('${id}')"></div>
+                    <span class="row-number">${roman}</span>
+                    <div class="search-select" id="${id}_box" onclick="activatePreview('${id}')">
+                        <input type="text" id="${id}_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('${id}')" onfocus="openSearchMenu('${id}')" onkeydown="handleSearchKeydown(event, '${id}')" onblur="handleSearchBlur('${id}')">
+                        <div id="${id}_menu" class="search-select-menu"></div>
+                    </div>
+                    <div class="info-toggle" data-info-for="${id}" onclick="toggleDescVisibility('${id}', this)">ℹ</div>
+                    ${isExtra ? `<button class="remove-slot-btn" title="Remove this slot" onclick="removeSlot('${id}', 'heroic')">✕</button>` : ''}
+                </div>
+                <div id="meta_${id}" class="selection-meta"></div>
+                <div id="desc_${id}" class="ability-desc"></div>
+                <input type="hidden" id="${id}" class="save-field">
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function addInnateSlot() {
+        innateSlotsCount++;
+        const i = innateSlotsCount;
+        const id = 'in' + i;
+        const roman = toRoman(i);
+        
+        SEARCHABLE_STATE[id] = {
+            id: id,
+            options: buildAbilityOptions(), 
+            allowCustom: true,
+            slotLabel: `Innate Slot ${roman}`,
+            renderedOptions: [],
+            selectedOption: null,
+            selectedValue: '',
+            highlightIndex: -1
+        };
+
+        const isExtra = i > 4;
+        const container = document.getElementById('innate-list');
+        const html = `
+            <div class="ability-group" id="group_${id}">
+                <div class="numbered-row" id="row_${id}">
+                    <div class="ability-toggle" onclick="toggleUse('${id}')"></div>
+                    <span class="row-number">${roman}</span>
+                    <div class="search-select" id="${id}_box" onclick="activatePreview('${id}')">
+                        <input type="text" id="${id}_search" class="search-select-input" placeholder="Search innate spell or type custom..." autocomplete="off" oninput="handleSearchInput('${id}')" onfocus="openSearchMenu('${id}')" onkeydown="handleSearchKeydown(event, '${id}')" onblur="handleSearchBlur('${id}')">
+                        <div id="${id}_menu" class="search-select-menu"></div>
+                    </div>
+                    <div class="info-toggle" data-info-for="${id}" onclick="toggleDescVisibility('${id}', this)">ℹ</div>
+                    ${isExtra ? `<button class="remove-slot-btn" title="Remove this slot" onclick="removeSlot('${id}', 'innate')">✕</button>` : ''}
+                </div>
+                <div id="meta_${id}" class="selection-meta"></div>
+                <div id="desc_${id}" class="ability-desc"></div>
+                <input type="hidden" id="${id}" class="save-field">
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function removeSlot(id, type) {
+        const group = document.getElementById('group_' + id);
+        if (group) group.remove();
+        delete SEARCHABLE_STATE[id];
+        if (type === 'heroic') heroicSlotsCount--;
+        else innateSlotsCount--;
+        scheduleSave();
     }
 
     function normalizeSearchValue(value) {
@@ -805,7 +884,25 @@
         clearTimeout(saveTimer);
         const data = {};
         saveFields.forEach(f => data[f.id] = f.value);
-        for (let i = 1; i <= 5; i++) data['ab' + i + '_used'] = document.getElementById('row_ab' + i).classList.contains('used');
+        
+        data.heroicSlotsCount = heroicSlotsCount;
+        data.innateSlotsCount = innateSlotsCount;
+        data.showInnateSection = document.getElementById('innate-section').style.display === 'block';
+        
+        for (let i = 1; i <= heroicSlotsCount; i++) {
+            const hField = document.getElementById('ab' + i);
+            if(hField) data['ab' + i] = hField.value;
+            const rField = document.getElementById('row_ab' + i);
+            if(rField) data['ab' + i + '_used'] = rField.classList.contains('used');
+        }
+
+        for (let i = 1; i <= innateSlotsCount; i++) {
+            const hField = document.getElementById('in' + i);
+            if(hField) data['in' + i] = hField.value;
+            const rField = document.getElementById('row_in' + i);
+            if(rField) data['in' + i + '_used'] = rField.classList.contains('used');
+        }
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         setSaveStatus('saved', 'Saved');
     }
@@ -839,6 +936,19 @@
             div.style.display = "block";
             btn.innerHTML = "Hide Archetype Details";
         }
+    }
+
+    function toggleInnateSection() {
+        const sec = document.getElementById('innate-section');
+        const btn = document.getElementById('innate_toggle_btn');
+        if (sec.style.display === "none") {
+            sec.style.display = "block";
+            btn.innerHTML = "Hide Innate Spells & Abilities";
+        } else {
+            sec.style.display = "none";
+            btn.innerHTML = "Show Innate Spells & Abilities";
+        }
+        scheduleSave();
     }
 
     function getEquipmentDescription(value) {
@@ -1148,25 +1258,57 @@
 
     function applyData(data) {
         saveFields.forEach(f => {
-            if (SEARCHABLE_STATE[f.id]) return;
+            if (SEARCHABLE_STATE[f.id] && f.id.startsWith('it')) return;
             if(data[f.id] !== undefined) f.value = data[f.id];
             if(f.id === 'char_arch') updateArchetype(true);
         });
 
-        for (let i = 1; i <= 5; i++) applySearchableValue('ab' + i, data['ab' + i] || '', true);
-        for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, data['it' + i] || '', true);
+        document.getElementById('abilities-list').innerHTML = '';
+        document.getElementById('innate-list').innerHTML = '';
+        heroicSlotsCount = 0;
+        innateSlotsCount = 0;
 
-        for(let i=1; i<=5; i++) {
+        const hCount = data.heroicSlotsCount || 5;
+        const iCount = data.innateSlotsCount || 4;
+
+        if (data.showInnateSection) {
+            document.getElementById('innate-section').style.display = "block";
+            document.getElementById('innate_toggle_btn').innerHTML = "Hide Innate Spells & Abilities";
+        } else {
+            document.getElementById('innate-section').style.display = "none";
+            document.getElementById('innate_toggle_btn').innerHTML = "Show Innate Spells & Abilities";
+        }
+
+        for(let j=0; j<hCount; j++) addHeroicSlot();
+        for(let j=0; j<iCount; j++) addInnateSlot();
+
+        for (let i = 1; i <= heroicSlotsCount; i++) {
+            applySearchableValue('ab' + i, data['ab' + i] || '', true);
             const row = document.getElementById('row_ab' + i);
             if(data['ab' + i + '_used']) row.classList.add('used');
             else row.classList.remove('used');
         }
+
+        for (let i = 1; i <= innateSlotsCount; i++) {
+            applySearchableValue('in' + i, data['in' + i] || '', true);
+            const row = document.getElementById('row_in' + i);
+            if(data['in' + i + '_used']) row.classList.add('used');
+            else row.classList.remove('used');
+        }
+
+        for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, data['it' + i] || '', true);
+
         saveNow();
     }
 
     function load() {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if(raw) applyData(JSON.parse(raw));
+        if(raw) {
+            applyData(JSON.parse(raw));
+        } else {
+            for(let j=0; j<5; j++) addHeroicSlot();
+            for(let j=0; j<4; j++) addInnateSlot();
+        }
     }
 
     function handleDocumentClick(event) {
