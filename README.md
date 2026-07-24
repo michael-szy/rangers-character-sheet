@@ -1,52 +1,40 @@
-⚔️ Rangers of Shadow Deep - Digital Character Sheet
-Dieses Projekt ist ein interaktiver, webbasierter Charakterbogen für das Tabletop-Spiel Rangers of Shadow Deep. Es wurde entwickelt, um den klassischen Papierbogen durch eine mobile, performante und atmosphärische digitale Lösung zu ersetzen.
+# Rangers of Shadow Deep – Digital Character Sheet
 
-📜 Projekt-Kontext & Vision
-Das Ziel war es, ein Tool zu schaffen, das:
+Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Das Tool ist für Smartphone, Tablet und Desktop gedacht und unterstützt die Buchhaltung direkt am Spieltisch.
 
-Geräteunabhängig funktioniert (Smartphone am Spieltisch, Tablet oder PC).
+## Funktionen
 
-Keine Serverkosten verursacht (Hosting via GitHub Pages).
+- Ranger-Werte, Ausrüstung und Quest-Notizen verwalten
+- Heroic Abilities und Spells auswählen und ihre Nutzung markieren
+- Archetypen mit Traits und Einschränkungen anzeigen
+- Änderungen automatisch im Browser speichern
+- Charaktere als JSON-Datei sichern und auf einem anderen Gerät laden
+- Ohne Konto, Backend oder Installation verwenden
 
-Atmosphärisch wirkt (Dark-Fantasy-Design in Grün-Türkis mit "Cinzel"-Schriftart).
+## Verwendung
 
-Regel-Unterstützung bietet, ohne den Spieler zu bevormunden.
+Öffne `index.html` direkt in einem modernen Browser. Für die lokale Entwicklung kann alternativ ein kleiner Webserver gestartet werden:
 
-🚀 Entwicklung & Evolution
-Das Projekt ist organisch gewachsen:
+```bash
+python3 -m http.server 5500
+```
 
-Basis-Sheet: Einfache Eingabefelder für Stats (Move, Fight, etc.).
+Anschließend ist der Charakterbogen unter `http://localhost:5500` erreichbar.
 
-Persistence: Integration von localStorage für automatisches Speichern im Browser.
+## Daten und Backups
 
-Magische Interaktion: Einführung von "runischen Toggles" für Heroic Abilities, um die einmalige Nutzung pro Szenario visuell zu tracken.
+Der aktuelle Charakter wird ausschließlich im lokalen Browserspeicher (`localStorage`) abgelegt. Browserdaten zu löschen oder einen anderen Browser beziehungsweise ein anderes Gerät zu verwenden, übernimmt diese Daten nicht automatisch. Nutze deshalb regelmäßig **Save Character File** und stelle Sicherungen mit **Load Character File** wieder her.
 
-Regel-Bibliothek: Integration von Dropdowns für Fähigkeiten und Zauber inklusive dynamischer Regelbeschreibungen.
+## Technik
 
-Archetypen-System: Unterstützung für die Erweiterung A Gathering of Heroes mit aufklappbaren Traits und Limitations.
+Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
 
-Data-Portability: Implementierung eines JSON-basierten Export/Import-Systems für Backups und Gerätewechsel.
+## Hinweis zum Spiel
 
-🛠 Technische Struktur (für KI-Editoren)
-Dieser Bogen ist als Single Page Application (SPA) in einer einzigen Datei (index.html) realisiert.
+Dies ist ein nicht kommerzielles Fan-Projekt und steht in keiner Verbindung zu Joseph A. McCullough, Modiphius Entertainment oder anderen Rechteinhabern. *Rangers of Shadow Deep* sowie zugehörige Namen und Spielinhalte gehören ihren jeweiligen Rechteinhabern. Zum Spielen wird das offizielle Regelwerk benötigt.
 
-Technologien: HTML5, CSS3 (Flexbox/Grid), Vanilla JavaScript.
+Weitere Informationen zum Spiel gibt es auf der [offiziellen Rangers-of-Shadow-Deep-Seite von Modiphius](https://modiphius.net/en-us/collections/rangers-of-shadow-deep).
 
-Speicherung: Nutzt den STORAGE_KEY = 'rosd_ranger_v_archetypes' im localStorage.
+## Lizenz
 
-Daten-Format: Exportiert/Importiert JSON-Objekte, die alle id-Werte der save-field-Klasse enthalten.
-
-Erweiterbarkeit:
-
-Abilities/Spells: Können im Objekt ABILITY_LIBRARY (JavaScript-Teil) ergänzt werden.
-
-Archetypen: Neue Klassen können im Objekt ARCHETYPE_LIBRARY mit ihren spezifischen traits und limits hinzugefügt werden.
-
-📖 Benutzung für Spieler
-Initialisierung: Name und Stats eingeben. Archetyp wählen, falls vorhanden.
-
-Tracking: Während der Session Lebenspunkte (Current) und verbrauchte Runen bei den Abilities anklicken.
-
-Backup: Nach dem Spiel via "Save Character File" eine .json Datei herunterladen. Der Dateiname wird automatisch aus Name + Zeitstempel generiert (z.B. RoSD_Verus_22-02_1430.json).
-
-Gerätewechsel: JSON auf neuem Gerät via "Load Character File" hochladen.
+Für den Quellcode wurde noch keine allgemeine Wiederverwendungslizenz festgelegt. Spielnamen, Regeltexte und sonstige Inhalte Dritter sind von einer zukünftigen Code-Lizenz nicht umfasst.

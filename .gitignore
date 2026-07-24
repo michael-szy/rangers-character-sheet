@@ -1,0 +1,17 @@
+# Private project workflow (kept in the companion private repository)
+/AGENTS.md
+/HANDOFF.md
+/PROJECT_CONTEXT.md
+/PROGRESS_LOG.md
+/.claude
+
+# Non-runtime source material (kept in the companion private repository)
+/Archetypes.md
+/Equipment.md
+/Heroic Abilities.md
+/Spell List.md
+
+# Local and operating-system metadata
+*:Zone.Identifier
+.DS_Store
+Thumbs.db
