@@ -767,6 +767,7 @@
 
     const saveFields = document.querySelectorAll('.save-field');
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
+    const STORAGE_RECOVERY_KEY = `${STORAGE_KEY}_recovery`;
     const SEARCHABLE_STATE = {};
     let activePreviewId = null;
     let saveTimer = null;
@@ -1407,13 +1408,90 @@
         saveNow();
     }
 
+    function initializeBlankSheet() {
+        saveFields.forEach(field => {
+            field.value = '';
+        });
+
+        document.getElementById('abilities-list').innerHTML = '';
+        document.getElementById('innate-list').innerHTML = '';
+        heroicSlotsCount = 0;
+        innateSlotsCount = 0;
+
+        Object.keys(SEARCHABLE_STATE).forEach(id => {
+            if (id.startsWith('ab') || id.startsWith('in')) delete SEARCHABLE_STATE[id];
+        });
+
+        updateArchetype(true);
+        document.getElementById('innate-section').style.display = 'none';
+        document.getElementById('innate_toggle_btn').textContent = 'Show Innate Spells & Abilities';
+
+        for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, '', true);
+        for (let i = 0; i < 5; i++) addHeroicSlot();
+        for (let i = 0; i < 4; i++) addInnateSlot();
+    }
+
+    function parseStoredData(raw) {
+        const data = JSON.parse(raw);
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('Stored character data must be a JSON object.');
+        }
+
+        ['heroicSlotsCount', 'innateSlotsCount'].forEach(key => {
+            if (data[key] === undefined) return;
+            if (!Number.isInteger(data[key]) || data[key] < 0 || data[key] > 50) {
+                throw new Error(`Stored ${key} is outside the safe range.`);
+            }
+        });
+
+        return data;
+    }
+
+    function preserveRecoveryCopy(raw, error) {
+        try {
+            localStorage.setItem(STORAGE_RECOVERY_KEY, JSON.stringify({
+                capturedAt: new Date().toISOString(),
+                reason: error instanceof Error ? error.message : String(error),
+                raw
+            }));
+            return true;
+        } catch (recoveryError) {
+            console.error('Could not preserve the recovery copy.', recoveryError);
+            return false;
+        }
+    }
+
     function load() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(raw) {
-            applyData(JSON.parse(raw));
-        } else {
-            for(let j=0; j<5; j++) addHeroicSlot();
-            for(let j=0; j<4; j++) addInnateSlot();
+        let raw;
+
+        try {
+            raw = localStorage.getItem(STORAGE_KEY);
+        } catch (error) {
+            console.error('Browser storage is unavailable.', error);
+            initializeBlankSheet();
+            setSaveStatus('unsaved', 'Storage unavailable');
+            alert('Browser storage is unavailable. You can use the sheet, but changes may not be saved.');
+            return;
+        }
+
+        if (!raw) {
+            initializeBlankSheet();
+            return;
+        }
+
+        try {
+            applyData(parseStoredData(raw));
+        } catch (error) {
+            console.error('Saved character data could not be loaded.', error);
+            const recoverySaved = preserveRecoveryCopy(raw, error);
+            initializeBlankSheet();
+            setSaveStatus('unsaved', 'Recovery needed');
+            alert(
+                'Saved character data could not be loaded, so a blank sheet was opened. ' +
+                (recoverySaved
+                    ? 'The original data was preserved in a browser recovery copy. Do not use Obliterate if you still need it.'
+                    : 'The original storage value was not deliberately removed.')
+            );
         }
     }
 
@@ -1514,7 +1592,22 @@
         reader.readAsText(file);
     }
 
-    function clearSheet() { if(confirm("Obliterate this Ranger?")) { localStorage.clear(); location.reload(); } }
+    function clearSheet() {
+        const confirmed = confirm(
+            'Obliterate this Ranger from this browser? This removes the current sheet and any recovery copy. ' +
+            'Save a Character File first if you may need this data again.'
+        );
+        if (!confirmed) return;
+
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(STORAGE_RECOVERY_KEY);
+            location.reload();
+        } catch (error) {
+            console.error('Could not clear application data.', error);
+            alert('The Ranger could not be removed from browser storage. Check this browser’s storage permissions.');
+        }
+    }
 </script>
 </body>
 </html>
