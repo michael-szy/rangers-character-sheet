@@ -11,6 +11,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Den Missionsbereich in Edit und Play einklappen, wenn er gerade nicht benötigt wird
 - Einen optionalen Gegnerkatalog laden und Gegner samt vorgeschlagenen XP per Dropdown hinzufügen
 - Frei wählbare temporäre Ally-Boni und Debuffs direkt an den effektiven Charakterwerten anzeigen
+- Poisoned, Diseased sowie gestapeltes Hunger & Thirst als aktive Zustände mit Regelerinnerung festhalten
 - Änderungen automatisch im Browser speichern
 - Charaktere als JSON-Datei sichern und auf einem anderen Gerät laden
 - Ohne Konto, Backend oder Installation verwenden
@@ -32,6 +33,8 @@ Der aktuelle Charakter wird ausschließlich im lokalen Browserspeicher (`localSt
 Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen und ebenfalls nur in diesem Browser gespeichert. Danach lassen sich Gegner in einer Auswahlliste samt vorgeschlagenem XP-Wert zur aktiven Mission hinzufügen. **Add blank enemy** bleibt für eigene oder szenariospezifische Gegner verfügbar. Die vorgeschlagenen Gegner-XP ersetzen nicht die **Outcome and Experience**-Regeln des gespielten Szenarios; Name und Wert bleiben deshalb in jedem Missionsbericht manuell korrigierbar.
 
 In Edit und Play können temporäre Ally-Boni und Debuffs direkt an Movement, Fight, Shoot, Armor, Will, Health und Recruitment gesetzt werden. Ein Tippen auf **Effects ±** öffnet den gemeinsamen Dialog; Bonus und Malus haben getrennte Zahlenfelder mit touchfreundlichen `−/+`-Schritten und können gleichzeitig gelten. Aktive Karten zeigen den effektiven Wert sowie die vollständige Rechnung aus Grundwert, Ally-Bonus und Debuff. Grundwerte und Charakterdatei werden nicht verändert. Einzelne oder alle Effekte lassen sich im selben Dialog entfernen. Die Effekte überleben ein versehentliches Neuladen desselben Tabs, aber keine neue Browser-Sitzung.
+
+Unter **Conditions** lassen sich die allgemeinen Regelzustände **Poisoned**, **Diseased** und **Hunger & Thirst** über **+ Add Condition** aktivieren. Aktive Karten zeigen die wichtigsten Auswirkungen, Dauer beziehungsweise Heilungsmöglichkeit und die Regelbuchseite; Hunger & Thirst besitzt einen eigenen Stufenzähler. Zustände werden mit dem Charakter gespeichert und exportiert, verändern Werte oder Würfe aber bewusst nicht automatisch.
 
 Die Überschrift **Mission** ist in beiden Modi ein Ein-/Ausklappschalter. Das Einklappen blendet lediglich die Oberfläche aus; eine aktive Mission und die Historie bleiben gespeichert. Der gewählte Zustand wird mit dem Charakter gesichert.
 

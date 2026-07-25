@@ -1,0 +1,35 @@
+{
+  "formatVersion": 4,
+  "character": {
+    "fields": {
+      "char_name": "Condition Ranger",
+      "s_hpm": "14",
+      "s_hpc": "9"
+    },
+    "heroicSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "innateSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "conditions": {
+      "poisoned": true,
+      "diseased": false,
+      "hungerThirst": 2
+    }
+  },
+  "uiState": {
+    "showInnateSection": false,
+    "missionSectionExpanded": true,
+    "mode": "play"
+  },
+  "activeMission": null,
+  "missionHistory": []
+}

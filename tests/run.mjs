@@ -250,6 +250,7 @@ for (const name of [
     'format-1-character',
     'format-2-mission',
     'format-3-catalog-snapshot',
+    'format-4-conditions',
     'enemy-catalog'
 ]) {
     fixtures[name] = JSON.parse(await readFile(join(fixtureDir, `${name}.json`), 'utf8'));
@@ -311,13 +312,14 @@ try {
     await suite('blank sheet and schema migrations', async () => {
         await freshBrowserState(client);
 
-        equal(await client.evaluate('FORMAT_VERSION'), 3, 'current document format');
+        equal(await client.evaluate('FORMAT_VERSION'), 4, 'current document format');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 5, 'default heroic slots');
         equal(await client.evaluate(`document.querySelectorAll('#innate-list .ability-group').length`), 4, 'default innate slots');
         equal(await client.evaluate('currentMode()'), 'edit', 'blank sheet mode');
         equal(await client.evaluate('MISSION.active'), null, 'blank active mission');
         equal(await client.evaluate('MISSION.history.length'), 0, 'blank mission history');
         equal(await client.evaluate('ENEMY_CATALOG'), null, 'catalog is optional');
+        equal(await client.evaluate('JSON.stringify(CONDITIONS)'), '{"poisoned":false,"diseased":false,"hungerThirst":0}', 'blank conditions');
         equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), false, 'blank Mission section is expanded');
 
         const legacy = await client.evaluate(`(() => {
@@ -335,11 +337,12 @@ try {
                 missionExpanded: result.document.uiState.missionSectionExpanded,
                 mode: result.document.uiState.mode,
                 active: result.document.activeMission,
-                history: result.document.missionHistory.length
+                history: result.document.missionHistory.length,
+                conditions: result.document.character.conditions
             };
         })()`);
         equal(legacy.migratedFrom, 0, 'legacy migration source');
-        equal(legacy.version, 3, 'legacy migration target');
+        equal(legacy.version, 4, 'legacy migration target');
         equal(legacy.name, 'Legacy Ranger', 'legacy character field');
         equal(legacy.heroicCount, 6, 'legacy heroic count');
         equal(legacy.innateCount, 5, 'legacy innate count');
@@ -351,6 +354,7 @@ try {
         equal(legacy.mode, 'edit', 'legacy safe mode default');
         equal(legacy.active, null, 'legacy active mission default');
         equal(legacy.history, 0, 'legacy history default');
+        equal(JSON.stringify(legacy.conditions), '{"poisoned":false,"diseased":false,"hungerThirst":0}', 'legacy conditions default');
 
         const format1 = await client.evaluate(`(() => {
             const result = normalizeDocument(${JSON.stringify(fixtures['format-1-character'])});
@@ -365,7 +369,7 @@ try {
             };
         })()`);
         equal(format1.migratedFrom, 1, 'format 1 migration source');
-        equal(format1.version, 3, 'format 1 migration target');
+        equal(format1.version, 4, 'format 1 migration target');
         equal(format1.name, 'Format One', 'format 1 character');
         equal(format1.missionExpanded, true, 'older version Mission section defaults expanded');
         equal(format1.mode, 'play', 'format 1 mode preserved');
@@ -386,7 +390,7 @@ try {
             };
         })()`);
         equal(format2.migratedFrom, 2, 'format 2 migration source');
-        equal(format2.version, 3, 'format 2 migration target');
+        equal(format2.version, 4, 'format 2 migration target');
         equal(format2.enemyId, null, 'format 2 enemy id default');
         equal(format2.catalogVersion, null, 'format 2 catalog version default');
         equal(format2.name, 'Old Beast', 'format 2 name snapshot');
@@ -401,21 +405,37 @@ try {
                 enemyId: kill.enemyId,
                 catalogVersion: kill.catalogVersion,
                 value: kill.value,
-                status: result.document.missionHistory[0].status
+                status: result.document.missionHistory[0].status,
+                conditions: result.document.character.conditions
             };
         })()`);
-        equal(format3.migratedFrom, null, 'format 3 needs no migration');
+        equal(format3.migratedFrom, 3, 'format 3 migration source');
         equal(format3.enemyId, 'fixture-ogre', 'format 3 enemy id');
         equal(format3.catalogVersion, 'fixture@1', 'format 3 catalog version');
         equal(format3.value, 5, 'format 3 XP snapshot');
         equal(format3.status, 'complete', 'history status normalized');
+        equal(JSON.stringify(format3.conditions), '{"poisoned":false,"diseased":false,"hungerThirst":0}', 'format 3 conditions default');
+
+        const format4 = await client.evaluate(`(() => {
+            const result = normalizeDocument(${JSON.stringify(fixtures['format-4-conditions'])});
+            return {
+                migratedFrom: result.migratedFrom,
+                version: result.document.formatVersion,
+                mode: result.document.uiState.mode,
+                conditions: result.document.character.conditions
+            };
+        })()`);
+        equal(format4.migratedFrom, null, 'format 4 needs no migration');
+        equal(format4.version, 4, 'format 4 remains current');
+        equal(format4.mode, 'play', 'format 4 mode preserved');
+        equal(JSON.stringify(format4.conditions), '{"poisoned":true,"diseased":false,"hungerThirst":2}', 'format 4 conditions preserved');
 
         equal(await client.evaluate(`(() => {
-            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 4 }); return false; }
+            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 5 }); return false; }
             catch { return true; }
         })()`), true, 'newer character format refused');
         equal(await client.evaluate(`(() => {
-            try { normalizeDocument({ formatVersion: 3, character: null }); return false; }
+            try { normalizeDocument({ formatVersion: 4, character: null }); return false; }
             catch { return true; }
         })()`), true, 'missing character section refused');
         equal(await client.evaluate(`(() => {
@@ -430,6 +450,18 @@ try {
             try { normalizeDocument(doc); return false; }
             catch { return true; }
         })()`), true, 'non-text catalog linkage refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-4-conditions'])};
+            doc.character.conditions.hungerThirst = 100;
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'excessive condition level refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-4-conditions'])};
+            doc.character.conditions.poisoned = 'yes';
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'invalid condition flag refused');
     });
 
     await suite('storage recovery and file import', async () => {
@@ -437,7 +469,7 @@ try {
 
         await client.evaluate(`localStorage.setItem(STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['format-0-legacy']))}); location.reload();`);
         await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === 'Legacy Ranger'`);
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 3, 'stored legacy data upgraded');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 4, 'stored legacy data upgraded');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_RECOVERY_KEY)).raw.length > 0`), true, 'pre-migration recovery stored');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 6, 'migrated slot count applied');
         equal(await client.evaluate(`document.querySelector('#abilities-list .numbered-row').classList.contains('used')`), true, 'migrated used state applied');
@@ -456,7 +488,7 @@ try {
         })()`);
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
         equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 3, 'file import persists current format');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 4, 'file import persists current format');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'file import clears temporary stat effects');
 
         const beforeInvalid = await client.evaluate(`localStorage.getItem(STORAGE_KEY)`);
@@ -575,6 +607,54 @@ try {
 
         await client.evaluate(`setMode('edit'); openSearchMenu('it1'); setMode('play')`);
         equal(await client.evaluate(`document.getElementById('it1_box').classList.contains('open')`), false, 'mode switch closes combobox');
+    });
+
+    await suite('character conditions', async () => {
+        await freshBrowserState(client);
+
+        equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 0, 'blank Ranger has no active conditions');
+        equal(await client.evaluate(`document.querySelector('#condition_list .condition-empty').textContent`), 'No active conditions.', 'blank condition state explained');
+        equal(await client.evaluate(`document.getElementById('condition_add').offsetParent !== null`), true, 'condition add control is visible in edit mode');
+        check(await client.evaluate(`document.getElementById('condition_add').getBoundingClientRect().height >= 44`), 'condition add control is touch-sized');
+
+        await client.evaluate(`openConditionDialog()`);
+        equal(await client.evaluate(`document.getElementById('condition_dialog').open`), true, 'condition dialog opens');
+        equal(await client.evaluate(`document.querySelectorAll('#condition_dialog .condition-option').length`), 3, 'three core conditions offered');
+        equal(await client.evaluate(`document.getElementById('condition_option_poisoned').disabled`), false, 'inactive Poisoned option is available');
+
+        await client.evaluate(`document.getElementById('condition_option_poisoned').click()`);
+        equal(await client.evaluate(`document.getElementById('condition_dialog').open`), false, 'adding a condition closes the dialog');
+        equal(await client.evaluate(`CONDITIONS.poisoned`), true, 'Poisoned becomes active');
+        equal(await client.evaluate(`document.querySelector('[data-condition="poisoned"] .condition-rule').textContent.includes('one action per activation')`), true, 'Poisoned rule reminder shown');
+
+        await client.evaluate(`openConditionDialog()`);
+        equal(await client.evaluate(`document.getElementById('condition_option_poisoned').disabled`), true, 'active Poisoned option is disabled');
+        await client.evaluate(`closeConditionDialog(); addCondition('diseased'); addCondition('hungerThirst'); addCondition('hungerThirst');`);
+
+        equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 3, 'all active core conditions render');
+        equal(await client.evaluate(`CONDITIONS.diseased`), true, 'Diseased becomes active');
+        equal(await client.evaluate(`CONDITIONS.hungerThirst`), 2, 'Hunger and Thirst stacks');
+        equal(await client.evaluate(`document.querySelector('[data-condition="hungerThirst"] .condition-title').textContent`), 'Hunger & Thirst · Level 2', 'stack level appears in title');
+        equal(await client.evaluate(`document.querySelector('[data-condition="hungerThirst"] .condition-rule').textContent.includes('−4 Health')`), true, 'stacked Health reminder is derived');
+        equal(await client.evaluate(`document.querySelector('[data-condition="diseased"] .condition-source').textContent`), 'Standard Edition, pp. 32–33', 'rule source is shown');
+
+        await client.evaluate(`document.getElementById('s_hpm').value = '14'; document.getElementById('s_hpc').value = '9'; setMode('play');`);
+        equal(await client.evaluate(`document.getElementById('conditions_section').offsetParent !== null`), true, 'conditions remain visible in play mode');
+        equal(await client.evaluate(`document.body.classList.contains('play-empty')`), false, 'active conditions count as play content');
+        equal(await client.evaluate(`document.getElementById('s_hpm').value`), '14', 'conditions do not rewrite base Health');
+        equal(await client.evaluate(`document.getElementById('s_hpc').value`), '9', 'conditions do not rewrite current Health');
+        equal(await client.evaluate(`JSON.stringify(collectDocument().character.conditions)`), '{"poisoned":true,"diseased":true,"hungerThirst":2}', 'conditions enter the character document');
+
+        await client.evaluate(`saveNow(); location.reload();`);
+        await waitFor(client, `document.readyState === 'complete' && CONDITIONS.poisoned && CONDITIONS.hungerThirst === 2`);
+        equal(await client.evaluate(`currentMode()`), 'play', 'condition reload preserves play mode');
+        equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 3, 'conditions survive reload');
+
+        await client.evaluate(`clearCondition('poisoned'); stepCondition('hungerThirst', -1);`);
+        equal(await client.evaluate(`CONDITIONS.poisoned`), false, 'condition can be cleared');
+        equal(await client.evaluate(`document.querySelector('[data-condition="poisoned"]')`), null, 'cleared condition card disappears');
+        equal(await client.evaluate(`CONDITIONS.hungerThirst`), 1, 'stack can be decreased');
+        equal(await client.evaluate(`document.querySelector('[data-condition="hungerThirst"] .condition-rule').textContent.includes('−2 Health')`), true, 'decreased stack reminder updates');
     });
 
     await suite('collapsible Mission section', async () => {
@@ -885,6 +965,7 @@ try {
             select.value = 'fixture-ghoul';
             select.dispatchEvent(new Event('change', { bubbles: true }));
             document.getElementById('enemy_picker_add').click();
+            addCondition('hungerThirst');
         })()`);
 
         const widths = [360, 430, 712, 768, 800, 899, 900, 912, 1080];
@@ -906,6 +987,8 @@ try {
                 statColumns: getComputedStyle(document.getElementById('stat-grid')).gridTemplateColumns.split(' ').length,
                 addHeight: document.querySelector('.mission-enemy-picker > button').getBoundingClientRect().height,
                 stepHeight: document.querySelector('.mission-step').getBoundingClientRect().height,
+                conditionAddHeight: document.getElementById('condition_add').getBoundingClientRect().height,
+                conditionStepHeight: document.querySelector('.condition-step').getBoundingClientRect().height,
                 nameWidth: document.querySelector('.mission-kill-row .mission-grow').getBoundingClientRect().width,
                 overflowElements: Array.from(document.querySelectorAll('body *'))
                     .filter(element => element.getBoundingClientRect().right > document.documentElement.clientWidth + 0.5)
@@ -917,8 +1000,20 @@ try {
             equal(layout.statColumns, width <= 899 ? 4 : 8, `${width}px stat column count`);
             check(layout.addHeight >= 44, `${width}px add target is touch-sized`);
             check(layout.stepHeight >= 44, `${width}px mission step target is touch-sized`);
+            check(layout.conditionAddHeight >= 44, `${width}px condition add target is touch-sized`);
+            check(layout.conditionStepHeight >= 44, `${width}px condition step target is touch-sized`);
             if (width <= 430) check(layout.nameWidth >= 180, `${width}px enemy name remains usable`);
         }
+
+        await client.send('Emulation.setDeviceMetricsOverride', {
+            width: 360,
+            height: 1000,
+            deviceScaleFactor: 1,
+            mobile: true
+        });
+        await client.evaluate(`openConditionDialog()`);
+        check(await client.evaluate(`document.getElementById('condition_dialog').getBoundingClientRect().right <= document.documentElement.clientWidth`), 'condition dialog fits phone viewport');
+        await client.evaluate(`closeConditionDialog()`);
 
         await client.send('Emulation.clearDeviceMetricsOverride');
         await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });

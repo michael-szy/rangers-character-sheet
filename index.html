@@ -209,7 +209,123 @@
         color: #91a0b0;
         margin-right: auto;
     }
-    
+
+    /* --- Character conditions --- */
+    .conditions-section { margin-top: 22px; }
+    .condition-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .condition-empty {
+        margin: 0;
+        padding: 12px 14px;
+        border: 1px dashed var(--border-col);
+        border-radius: 8px;
+        color: #7f8b98;
+        font-size: 0.88em;
+    }
+    .condition-card {
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid rgba(227,106,106,0.55);
+        border-left: 3px solid #e36a6a;
+        border-radius: 8px;
+        background: rgba(192,57,43,0.08);
+    }
+    .condition-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .condition-title {
+        min-width: 0;
+        color: #f0a0a0;
+        font-family: var(--fantasy-font);
+        font-size: 0.86em;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .condition-rule {
+        margin: 8px 0 0;
+        color: #d6dce3;
+        font-size: 0.88em;
+        line-height: 1.5;
+    }
+    .condition-source {
+        display: block;
+        margin-top: 6px;
+        color: #778491;
+        font-size: 0.72em;
+    }
+    .condition-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 0 0 auto;
+    }
+    .condition-controls button {
+        min-height: 44px;
+        padding: 7px 12px;
+    }
+    .condition-step {
+        width: 44px;
+        padding: 0 !important;
+        font-size: 1.15em;
+    }
+    .condition-level {
+        min-width: 52px;
+        color: #fff;
+        text-align: center;
+        font-family: var(--fantasy-font);
+        font-weight: bold;
+    }
+    .condition-clear {
+        border-color: #8b5960;
+        color: #d7a4aa;
+    }
+    .condition-dialog {
+        border-color: var(--accent-teal);
+    }
+    .condition-dialog h2 { color: var(--accent-teal); }
+    .condition-options {
+        display: grid;
+        gap: 9px;
+        margin-top: 14px;
+    }
+    .condition-option {
+        width: 100%;
+        min-width: 0;
+        min-height: 56px;
+        padding: 10px 12px;
+        text-align: left;
+    }
+    .condition-option strong,
+    .condition-option span { display: block; }
+    .condition-option span {
+        margin-top: 3px;
+        color: #91a0b0;
+        font-family: var(--body-font);
+        font-size: 0.78em;
+        font-weight: normal;
+        line-height: 1.35;
+    }
+    .condition-option:disabled {
+        border-color: #46505a;
+        color: #65717d;
+        cursor: not-allowed;
+        opacity: 0.72;
+    }
+    .condition-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+    .condition-dialog-actions button { min-height: 44px; padding: 8px 14px; }
+
     .current-hp { border: 2px solid var(--danger-red); background: rgba(192, 57, 43, 0.1); }
 
     input, textarea, select {
@@ -972,6 +1088,38 @@
             </div>
         </div>
 
+        <section id="conditions_section" class="conditions-section" aria-labelledby="conditions_heading">
+            <div class="section-header" id="conditions_heading">Conditions</div>
+            <div id="condition_list" class="condition-list" aria-live="polite"></div>
+            <button type="button" id="condition_add" class="add-slot-btn"
+                aria-haspopup="dialog" onclick="openConditionDialog()">+ Add Condition</button>
+        </section>
+
+        <dialog id="condition_dialog" class="ally-modifier-dialog condition-dialog" aria-labelledby="condition_dialog_title">
+            <h2 id="condition_dialog_title">Add condition</h2>
+            <p>Conditions are reminders only. They do not change stats or rolls automatically.</p>
+            <div class="condition-options">
+                <button type="button" id="condition_option_poisoned" class="condition-option"
+                    onclick="addCondition('poisoned')">
+                    <strong>Poisoned</strong>
+                    <span>One action per activation until cured or the scenario ends.</span>
+                </button>
+                <button type="button" id="condition_option_diseased" class="condition-option"
+                    onclick="addCondition('diseased')">
+                    <strong>Diseased</strong>
+                    <span>Carry a failed Disease test into the next scenario of the mission.</span>
+                </button>
+                <button type="button" id="condition_option_hungerThirst" class="condition-option"
+                    onclick="addCondition('hungerThirst')">
+                    <strong>Hunger &amp; Thirst</strong>
+                    <span>Add one stack; each stack reduces starting Health in the next scenario.</span>
+                </button>
+            </div>
+            <div class="condition-dialog-actions">
+                <button type="button" onclick="closeConditionDialog()">Close</button>
+            </div>
+        </dialog>
+
         <dialog id="ally_modifier_dialog" class="ally-modifier-dialog" aria-labelledby="ally_modifier_title">
             <form method="dialog" onsubmit="applyTemporaryEffects(event)">
                 <h2 id="ally_modifier_title">Temporary effects</h2>
@@ -1347,7 +1495,7 @@
     const LEGACY_ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
     const MAX_TEMP_EFFECT = 99;
     const ENEMY_CATALOG_FORMAT_VERSION = 1;
-    const FORMAT_VERSION = 3;
+    const FORMAT_VERSION = 4;
     const MAX_SLOTS = 50;
     const MAX_MISSION_ROWS = 200;
     const MAX_MISSION_HISTORY = 100;
@@ -1382,6 +1530,24 @@
         s_hpm: { label: 'Health', shortLabel: 'Health' },
         s_rec: { label: 'Recruitment', shortLabel: 'Recr' }
     };
+    const CONDITION_LIBRARY = {
+        poisoned: {
+            label: 'Poisoned',
+            source: 'Standard Edition, p. 32',
+            effect: () => 'Maximum one action per activation. Clear after healing back to starting Health, a specific cure, or the end of the scenario.'
+        },
+        diseased: {
+            label: 'Diseased',
+            source: 'Standard Edition, pp. 32–33',
+            effect: () => 'After a failed Disease test, there is no immediate penalty. In the next scenario of the same mission, start at −3 Health and suffer −1 to all rolls; clear at that scenario’s end.'
+        },
+        hungerThirst: {
+            label: 'Hunger & Thirst',
+            source: 'Standard Edition, p. 33',
+            stackable: true,
+            effect: level => `Next scenario starts at −${level * 2} Health (${level} × −2). Clear when the mission ends or a rule removes all levels.`
+        }
+    };
     const SEARCHABLE_STATE = {};
     /*
        Missions are nested records rather than flat fields, so they live in a state object instead
@@ -1390,6 +1556,7 @@
     */
     let MISSION = { active: null, history: [] };
     let ENEMY_CATALOG = null;
+    let CONDITIONS = blankConditions();
     let temporaryStatEffects = {};
     let activeEffectStatId = null;
     let lastMissionRemoval = null;
@@ -1776,7 +1943,8 @@
             character: {
                 fields: fields,
                 heroicSlots: collectSlots('heroic'),
-                innateSlots: collectSlots('innate')
+                innateSlots: collectSlots('innate'),
+                conditions: CONDITIONS
             },
             uiState: {
                 showInnateSection: document.getElementById('innate-section').style.display === 'block',
@@ -1988,6 +2156,97 @@
         closeTemporaryEffects();
     }
 
+    function hasActiveConditions() {
+        return CONDITIONS.poisoned || CONDITIONS.diseased || CONDITIONS.hungerThirst > 0;
+    }
+
+    function renderConditions() {
+        const list = document.getElementById('condition_list');
+        const active = Object.entries(CONDITION_LIBRARY).filter(([key, config]) =>
+            config.stackable ? CONDITIONS[key] > 0 : CONDITIONS[key] === true
+        );
+
+        if (!active.length) {
+            list.innerHTML = '<p class="condition-empty">No active conditions.</p>';
+        } else {
+            list.innerHTML = active.map(([key, config]) => {
+                const level = config.stackable ? CONDITIONS[key] : 1;
+                const title = config.stackable ? `${config.label} · Level ${level}` : config.label;
+                const stepper = config.stackable ? `
+                    <button type="button" class="condition-step" aria-label="Decrease ${escapeHtml(config.label)} level"
+                        onclick="stepCondition('${key}', -1)">−</button>
+                    <output class="condition-level" aria-label="${escapeHtml(config.label)} level ${level}">${level}</output>
+                    <button type="button" class="condition-step" aria-label="Increase ${escapeHtml(config.label)} level"
+                        onclick="stepCondition('${key}', 1)">+</button>
+                ` : '';
+
+                return `
+                    <article class="condition-card" data-condition="${key}">
+                        <div class="condition-card-head">
+                            <div class="condition-title">${escapeHtml(title)}</div>
+                            <div class="condition-controls">
+                                ${stepper}
+                                <button type="button" class="condition-clear" aria-label="Clear ${escapeHtml(config.label)}"
+                                    onclick="clearCondition('${key}')">Clear</button>
+                            </div>
+                        </div>
+                        <p class="condition-rule">${escapeHtml(config.effect(level))}</p>
+                        <span class="condition-source">${escapeHtml(config.source)}</span>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        refreshEmptyMarkers();
+    }
+
+    function openConditionDialog() {
+        const dialog = document.getElementById('condition_dialog');
+        document.getElementById('condition_option_poisoned').disabled = CONDITIONS.poisoned;
+        document.getElementById('condition_option_diseased').disabled = CONDITIONS.diseased;
+        document.getElementById('condition_option_hungerThirst').disabled = CONDITIONS.hungerThirst >= 99;
+
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+
+        const firstAvailable = dialog.querySelector('.condition-option:not(:disabled)');
+        if (firstAvailable) firstAvailable.focus();
+    }
+
+    function closeConditionDialog() {
+        const dialog = document.getElementById('condition_dialog');
+        if (dialog.open && typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+    }
+
+    function addCondition(key) {
+        const config = CONDITION_LIBRARY[key];
+        if (!config) return;
+
+        if (config.stackable) CONDITIONS[key] = Math.min(99, CONDITIONS[key] + 1);
+        else CONDITIONS[key] = true;
+
+        renderConditions();
+        scheduleSave();
+        closeConditionDialog();
+    }
+
+    function stepCondition(key, delta) {
+        const config = CONDITION_LIBRARY[key];
+        if (!config || !config.stackable) return;
+        CONDITIONS[key] = Math.min(99, Math.max(0, CONDITIONS[key] + delta));
+        renderConditions();
+        scheduleSave();
+    }
+
+    function clearCondition(key) {
+        const config = CONDITION_LIBRARY[key];
+        if (!config) return;
+        CONDITIONS[key] = config.stackable ? 0 : false;
+        renderConditions();
+        scheduleSave();
+    }
+
     function updateArchetype(skipSave = false) {
         const val = document.getElementById('char_arch').value;
         const detailsDiv = document.getElementById('arch_details');
@@ -2120,6 +2379,7 @@
         blocks.forEach((blockId, index) => markBlockEmpty(blockId, rowSelectors[index]));
 
         document.body.classList.toggle('play-empty',
+            !hasActiveConditions() &&
             blocks.every(blockId => document.getElementById(blockId).classList.contains('is-empty')));
     }
 
@@ -2474,13 +2734,41 @@
         return Array.from({ length: count }, () => ({ value: '', used: false }));
     }
 
+    function blankConditions() {
+        return { poisoned: false, diseased: false, hungerThirst: 0 };
+    }
+
+    function normalizeConditions(rawConditions) {
+        if (rawConditions === undefined || rawConditions === null) return blankConditions();
+        if (!isPlainObject(rawConditions)) throw new Error('Character conditions are not stored as a record.');
+
+        for (const key of ['poisoned', 'diseased']) {
+            if (rawConditions[key] !== undefined && typeof rawConditions[key] !== 'boolean') {
+                throw new Error(`The "${key}" condition must be true or false.`);
+            }
+        }
+
+        const rawLevel = rawConditions.hungerThirst === undefined ? 0 : rawConditions.hungerThirst;
+        const hungerThirst = Number(rawLevel);
+        if (!Number.isInteger(hungerThirst) || hungerThirst < 0 || hungerThirst > 99) {
+            throw new Error('Hunger and Thirst levels must be a whole number from 0 to 99.');
+        }
+
+        return {
+            poisoned: rawConditions.poisoned === true,
+            diseased: rawConditions.diseased === true,
+            hungerThirst
+        };
+    }
+
     function createBlankDocument() {
         return {
             formatVersion: FORMAT_VERSION,
             character: {
                 fields: {},
                 heroicSlots: blankSlots(DEFAULT_HEROIC_SLOTS),
-                innateSlots: blankSlots(DEFAULT_INNATE_SLOTS)
+                innateSlots: blankSlots(DEFAULT_INNATE_SLOTS),
+                conditions: blankConditions()
             },
             uiState: { showInnateSection: false, missionSectionExpanded: true, mode: 'edit' },
             activeMission: null,
@@ -2551,7 +2839,8 @@
             character: {
                 fields: legacy,
                 heroicSlots: readSlots('ab', legacySlotCount(legacy.heroicSlotsCount, DEFAULT_HEROIC_SLOTS, 'heroic slot')),
-                innateSlots: readSlots('in', legacySlotCount(legacy.innateSlotsCount, DEFAULT_INNATE_SLOTS, 'innate slot'))
+                innateSlots: readSlots('in', legacySlotCount(legacy.innateSlotsCount, DEFAULT_INNATE_SLOTS, 'innate slot')),
+                conditions: blankConditions()
             },
             uiState: { showInnateSection: legacy.showInnateSection === true, missionSectionExpanded: true }
         };
@@ -3152,7 +3441,9 @@
                 character: {
                     fields: fields,
                     heroicSlots: normalizeSlots(upgraded.character.heroicSlots, DEFAULT_HEROIC_SLOTS, 'Heroic ability slots'),
-                    innateSlots: normalizeSlots(upgraded.character.innateSlots, DEFAULT_INNATE_SLOTS, 'Innate ability slots')
+                    innateSlots: normalizeSlots(upgraded.character.innateSlots, DEFAULT_INNATE_SLOTS, 'Innate ability slots'),
+                    // Formats 0–3 predate character conditions and therefore normalize to none.
+                    conditions: normalizeConditions(upgraded.character.conditions)
                 },
                 uiState: {
                     showInnateSection: !!(upgraded.uiState && upgraded.uiState.showInnateSection === true),
@@ -3199,6 +3490,9 @@
         applySlots('innate', doc.character.innateSlots);
 
         for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, fields['it' + i] || '', true);
+
+        CONDITIONS = doc.character.conditions;
+        renderConditions();
 
         MISSION = { active: doc.activeMission, history: doc.missionHistory };
         lastMissionRemoval = null;
