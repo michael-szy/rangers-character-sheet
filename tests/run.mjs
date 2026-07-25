@@ -100,7 +100,7 @@ async function startStaticServer() {
         const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
         const file = pathname === '/' || pathname === '/index.html'
             ? join(projectRoot, 'index.html')
-            : pathname === '/styles.css' || pathname === '/rules-data.js' || pathname === '/persistence.js' || pathname === '/storage.js'
+            : pathname === '/styles.css' || pathname === '/rules-data.js' || pathname === '/persistence.js' || pathname === '/storage.js' || pathname === '/app.js'
                 ? join(projectRoot, pathname.slice(1))
                 : pathname.startsWith('/tests/fixtures/')
                     ? join(projectRoot, pathname.slice(1))
@@ -342,6 +342,8 @@ try {
         equal(await client.evaluate(`Object.isFrozen(STORAGE)`), true, 'configured storage interface is immutable');
         equal(await client.evaluate(`document.querySelector('link[href="styles.css"]') !== null`), true, 'external stylesheet is linked');
         equal(await client.evaluate(`Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles.css'))`), true, 'external stylesheet is loaded');
+        equal(await client.evaluate(`document.querySelector('script[src="app.js"]') !== null`), true, 'external application script is linked');
+        equal(await client.evaluate(`typeof initializeApp`), 'function', 'external application script is loaded');
         equal(await client.evaluate(`typeof RangersRules`), 'object', 'rule data module loaded');
         equal(await client.evaluate(`Object.isFrozen(RangersRules)`), true, 'rule data interface is immutable');
         equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.heroic)`), true, 'heroic ability data is immutable');

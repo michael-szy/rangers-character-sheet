@@ -46,7 +46,7 @@ Kurze visuelle Effekte bestätigen wichtige Spielaktionen: Eine Ability wird ver
 
 ## Technik
 
-Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. `index.html` enthält Oberfläche und Anwendungslogik; `styles.css` bündelt die Darstellung einschließlich Responsive- und Effektregeln. `rules-data.js` stellt die unveränderlichen Auswahlkataloge für Fähigkeiten, Archetypen und Ausrüstung bereit. `persistence.js` kapselt die reine Validierung, Migration und Normalisierung gespeicherter Charakterdaten, während `storage.js` ausschließlich das lokale Character-JSON und dessen Recovery-Kopie verwaltet. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
+Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. `index.html` enthält das Markup, `styles.css` bündelt die Darstellung einschließlich Responsive- und Effektregeln, und `app.js` enthält Zustand, Rendering und Interaktionen. `rules-data.js` stellt die unveränderlichen Auswahlkataloge für Fähigkeiten, Archetypen und Ausrüstung bereit. `persistence.js` kapselt die reine Validierung, Migration und Normalisierung gespeicherter Charakterdaten, während `storage.js` ausschließlich das lokale Character-JSON und dessen Recovery-Kopie verwaltet. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
 
 Für die Browser-Regressionsprüfungen werden Node.js 22 oder neuer und ein Chromium-basierter Browser benötigt:
 
