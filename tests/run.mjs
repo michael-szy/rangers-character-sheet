@@ -541,6 +541,61 @@ try {
         equal(slotResult.numerals.at(-1), 'VIII', 'slot presentation renumbered');
         equal(new Set(slotResult.ids).size, slotResult.ids.length, 'DOM ids remain unique');
 
+        const archetypeAbilities = await client.evaluate(`(() => {
+            const expected = [
+                'Flashing Blade',
+                'Quick Strike',
+                'Tumble',
+                'Double Shot',
+                'Fire Shot',
+                'Smoke Shot',
+                'Whirling Death',
+                'Sneak Attack'
+            ];
+            const options = buildAbilityOptions();
+            const rare = options.filter(option => option.badges.includes('Archetype'));
+            return {
+                keys: Object.keys(ABILITY_LIBRARY.archetypeHeroic).join('|'),
+                expected: expected.join('|'),
+                rareValues: rare.map(option => option.value).join('|'),
+                flashing: rare.find(option => option.value === 'Flashing Blade'),
+                redHawk: options
+                    .filter(option => [option.label, option.group, ...option.badges].join(' ').toLowerCase().includes('red hawk knight'))
+                    .map(option => option.value).join('|'),
+                varakian: options
+                    .filter(option => [option.label, option.group, ...option.badges].join(' ').toLowerCase().includes('varakian archer'))
+                    .map(option => option.value).join('|')
+            };
+        })()`);
+        equal(archetypeAbilities.keys, archetypeAbilities.expected, 'all archetype Heroic Abilities are catalogued');
+        equal(archetypeAbilities.rareValues, archetypeAbilities.expected, 'archetype abilities become searchable options');
+        equal(archetypeAbilities.flashing.badges.join('|'), 'Heroic Ability|Archetype', 'archetype ability has clear badges');
+        check(archetypeAbilities.flashing.group.includes('Red Hawk Knight'), 'Flashing Blade names Red Hawk Knight');
+        check(archetypeAbilities.flashing.group.includes('River Shark'), 'Flashing Blade names River Shark');
+        check(archetypeAbilities.flashing.group.includes('Wasteland Firesword'), 'Flashing Blade names Wasteland Firesword');
+        equal(archetypeAbilities.redHawk, 'Flashing Blade|Quick Strike', 'Red Hawk Knight search finds its unique abilities');
+        equal(archetypeAbilities.varakian, 'Double Shot|Fire Shot|Smoke Shot', 'Varakian Archer search finds its unique abilities');
+
+        const selectedArchetypeAbility = await client.evaluate(`(() => {
+            const slotId = slotGroups('heroic')[0].dataset.slotId;
+            const input = document.getElementById(slotId + '_search');
+            input.focus();
+            input.value = 'Red Hawk Knight';
+            input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: 'Red Hawk Knight' }));
+            const redHawkRendered = SEARCHABLE_STATE[slotId].renderedOptions.map(option => option.value).join('|');
+            input.value = 'Flashing Blade';
+            input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: 'Flashing Blade' }));
+            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+            return {
+                redHawkRendered,
+                value: document.getElementById(slotId).value,
+                desc: document.getElementById('desc_' + slotId).textContent
+            };
+        })()`);
+        equal(selectedArchetypeAbility.redHawkRendered, 'Flashing Blade|Quick Strike', 'combobox filters by archetype name');
+        equal(selectedArchetypeAbility.value, 'Flashing Blade', 'keyboard selects archetype ability');
+        check(selectedArchetypeAbility.desc.includes('free attack'), 'archetype ability description is shown');
+
         equal(await client.evaluate(`(() => {
             while (slotGroups('innate').length > SLOT_TYPES.innate.minSlots) removeSlot(slotGroups('innate').at(-1).dataset.slotId, 'innate');
             const before = slotGroups('innate').length;

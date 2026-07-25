@@ -1307,6 +1307,40 @@
             "Split Cast": "This ability may be used any time a figure casts a spell that has a specific target figure or target point. The caster may choose two different targets for the Spell, resolving the full effect of the Spell on both targets.",
             "Steady Aim": "The hero may add +5 Shoot for one Shooting Roll. This must be declared before the roll is made."
         },
+        archetypeHeroic: {
+            "Flashing Blade": {
+                desc: "Use when this figure activates while in combat. It immediately makes a free attack against one figure in that combat, then takes its normal actions.",
+                archetypes: ["Red Hawk Knight", "River Shark", "Wasteland Firesword"]
+            },
+            "Quick Strike": {
+                desc: "Use when this figure forces combat with an enemy. It immediately attacks that enemy as a free action.",
+                archetypes: ["Red Hawk Knight"]
+            },
+            "Tumble": {
+                desc: "During a move action, nominate one enemy. That enemy cannot force combat during this move if the hero finishes at least 1\" away from it.",
+                archetypes: ["River Shark"]
+            },
+            "Double Shot": {
+                desc: "Use during a shoot action to attack two different legal targets that are within 6\" of one another.",
+                archetypes: ["Varakian Archer"]
+            },
+            "Fire Shot": {
+                desc: "Use after a shooting attack damages its target. The arrow deals 5 additional points of magic damage.",
+                archetypes: ["Varakian Archer"]
+            },
+            "Smoke Shot": {
+                desc: "Use during a shoot action to place a 3\" smoke cloud at a chosen point, or after hitting to centre it on the target while resolving normal damage. Smoke blocks line of sight but not movement; at the end of each turn, it dissipates on a roll of 1–2.",
+                archetypes: ["Varakian Archer"]
+            },
+            "Whirling Death": {
+                desc: "Use when activating in combat with more than one enemy. Spend one action to attack every enemy in that combat, in any order; neither side receives supporting-figure bonuses.",
+                archetypes: ["Wasteland Firesword"]
+            },
+            "Sneak Attack": {
+                desc: "Use if this figure began the turn Disguised as the Enemy. It gains +2 to all attacks for that turn.",
+                archetypes: ["Shadow Deep Survivor / Deserter"]
+            }
+        },
         spells: {
             "Amphibious": "The target of this spell automatically passes all Swimming Rolls for the rest of the scenario.",
             "Armour": "The target of this spell receives +2 Armour for the rest of the scenario. A figure can only receive the benefits of one Armour spell at one time.",
@@ -1587,6 +1621,17 @@
                 desc: ABILITY_LIBRARY.heroic[key],
                 badges: ['Heroic Ability'],
                 group: 'Heroic Abilities'
+            });
+        }
+
+        for (let key in ABILITY_LIBRARY.archetypeHeroic) {
+            const ability = ABILITY_LIBRARY.archetypeHeroic[key];
+            options.push({
+                value: key,
+                label: key,
+                desc: ability.desc,
+                badges: ['Heroic Ability', 'Archetype'],
+                group: `Archetype Heroic Ability · ${ability.archetypes.join(' · ')}`
             });
         }
 

@@ -5,7 +5,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 ## Funktionen
 
 - Ranger-Werte, Ausrüstung und Quest-Notizen verwalten
-- Heroic Abilities und Spells auswählen und ihre Nutzung markieren
+- Heroic Abilities – einschließlich archetypspezifischer Varianten – und Spells auswählen und ihre Nutzung markieren
 - Archetypen mit Traits und Einschränkungen anzeigen
 - Missionen mit Gegnern, Zielen, Anpassungen und bestätigter XP-Übertragung dokumentieren
 - Den Missionsbereich in Edit und Play einklappen, wenn er gerade nicht benötigt wird
