@@ -331,6 +331,101 @@
     }
     .remove-slot-btn:active { color: var(--danger-red); }
 
+    /* --- Mission report --- */
+    .mission-card {
+        margin-top: 14px;
+        padding: 14px;
+        border: 1px solid var(--border-col);
+        border-radius: 10px;
+        background: rgba(0,0,0,0.22);
+    }
+    .mission-empty { margin-top: 14px; }
+    .mission-empty p { color: #91a0b0; margin: 0 0 12px; font-size: 0.95em; }
+    .mission-head { display: flex; flex-direction: column; gap: 10px; }
+    .mission-title-input { font-family: var(--fantasy-font); font-size: 1.1em; }
+    .mission-head-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .mission-inline { display: flex; align-items: center; gap: 8px; flex: 1 1 180px; }
+    .mission-inline span {
+        font-family: var(--fantasy-font); font-size: 0.7em; color: var(--accent-teal);
+        text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
+    }
+    .mission-group { margin-top: 18px; }
+    .mission-group-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .mission-group h3 {
+        margin: 0; font-family: var(--fantasy-font); font-size: 0.85em; color: var(--accent-teal);
+        text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .mission-hint { color: #6f7d8c; font-size: 0.75em; }
+    .mission-none { color: #6f7d8c; font-size: 0.85em; font-style: italic; margin: 8px 0 0; }
+    .mission-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .mission-grow { flex: 1 1 120px; min-width: 0; }
+    .mission-value { flex: 0 0 74px; text-align: center; }
+    .mission-type { flex: 0 0 116px; }
+    .mission-count { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+    .mission-count input { width: 56px; text-align: center; }
+    .mission-step {
+        flex-shrink: 0; width: 38px; height: 38px; min-height: 38px; padding: 0;
+        border: 1px solid var(--border-col); border-radius: 6px;
+        background: rgba(22, 224, 189, 0.08); color: var(--accent-teal); font-size: 1.2em; line-height: 1;
+    }
+    .mission-check {
+        flex-shrink: 0; width: 34px; height: 34px; min-height: 0; padding: 0; border-radius: 50%;
+        border: 1px solid var(--border-col); background: transparent; color: transparent; font-size: 0.9em;
+    }
+    .mission-check.done { border-color: var(--accent-teal); background: rgba(22, 224, 189, 0.18); color: var(--accent-teal); }
+    .mission-remove {
+        flex-shrink: 0; min-height: 0; padding: 0 10px; border: none; border-radius: 6px;
+        background: transparent; color: #555; font-size: 1.1em;
+    }
+    .mission-remove:active { color: var(--danger-red); }
+    .mission-add {
+        margin-top: 10px; min-height: 0; padding: 8px 14px;
+        border: 1px dashed #555; border-radius: 6px; background: transparent; color: #91a0b0;
+        font-family: var(--fantasy-font); font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .mission-notes-label {
+        display: block; margin-top: 18px;
+        font-family: var(--fantasy-font); font-size: 0.7em; color: var(--accent-teal);
+        text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .mission-notes { height: 90px; margin-top: 6px; background: rgba(0,0,0,0.2); font-style: italic; }
+    .mission-total {
+        display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline;
+        margin-top: 18px; padding: 12px 14px;
+        border: 1px solid rgba(22, 224, 189, 0.35); border-radius: 8px;
+        background: rgba(22, 224, 189, 0.06);
+        font-size: 0.85em; color: #b8c3cf;
+    }
+    .mission-total strong { font-family: var(--fantasy-font); font-size: 1.1em; color: var(--accent-teal); margin-left: auto; }
+    .mission-undo {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        margin-top: 12px; padding: 10px 12px;
+        border: 1px dashed var(--border-col); border-radius: 8px; color: #91a0b0; font-size: 0.85em;
+    }
+    .mission-undo button {
+        min-height: 0; padding: 6px 14px; font-size: 0.75em;
+    }
+    .mission-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+    .mission-primary { font-size: 0.8em; }
+    .mission-secondary { font-size: 0.75em; border-color: #555; color: #91a0b0; }
+    .mission-note { color: #6f7d8c; font-size: 0.8em; margin: 10px 0 0; line-height: 1.5; }
+    .mission-history { margin-top: 22px; }
+    .mission-history h3 {
+        margin: 0; font-family: var(--fantasy-font); font-size: 0.8em; color: #91a0b0;
+        text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .mission-card.past { background: rgba(0,0,0,0.3); }
+    .mission-past-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+    .mission-past-head strong { font-family: var(--fantasy-font); color: var(--text-main); }
+    .mission-past-head span { color: #6f7d8c; font-size: 0.8em; }
+    .mission-past-summary {
+        display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline;
+        margin-top: 10px; font-size: 0.85em; color: #b8c3cf;
+    }
+    .mission-past-summary strong { color: var(--accent-teal); font-family: var(--fantasy-font); }
+    .mission-applied { color: #2ecc71; font-size: 0.85em; }
+    .mission-past-notes { color: #91a0b0; font-size: 0.85em; line-height: 1.5; margin: 10px 0 0; font-style: italic; }
+
     /* --- Play mode ---
        One DOM, two presentations. Play mode removes what is never touched mid-scenario; it
        deliberately does not lock anything, so a correction at the table stays one tap away.
@@ -447,6 +542,9 @@
         .add-slot-btn { min-height: 44px; }
         .mode-btn { min-height: 44px; padding: 6px 20px; }
         .untrained-btn { min-height: 44px; }
+        .mission-step, .mission-check { width: 44px; height: 44px; min-height: 44px; }
+        .mission-add, .mission-undo button { min-height: 44px; }
+        .mission-remove { min-height: 44px; padding: 0 12px; }
         /* The one stepper play mode keeps. */
         [data-mode="play"] .current-hp .stepper-btn { display: flex; }
         /*
@@ -695,6 +793,8 @@
             </div>
         </div>
 
+        <div class="section-header">Mission</div>
+        <div id="mission-block"></div>
         <div class="section-header">Quest Log</div>
         <textarea id="quest_notes" class="save-field notes-area" placeholder="Record the omens, the scars, and the trophies of each expedition."></textarea>
 
@@ -915,8 +1015,11 @@
     const saveFields = document.querySelectorAll('.save-field');
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
     const STORAGE_RECOVERY_KEY = `${STORAGE_KEY}_recovery`;
-    const FORMAT_VERSION = 1;
+    const FORMAT_VERSION = 2;
     const MAX_SLOTS = 50;
+    const MAX_MISSION_ROWS = 200;
+    const MAX_MISSION_HISTORY = 100;
+    const OBJECTIVE_TYPES = ['primary', 'optional', 'custom'];
     const DEFAULT_HEROIC_SLOTS = 5;
     const DEFAULT_INNATE_SLOTS = 4;
     const SLOT_TYPES = {
@@ -939,6 +1042,14 @@
     };
     const MODES = ['edit', 'play'];
     const SEARCHABLE_STATE = {};
+    /*
+       Missions are nested records rather than flat fields, so they live in a state object instead
+       of being read back out of the DOM like the rest of the sheet. The rendered block writes into
+       this object; collectDocument() serializes it.
+    */
+    let MISSION = { active: null, history: [] };
+    let lastMissionRemoval = null;
+    let missionSequence = 0;
     let activePreviewId = null;
     let saveTimer = null;
     let slotSequence = 0;
@@ -1192,7 +1303,9 @@
             uiState: {
                 showInnateSection: document.getElementById('innate-section').style.display === 'block',
                 mode: currentMode()
-            }
+            },
+            activeMission: MISSION.active,
+            missionHistory: MISSION.history
         };
     }
 
@@ -1693,7 +1806,9 @@
                 heroicSlots: blankSlots(DEFAULT_HEROIC_SLOTS),
                 innateSlots: blankSlots(DEFAULT_INNATE_SLOTS)
             },
-            uiState: { showInnateSection: false, mode: 'edit' }
+            uiState: { showInnateSection: false, mode: 'edit' },
+            activeMission: null,
+            missionHistory: []
         };
     }
 
@@ -1766,6 +1881,516 @@
         };
     }
 
+    // --- Mission report ---
+
+    function newMissionId() {
+        return `${Date.now().toString(36)}-${++missionSequence}`;
+    }
+
+    function createMission() {
+        const now = new Date();
+        const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+        return {
+            id: newMissionId(),
+            title: '',
+            date: date,
+            scenario: '',
+            notes: '',
+            status: 'active',
+            appliedXp: 0,
+            kills: [],
+            objectives: [],
+            adjustments: []
+        };
+    }
+
+    // Totals are always derived, never stored, so a corrected row cannot leave a stale number behind.
+    function missionTotals(mission) {
+        const kills = mission.kills.reduce((sum, row) => sum + row.count * row.value, 0);
+        const objectives = mission.objectives.reduce((sum, row) => sum + (row.completed ? row.value : 0), 0);
+        const adjustments = mission.adjustments.reduce((sum, row) => sum + row.value, 0);
+
+        return { kills, objectives, adjustments, total: kills + objectives + adjustments };
+    }
+
+    function missionRowLists(mission) {
+        return { kills: mission.kills, objectives: mission.objectives, adjustments: mission.adjustments };
+    }
+
+    function findMission(id) {
+        if (MISSION.active && MISSION.active.id === id) return MISSION.active;
+        return MISSION.history.find(mission => mission.id === id) || null;
+    }
+
+    function findMissionRow(missionId, kind, rowId) {
+        const mission = findMission(missionId);
+        if (!mission) return null;
+        return missionRowLists(mission)[kind].find(row => row.id === rowId) || null;
+    }
+
+    function startMission() {
+        if (MISSION.active) return;
+        MISSION.active = createMission();
+        renderMissions();
+        scheduleSave();
+        const title = document.getElementById('mission_title');
+        if (title) title.focus();
+    }
+
+    function addMissionRow(kind) {
+        const mission = MISSION.active;
+        if (!mission) return;
+
+        const rows = missionRowLists(mission)[kind];
+        if (rows.length >= MAX_MISSION_ROWS) {
+            alert(`A mission can hold at most ${MAX_MISSION_ROWS} entries of one kind.`);
+            return;
+        }
+
+        const id = newMissionId();
+        if (kind === 'kills') rows.push({ id, name: '', count: 1, value: 0 });
+        else if (kind === 'objectives') rows.push({ id, title: '', type: 'primary', completed: false, value: 0 });
+        else rows.push({ id, label: '', value: 0 });
+
+        renderMissions();
+        const field = document.querySelector(`[data-row="${id}"] input[type="text"]`);
+        if (field) field.focus();
+        scheduleSave();
+    }
+
+    // Removal is undoable rather than confirmed: a wrong tap at the table should cost one tap back.
+    function removeMissionRow(kind, rowId) {
+        const mission = MISSION.active;
+        if (!mission) return;
+
+        const rows = missionRowLists(mission)[kind];
+        const index = rows.findIndex(row => row.id === rowId);
+        if (index < 0) return;
+
+        const [row] = rows.splice(index, 1);
+        lastMissionRemoval = { kind, index, row, label: row.name || row.title || row.label || 'entry' };
+
+        renderMissions();
+        scheduleSave();
+    }
+
+    function undoMissionRemoval() {
+        if (!lastMissionRemoval || !MISSION.active) return;
+
+        const { kind, index, row } = lastMissionRemoval;
+        missionRowLists(MISSION.active)[kind].splice(index, 0, row);
+        lastMissionRemoval = null;
+
+        renderMissions();
+        scheduleSave();
+    }
+
+    function updateMissionField(missionId, field, value) {
+        const mission = findMission(missionId);
+        if (!mission) return;
+        mission[field] = value;
+        scheduleSave();
+    }
+
+    function updateMissionRow(missionId, kind, rowId, field, value) {
+        const row = findMissionRow(missionId, kind, rowId);
+        if (!row) return;
+
+        if (field === 'count') row.count = Math.max(0, Math.trunc(Number(value) || 0));
+        else if (field === 'value') row.value = Number(value) || 0;
+        else if (field === 'completed') row.completed = value === true;
+        else row[field] = value;
+
+        updateMissionTotals();
+        scheduleSave();
+    }
+
+    // Toggled in place rather than through a re-render, so the control keeps focus.
+    function toggleObjective(missionId, rowId) {
+        const row = findMissionRow(missionId, 'objectives', rowId);
+        if (!row) return;
+
+        row.completed = !row.completed;
+
+        const btn = document.querySelector(`[data-row="${rowId}"] .mission-check`);
+        if (btn) {
+            btn.classList.toggle('done', row.completed);
+            btn.setAttribute('aria-pressed', String(row.completed));
+        }
+
+        updateMissionTotals();
+        scheduleSave();
+    }
+
+    function stepMissionCount(missionId, rowId, delta) {
+        const row = findMissionRow(missionId, 'kills', rowId);
+        if (!row) return;
+
+        row.count = Math.max(0, row.count + delta);
+        const field = document.querySelector(`[data-row="${rowId}"] [data-field="count"]`);
+        if (field) field.value = row.count;
+
+        updateMissionTotals();
+        scheduleSave();
+    }
+
+    function completeMission() {
+        const mission = MISSION.active;
+        if (!mission) return;
+
+        const totals = missionTotals(mission);
+        const name = mission.title.trim() || 'this mission';
+        const confirmed = confirm(
+            `Complete ${name} with a proposed total of ${totals.total} XP?\n\n` +
+            'The report moves to the mission history and stops accepting edits until you reopen it. ' +
+            'No XP is applied to your Ranger until you choose Apply XP.'
+        );
+        if (!confirmed) return;
+
+        mission.status = 'complete';
+        MISSION.history.unshift(mission);
+        MISSION.active = null;
+        lastMissionRemoval = null;
+
+        if (MISSION.history.length > MAX_MISSION_HISTORY) MISSION.history.length = MAX_MISSION_HISTORY;
+
+        renderMissions();
+        saveNow();
+
+        if (confirm('Mark every used Heroic Ability and Innate Spell as available again for the next scenario?')) {
+            restoreAllAbilities();
+        }
+    }
+
+    function restoreAllAbilities() {
+        ['heroic', 'innate'].forEach(type => {
+            slotGroups(type).forEach(group => setSlotUsed(group.dataset.slotId, false));
+        });
+        saveNow();
+    }
+
+    function reopenMission(missionId) {
+        if (MISSION.active) {
+            alert('Finish or complete the mission you already have open before reopening an older report.');
+            return;
+        }
+
+        const index = MISSION.history.findIndex(mission => mission.id === missionId);
+        if (index < 0) return;
+
+        const [mission] = MISSION.history.splice(index, 1);
+        mission.status = 'active';
+        MISSION.active = mission;
+
+        renderMissions();
+        scheduleSave();
+    }
+
+    // XP is never transferred silently; this is the only path from a report into the Ranger.
+    function applyMissionXp(missionId) {
+        const mission = findMission(missionId);
+        if (!mission) return;
+
+        const totals = missionTotals(mission);
+        const outstanding = totals.total - mission.appliedXp;
+        if (!outstanding) return;
+
+        const xpField = document.getElementById('char_xp');
+        const current = Number(xpField.value) || 0;
+        const name = mission.title.trim() || 'this mission';
+
+        const confirmed = confirm(
+            `Add ${outstanding} XP from ${name} to your Ranger?\n\n` +
+            `Experience goes from ${current} to ${current + outstanding}. You can still edit the field by hand afterwards.`
+        );
+        if (!confirmed) return;
+
+        xpField.value = current + outstanding;
+        mission.appliedXp = totals.total;
+
+        renderMissions();
+        saveNow();
+    }
+
+    function renderMissions() {
+        const block = document.getElementById('mission-block');
+        const active = MISSION.active;
+
+        const parts = [];
+
+        if (active) parts.push(renderActiveMission(active));
+        else parts.push(`
+            <div class="mission-empty">
+                <p>No mission is running. Start one to record kills, objectives and the experience they add up to.</p>
+                <button type="button" class="mission-primary" onclick="startMission()">Start a mission</button>
+            </div>
+        `);
+
+        if (MISSION.history.length) parts.push(renderMissionHistory());
+
+        block.innerHTML = parts.join('');
+        block.classList.toggle('is-empty', !active && !MISSION.history.length);
+        refreshEmptyMarkers();
+    }
+
+    function renderActiveMission(mission) {
+        const totals = missionTotals(mission);
+        const id = mission.id;
+
+        return `
+            <div class="mission-card" data-mission="${id}">
+                <div class="mission-head">
+                    <input type="text" id="mission_title" class="mission-title-input" placeholder="Mission title"
+                        value="${escapeHtml(mission.title)}" aria-label="Mission title"
+                        oninput="updateMissionField('${id}', 'title', this.value)">
+                    <div class="mission-head-meta">
+                        <label class="mission-inline"><span>Date</span>
+                            <input type="date" value="${escapeHtml(mission.date)}" aria-label="Mission date"
+                                onchange="updateMissionField('${id}', 'date', this.value)"></label>
+                        <label class="mission-inline"><span>Scenario</span>
+                            <input type="text" value="${escapeHtml(mission.scenario)}" placeholder="optional"
+                                aria-label="Scenario reference"
+                                oninput="updateMissionField('${id}', 'scenario', this.value)"></label>
+                    </div>
+                </div>
+
+                ${renderKills(mission)}
+                ${renderObjectives(mission)}
+                ${renderAdjustments(mission)}
+
+                <label class="mission-notes-label" for="mission_notes">Mission notes</label>
+                <textarea id="mission_notes" class="mission-notes" placeholder="What happened out there?"
+                    oninput="updateMissionField('${id}', 'notes', this.value)">${escapeHtml(mission.notes)}</textarea>
+
+                ${renderTotals(totals)}
+                ${renderUndoNotice()}
+
+                <div class="mission-actions">
+                    <button type="button" class="mission-primary" onclick="completeMission()">Complete Mission</button>
+                </div>
+                <p class="mission-note">Completing a mission only freezes the report. Experience is applied afterwards, and only when you say so.</p>
+            </div>
+        `;
+    }
+
+    function renderKills(mission) {
+        const id = mission.id;
+        const rows = mission.kills.map(row => `
+            <div class="mission-row" data-row="${row.id}">
+                <input type="text" class="mission-grow" placeholder="Enemy" value="${escapeHtml(row.name)}"
+                    aria-label="Enemy name" oninput="updateMissionRow('${id}', 'kills', '${row.id}', 'name', this.value)">
+                <div class="mission-count">
+                    <button type="button" class="mission-step" aria-label="One fewer ${escapeHtml(row.name || 'enemy')}"
+                        onclick="stepMissionCount('${id}', '${row.id}', -1)">−</button>
+                    <input type="number" data-field="count" value="${row.count}" min="0" aria-label="Number defeated"
+                        oninput="updateMissionRow('${id}', 'kills', '${row.id}', 'count', this.value)">
+                    <button type="button" class="mission-step" aria-label="One more ${escapeHtml(row.name || 'enemy')}"
+                        onclick="stepMissionCount('${id}', '${row.id}', 1)">+</button>
+                </div>
+                <input type="number" class="mission-value" value="${row.value}" aria-label="Experience each"
+                    oninput="updateMissionRow('${id}', 'kills', '${row.id}', 'value', this.value)">
+                <button type="button" class="mission-remove" aria-label="Remove ${escapeHtml(row.name || 'this enemy')}"
+                    onclick="removeMissionRow('kills', '${row.id}')">✕</button>
+            </div>
+        `).join('');
+
+        return `
+            <div class="mission-group">
+                <div class="mission-group-head"><h3>Kills</h3><span class="mission-hint">enemy · number · XP each</span></div>
+                ${rows || '<p class="mission-none">Nothing recorded yet.</p>'}
+                <button type="button" class="mission-add" onclick="addMissionRow('kills')">+ Add enemy</button>
+            </div>
+        `;
+    }
+
+    function renderObjectives(mission) {
+        const id = mission.id;
+        const rows = mission.objectives.map(row => `
+            <div class="mission-row" data-row="${row.id}">
+                <button type="button" class="mission-check${row.completed ? ' done' : ''}" aria-pressed="${row.completed}"
+                    aria-label="${escapeHtml(row.title || 'Objective')} completed"
+                    onclick="toggleObjective('${id}', '${row.id}')">✓</button>
+                <input type="text" class="mission-grow" placeholder="Objective" value="${escapeHtml(row.title)}"
+                    aria-label="Objective" oninput="updateMissionRow('${id}', 'objectives', '${row.id}', 'title', this.value)">
+                <select class="mission-type" aria-label="Objective type"
+                    onchange="updateMissionRow('${id}', 'objectives', '${row.id}', 'type', this.value)">
+                    ${OBJECTIVE_TYPES.map(type => `<option value="${type}"${type === row.type ? ' selected' : ''}>${type}</option>`).join('')}
+                </select>
+                <input type="number" class="mission-value" value="${row.value}" aria-label="Experience when completed"
+                    oninput="updateMissionRow('${id}', 'objectives', '${row.id}', 'value', this.value)">
+                <button type="button" class="mission-remove" aria-label="Remove ${escapeHtml(row.title || 'this objective')}"
+                    onclick="removeMissionRow('objectives', '${row.id}')">✕</button>
+            </div>
+        `).join('');
+
+        return `
+            <div class="mission-group">
+                <div class="mission-group-head"><h3>Objectives</h3><span class="mission-hint">only completed ones count</span></div>
+                ${rows || '<p class="mission-none">Nothing recorded yet.</p>'}
+                <button type="button" class="mission-add" onclick="addMissionRow('objectives')">+ Add objective</button>
+            </div>
+        `;
+    }
+
+    function renderAdjustments(mission) {
+        const id = mission.id;
+        const rows = mission.adjustments.map(row => `
+            <div class="mission-row" data-row="${row.id}">
+                <input type="text" class="mission-grow" placeholder="Reason" value="${escapeHtml(row.label)}"
+                    aria-label="Adjustment reason" oninput="updateMissionRow('${id}', 'adjustments', '${row.id}', 'label', this.value)">
+                <input type="number" class="mission-value" value="${row.value}" aria-label="Experience change"
+                    oninput="updateMissionRow('${id}', 'adjustments', '${row.id}', 'value', this.value)">
+                <button type="button" class="mission-remove" aria-label="Remove ${escapeHtml(row.label || 'this adjustment')}"
+                    onclick="removeMissionRow('adjustments', '${row.id}')">✕</button>
+            </div>
+        `).join('');
+
+        return `
+            <div class="mission-group">
+                <div class="mission-group-head"><h3>Adjustments</h3><span class="mission-hint">bonuses or penalties, negative allowed</span></div>
+                ${rows || '<p class="mission-none">Nothing recorded yet.</p>'}
+                <button type="button" class="mission-add" onclick="addMissionRow('adjustments')">+ Add adjustment</button>
+            </div>
+        `;
+    }
+
+    /*
+       Deliberately not a live region: the total changes on every keystroke in the fields next to
+       it, and announcing each intermediate value would talk over the user.
+    */
+    function renderTotals(totals) {
+        return `
+            <div class="mission-total">
+                <span>Kills ${totals.kills}</span>
+                <span>Objectives ${totals.objectives}</span>
+                <span>Adjustments ${totals.adjustments}</span>
+                <strong>Proposed total ${totals.total} XP</strong>
+            </div>
+        `;
+    }
+
+    function renderUndoNotice() {
+        if (!lastMissionRemoval) return '';
+        return `
+            <div class="mission-undo" role="status">
+                <span>Removed “${escapeHtml(lastMissionRemoval.label)}”.</span>
+                <button type="button" onclick="undoMissionRemoval()">Undo</button>
+            </div>
+        `;
+    }
+
+    function renderMissionHistory() {
+        const cards = MISSION.history.map(mission => {
+            const totals = missionTotals(mission);
+            const outstanding = totals.total - mission.appliedXp;
+
+            return `
+                <div class="mission-card past" data-mission="${mission.id}">
+                    <div class="mission-past-head">
+                        <strong>${escapeHtml(mission.title.trim() || 'Untitled mission')}</strong>
+                        <span>${escapeHtml(mission.date)}${mission.scenario ? ' · ' + escapeHtml(mission.scenario) : ''}</span>
+                    </div>
+                    <div class="mission-past-summary">
+                        <span>${mission.kills.reduce((sum, row) => sum + row.count, 0)} kills</span>
+                        <span>${mission.objectives.filter(row => row.completed).length} of ${mission.objectives.length} objectives</span>
+                        <strong>${totals.total} XP</strong>
+                        ${mission.appliedXp ? `<span class="mission-applied">${mission.appliedXp} applied</span>` : ''}
+                    </div>
+                    ${mission.notes ? `<p class="mission-past-notes">${escapeHtml(mission.notes)}</p>` : ''}
+                    <div class="mission-actions">
+                        ${outstanding
+                            ? `<button type="button" class="mission-primary" onclick="applyMissionXp('${mission.id}')">Apply ${outstanding} XP to Ranger</button>`
+                            : '<span class="mission-note">Experience already applied.</span>'}
+                        <button type="button" class="mission-secondary setup-only" onclick="reopenMission('${mission.id}')">Reopen to correct</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `<div class="mission-history"><h3>Mission history</h3>${cards}</div>`;
+    }
+
+    function updateMissionTotals() {
+        const mission = MISSION.active;
+        const holder = document.querySelector('.mission-card .mission-total');
+        if (!mission || !holder) return;
+        holder.outerHTML = renderTotals(missionTotals(mission));
+    }
+
+    function normalizeText(value, label) {
+        if (value === undefined || value === null) return '';
+        if (typeof value === 'string') return value;
+        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+        throw new Error(`${label} is not a text value.`);
+    }
+
+    function normalizeNumber(value, label) {
+        if (value === undefined || value === null || value === '') return 0;
+        const number = Number(value);
+        if (!Number.isFinite(number)) throw new Error(`${label} is not a number.`);
+        return number;
+    }
+
+    function normalizeCount(value, label) {
+        const number = Math.trunc(normalizeNumber(value, label));
+        if (number < 0 || number > 9999) throw new Error(`${label} is outside the supported range.`);
+        return number;
+    }
+
+    function normalizeRows(raw, label, mapper) {
+        if (raw === undefined || raw === null) return [];
+        if (!Array.isArray(raw)) throw new Error(`${label} must be stored as a list.`);
+        if (raw.length > MAX_MISSION_ROWS) throw new Error(`${label} hold more than ${MAX_MISSION_ROWS} entries.`);
+        return raw.map((entry, index) => {
+            if (!isPlainObject(entry)) throw new Error(`${label} contain an entry that is not a record.`);
+            return mapper(entry, index);
+        });
+    }
+
+    function normalizeMission(raw, label) {
+        if (!isPlainObject(raw)) throw new Error(`${label} is not a record.`);
+
+        return {
+            id: typeof raw.id === 'string' && raw.id ? raw.id : newMissionId(),
+            title: normalizeText(raw.title, `${label} title`),
+            date: normalizeText(raw.date, `${label} date`),
+            scenario: normalizeText(raw.scenario, `${label} scenario`),
+            notes: normalizeText(raw.notes, `${label} notes`),
+            status: raw.status === 'complete' ? 'complete' : 'active',
+            appliedXp: normalizeNumber(raw.appliedXp, `${label} applied XP`),
+            kills: normalizeRows(raw.kills, `${label} kills`, entry => ({
+                id: typeof entry.id === 'string' && entry.id ? entry.id : newMissionId(),
+                name: normalizeText(entry.name, 'A kill name'),
+                count: normalizeCount(entry.count, 'A kill count'),
+                value: normalizeNumber(entry.value, 'A kill value')
+            })),
+            objectives: normalizeRows(raw.objectives, `${label} objectives`, entry => ({
+                id: typeof entry.id === 'string' && entry.id ? entry.id : newMissionId(),
+                title: normalizeText(entry.title, 'An objective title'),
+                type: OBJECTIVE_TYPES.includes(entry.type) ? entry.type : 'custom',
+                completed: entry.completed === true,
+                value: normalizeNumber(entry.value, 'An objective value')
+            })),
+            adjustments: normalizeRows(raw.adjustments, `${label} adjustments`, entry => ({
+                id: typeof entry.id === 'string' && entry.id ? entry.id : newMissionId(),
+                label: normalizeText(entry.label, 'An adjustment reason'),
+                value: normalizeNumber(entry.value, 'An adjustment value')
+            }))
+        };
+    }
+
+    function normalizeMissionHistory(raw) {
+        if (raw === undefined || raw === null) return [];
+        if (!Array.isArray(raw)) throw new Error('The mission history must be stored as a list.');
+        if (raw.length > MAX_MISSION_HISTORY) throw new Error(`The mission history holds more than ${MAX_MISSION_HISTORY} missions.`);
+        return raw.map((entry, index) => {
+            const mission = normalizeMission(entry, `Mission ${index + 1}`);
+            mission.status = 'complete';   // anything in the history is finished by definition
+            return mission;
+        });
+    }
+
     // Returns a fully validated document plus non-blocking notes. Throws if the data cannot be trusted at all.
     function normalizeDocument(parsed) {
         if (!isPlainObject(parsed)) throw new Error('The character data is not a JSON object.');
@@ -1806,7 +2431,13 @@
                     showInnateSection: !!(upgraded.uiState && upgraded.uiState.showInnateSection === true),
                     // An unknown or missing mode falls back to editing rather than rejecting the document.
                     mode: MODES.includes(upgraded.uiState && upgraded.uiState.mode) ? upgraded.uiState.mode : 'edit'
-                }
+                },
+                // Format 1 and older simply had no missions; there is nothing else to migrate.
+                activeMission: upgraded.activeMission === undefined || upgraded.activeMission === null
+                    ? null
+                    // A mission parked in this slot is by definition still running.
+                    : Object.assign(normalizeMission(upgraded.activeMission, 'The active mission'), { status: 'active' }),
+                missionHistory: normalizeMissionHistory(upgraded.missionHistory)
             },
             warnings: warnings,
             migratedFrom: version === FORMAT_VERSION ? null : version
@@ -1836,6 +2467,10 @@
         applySlots('innate', doc.character.innateSlots);
 
         for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, fields['it' + i] || '', true);
+
+        MISSION = { active: doc.activeMission, history: doc.missionHistory };
+        lastMissionRemoval = null;
+        renderMissions();
 
         setMode(doc.uiState.mode, false);
 
