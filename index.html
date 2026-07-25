@@ -1833,6 +1833,7 @@
     </div>
 
 <script src="persistence.js"></script>
+<script src="storage.js"></script>
 <script>
     // --- LIBRARIES ---
     const ABILITY_LIBRARY = {
@@ -2225,6 +2226,12 @@
         normalizeDocument,
         parseDocument
     } = PERSISTENCE;
+    const STORAGE = RangersStorage.create({
+        getStorage: () => localStorage,
+        characterKey: STORAGE_KEY,
+        recoveryKey: STORAGE_RECOVERY_KEY,
+        formatVersion: FORMAT_VERSION
+    });
     const SEARCHABLE_STATE = {};
     /*
        Missions are nested records rather than flat fields, so they live in a state object instead
@@ -2982,7 +2989,8 @@
             const nextHistory = updatedChangeHistory(CHANGE_HISTORY, changes);
 
             nextDocument.changeHistory = nextHistory;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(nextDocument));
+            const stored = STORAGE.writeDocument(nextDocument);
+            if (!stored.ok) throw stored.error;
             CHANGE_HISTORY = nextHistory;
             lastTrackedState = nextTrackedState;
             renderChangeHistory();
@@ -4419,59 +4427,44 @@
         applyDocument(createBlankDocument(), false);
     }
 
-    function preserveRecoveryCopy(raw, reason) {
-        try {
-            localStorage.setItem(STORAGE_RECOVERY_KEY, JSON.stringify({
-                capturedAt: new Date().toISOString(),
-                reason: reason instanceof Error ? reason.message : String(reason),
-                raw
-            }));
-            return true;
-        } catch (recoveryError) {
-            console.error('Could not preserve the recovery copy.', recoveryError);
-            return false;
-        }
-    }
-
     function load() {
-        let raw;
+        const stored = STORAGE.loadCharacter(parseDocument);
 
-        try {
-            raw = localStorage.getItem(STORAGE_KEY);
-        } catch (error) {
-            console.error('Browser storage is unavailable.', error);
+        if (stored.status === 'unavailable') {
+            console.error('Browser storage is unavailable.', stored.error);
             initializeBlankSheet();
             setSaveStatus('unsaved', 'Storage unavailable');
             alert('Browser storage is unavailable. You can use the sheet, but changes may not be saved.');
             return;
         }
 
-        if (!raw) {
+        if (stored.status === 'empty') {
             initializeBlankSheet();
             return;
         }
 
-        let result;
-
-        try {
-            result = parseDocument(raw);
-        } catch (error) {
-            console.error('Saved character data could not be loaded.', error);
-            const recoverySaved = preserveRecoveryCopy(raw, error);
+        if (stored.status === 'invalid') {
+            console.error('Saved character data could not be loaded.', stored.error);
+            if (!stored.recovery.ok) {
+                console.error('Could not preserve the recovery copy.', stored.recovery.error);
+            }
             initializeBlankSheet();
             setSaveStatus('unsaved', 'Recovery needed');
             alert(
-                `Saved character data could not be loaded, so a blank sheet was opened.\n\n${describeDataError(error)}\n\n` +
-                (recoverySaved
+                `Saved character data could not be loaded, so a blank sheet was opened.\n\n${describeDataError(stored.error)}\n\n` +
+                (stored.recovery.ok
                     ? 'The original data was preserved in a browser recovery copy. Do not use Obliterate if you still need it.'
                     : 'The original storage value was not deliberately removed.')
             );
             return;
         }
 
+        const result = stored.result;
         if (result.migratedFrom !== null) {
             console.info(`Migrated stored character data from format version ${result.migratedFrom} to ${FORMAT_VERSION}.`);
-            preserveRecoveryCopy(raw, `Backup taken before migrating format ${result.migratedFrom} to ${FORMAT_VERSION}.`);
+            if (stored.recovery && !stored.recovery.ok) {
+                console.error('Could not preserve the recovery copy.', stored.recovery.error);
+            }
         }
 
         result.warnings.forEach(warning => console.warn(warning));
@@ -4553,7 +4546,7 @@
         });
     }
 
-    window.onload = () => {
+    function initializeApp() {
         populateDropdowns();
         loadEnemyCatalog();
         initSearchables();
@@ -4566,7 +4559,13 @@
         });
         document.addEventListener('click', handleDocumentClick);
         hidePreviewPanel();
-    };
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
+    } else {
+        initializeApp();
+    }
 
     function downloadJSON() {
         saveNow();
@@ -4625,12 +4624,11 @@
         if (!confirmed) return;
 
         clearAllTemporaryEffects();
-        try {
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(STORAGE_RECOVERY_KEY);
+        const cleared = STORAGE.clearCharacterData();
+        if (cleared.ok) {
             location.reload();
-        } catch (error) {
-            console.error('Could not clear application data.', error);
+        } else {
+            console.error('Could not clear application data.', cleared.error);
             alert('The Ranger could not be removed from browser storage. Check this browser’s storage permissions.');
         }
     }

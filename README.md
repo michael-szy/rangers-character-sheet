@@ -46,7 +46,7 @@ Kurze visuelle Effekte bestätigen wichtige Spielaktionen: Eine Ability wird ver
 
 ## Technik
 
-Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. `index.html` enthält weiterhin Oberfläche und Anwendungslogik; `persistence.js` kapselt die reine Validierung, Migration und Normalisierung gespeicherter Charakterdaten. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
+Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. `index.html` enthält weiterhin Oberfläche und Anwendungslogik; `persistence.js` kapselt die reine Validierung, Migration und Normalisierung gespeicherter Charakterdaten, während `storage.js` ausschließlich das lokale Character-JSON und dessen Recovery-Kopie verwaltet. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
 
 Für die Browser-Regressionsprüfungen werden Node.js 22 oder neuer und ein Chromium-basierter Browser benötigt:
 

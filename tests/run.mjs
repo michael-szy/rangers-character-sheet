@@ -99,8 +99,8 @@ async function startStaticServer() {
         const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
         const file = pathname === '/' || pathname === '/index.html'
             ? join(projectRoot, 'index.html')
-            : pathname === '/persistence.js'
-                ? join(projectRoot, 'persistence.js')
+            : pathname === '/persistence.js' || pathname === '/storage.js'
+                ? join(projectRoot, pathname.slice(1))
                 : pathname.startsWith('/tests/fixtures/')
                     ? join(projectRoot, pathname.slice(1))
                     : null;
@@ -239,12 +239,29 @@ async function waitFor(client, expression, timeoutMs = 5000) {
         }
         await new Promise(resolveWait => setTimeout(resolveWait, 50));
     }
-    throw new Error(`Timed out waiting for: ${expression}`);
+    let diagnostic = '';
+    try {
+        const state = await client.evaluate(`({
+            readyState: document.readyState,
+            url: location.href,
+            formatType: typeof FORMAT_VERSION,
+            persistenceType: typeof RangersPersistence,
+            storageType: typeof RangersStorage
+        })`);
+        diagnostic = ` (${JSON.stringify(state)})`;
+    } catch {
+        diagnostic = ' (execution context unavailable)';
+    }
+    const latestException = client.events
+        .filter(event => event.method === 'Runtime.exceptionThrown')
+        .at(-1)?.params?.exceptionDetails?.exception?.description;
+    if (latestException) diagnostic += `\nLatest browser exception: ${latestException}`;
+    throw new Error(`Timed out waiting for: ${expression}${diagnostic}`);
 }
 
 async function freshBrowserState(client) {
     await client.evaluate('localStorage.clear(); sessionStorage.clear(); location.reload();');
-    await waitFor(client, `document.readyState === 'complete' && typeof FORMAT_VERSION !== 'undefined'`);
+    await waitFor(client, `document.readyState !== 'loading' && typeof FORMAT_VERSION !== 'undefined'`);
 }
 
 const fixtures = {};
@@ -311,13 +328,15 @@ let client;
 try {
     await waitForEndpoint(`${endpoint}/json/version`);
     client = await openCdp(endpoint, appUrl);
-    await waitFor(client, `document.readyState === 'complete' && typeof FORMAT_VERSION !== 'undefined'`);
+    await waitFor(client, `document.readyState !== 'loading' && typeof FORMAT_VERSION !== 'undefined'`);
 
     await suite('blank sheet and schema migrations', async () => {
         await freshBrowserState(client);
 
         equal(await client.evaluate(`typeof RangersPersistence.create`), 'function', 'persistence module loaded');
         equal(await client.evaluate(`Object.isFrozen(PERSISTENCE)`), true, 'configured persistence interface is immutable');
+        equal(await client.evaluate(`typeof RangersStorage.create`), 'function', 'storage module loaded');
+        equal(await client.evaluate(`Object.isFrozen(STORAGE)`), true, 'configured storage interface is immutable');
         equal(await client.evaluate('FORMAT_VERSION'), 5, 'current document format');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 5, 'default heroic slots');
         equal(await client.evaluate(`document.querySelectorAll('#innate-list .ability-group').length`), 4, 'default innate slots');
@@ -523,15 +542,79 @@ try {
     await suite('storage recovery and file import', async () => {
         await freshBrowserState(client);
 
+        const storageAdapter = await client.evaluate(`(() => {
+            const values = new Map();
+            const fakeStorage = {
+                getItem: key => values.has(key) ? values.get(key) : null,
+                setItem: (key, value) => values.set(key, value),
+                removeItem: key => values.delete(key)
+            };
+            const adapter = RangersStorage.create({
+                getStorage: () => fakeStorage,
+                characterKey: 'character',
+                recoveryKey: 'recovery',
+                formatVersion: 5,
+                now: () => new Date('2026-07-25T12:00:00.000Z')
+            });
+            const write = adapter.writeDocument({ formatVersion: 4, character: {} });
+            const loaded = adapter.loadCharacter(raw => ({
+                migratedFrom: JSON.parse(raw).formatVersion,
+                document: {}
+            }));
+            const recovery = JSON.parse(values.get('recovery'));
+            const cleared = adapter.clearCharacterData();
+            return {
+                frozen: Object.isFrozen(adapter),
+                writeOk: write.ok,
+                raw: write.raw,
+                loadStatus: loaded.status,
+                migratedFrom: loaded.result.migratedFrom,
+                recoveryCapturedAt: recovery.capturedAt,
+                recoveryReason: recovery.reason,
+                recoveryRaw: recovery.raw,
+                clearOk: cleared.ok,
+                remaining: values.size
+            };
+        })()`);
+        equal(storageAdapter.frozen, true, 'standalone storage adapter is immutable');
+        equal(storageAdapter.writeOk, true, 'storage adapter serializes document');
+        equal(storageAdapter.raw, '{"formatVersion":4,"character":{}}', 'storage adapter returns stored JSON');
+        equal(storageAdapter.loadStatus, 'loaded', 'storage adapter returns loaded outcome');
+        equal(storageAdapter.migratedFrom, 4, 'storage adapter preserves parser result');
+        equal(storageAdapter.recoveryCapturedAt, '2026-07-25T12:00:00.000Z', 'migration recovery captures time');
+        equal(storageAdapter.recoveryReason, 'Backup taken before migrating format 4 to 5.', 'migration recovery explains reason');
+        equal(storageAdapter.recoveryRaw, storageAdapter.raw, 'migration recovery preserves exact raw JSON');
+        equal(storageAdapter.clearOk, true, 'storage adapter clears owned keys');
+        equal(storageAdapter.remaining, 0, 'storage adapter leaves fake store empty');
+
+        const unavailableStorage = await client.evaluate(`(() => {
+            const adapter = RangersStorage.create({
+                getStorage: () => { throw new Error('Blocked'); },
+                characterKey: 'character',
+                recoveryKey: 'recovery',
+                formatVersion: 5
+            });
+            return {
+                read: adapter.readRaw().ok,
+                write: adapter.writeDocument({}).ok,
+                clear: adapter.clearCharacterData().ok,
+                load: adapter.loadCharacter(() => ({})).status
+            };
+        })()`);
+        equal(unavailableStorage.read, false, 'blocked storage read returns failure outcome');
+        equal(unavailableStorage.write, false, 'blocked storage write returns failure outcome');
+        equal(unavailableStorage.clear, false, 'blocked storage clear returns failure outcome');
+        equal(unavailableStorage.load, 'unavailable', 'blocked storage load is classified');
+
         await client.evaluate(`localStorage.setItem(STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['format-0-legacy']))}); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === 'Legacy Ranger'`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('char_name').value === 'Legacy Ranger'`);
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 5, 'stored legacy data upgraded');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_RECOVERY_KEY)).raw.length > 0`), true, 'pre-migration recovery stored');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 6, 'migrated slot count applied');
         equal(await client.evaluate(`document.querySelector('#abilities-list .numbered-row').classList.contains('used')`), true, 'migrated used state applied');
 
         await client.evaluate(`localStorage.setItem(STORAGE_KEY, '{broken'); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === ''`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`document.getElementById('save_status').textContent`), 'Recovery needed', 'corrupt storage status');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_RECOVERY_KEY)).raw`), '{broken', 'corrupt raw data preserved');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), '{broken', 'corrupt primary data not silently removed');
@@ -570,7 +653,7 @@ try {
         equal(await client.evaluate(`document.getElementById('char_name').value`), 'Format One', 'invalid history import leaves sheet unchanged');
 
         await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setTemporaryEffects('s_fig', 3, 2); window.confirm = () => true; clearSheet();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === ''`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`localStorage.getItem('unrelated_test_key')`), 'keep', 'obliterate keeps unrelated storage');
         equal(await client.evaluate(`localStorage.getItem(ENEMY_CATALOG_STORAGE_KEY) !== null`), true, 'obliterate keeps catalog');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), null, 'obliterate removes character');
@@ -718,7 +801,7 @@ try {
 
         equal(await client.evaluate(`collectDocument().changeHistory.length`), 1, 'history included in collected export document');
         await client.evaluate(`location.reload()`);
-        await waitFor(client, `document.readyState === 'complete' && CHANGE_HISTORY.length === 1`);
+        await waitFor(client, `document.readyState !== 'loading' && CHANGE_HISTORY.length === 1`);
         equal(await client.evaluate(`CHANGE_HISTORY[0].changes.find(change => change.path.endsWith('.count')).after`), '3', 'history survives reload');
         equal(await client.evaluate(`document.getElementById('history_count').textContent`), '1', 'history count survives reload');
 
@@ -867,7 +950,7 @@ try {
         equal(await client.evaluate(`document.getElementById('it1').value`), 'Bow', 'Escape keeps hidden value');
 
         await client.evaluate(`saveNow(); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('it1').value === 'Bow'`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('it1').value === 'Bow'`);
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 8, 'added slots survive reload');
         equal(await client.evaluate(`document.getElementById('it1_search').value`), 'Bow', 'searchable selection survives reload');
     });
@@ -1097,7 +1180,7 @@ try {
         equal(await client.evaluate(`JSON.stringify(collectDocument().character.conditions)`), '{"poisoned":true,"diseased":true,"hungerThirst":2}', 'conditions enter the character document');
 
         await client.evaluate(`saveNow(); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && CONDITIONS.poisoned && CONDITIONS.hungerThirst === 2`);
+        await waitFor(client, `document.readyState !== 'loading' && CONDITIONS.poisoned && CONDITIONS.hungerThirst === 2`);
         equal(await client.evaluate(`currentMode()`), 'play', 'condition reload preserves play mode');
         equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 3, 'conditions survive reload');
 
@@ -1131,7 +1214,7 @@ try {
         equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), true, 'mode switch preserves collapsed state');
 
         await client.evaluate(`saveNow(); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('mission_section_content').hidden`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('mission_section_content').hidden`);
         equal(await client.evaluate(`currentMode()`), 'play', 'collapsed Mission section reload keeps mode');
         equal(await client.evaluate(`MISSION.active.title`), 'Collapsed patrol', 'collapsed mission survives reload');
 
@@ -1216,7 +1299,7 @@ try {
         equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'effect control remains visible in play mode');
 
         await client.evaluate(`saveNow(); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_fig_effective').textContent === '5'`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('s_fig_effective').textContent === '5'`);
         equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '10', 'multiple effects survive an accidental reload');
         equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'reload still preserves base Fight');
         equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'reload still preserves base Armour');
@@ -1258,13 +1341,13 @@ try {
         equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'Clear all never changes base Armour');
 
         await client.evaluate(`sessionStorage.setItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY, '{"s_fig":4,"s_arm":2}'); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_fig_effective').textContent === '7'`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('s_fig_effective').textContent === '7'`);
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_fig.buff`), 4, 'legacy Ally record migrates to buff effects');
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_fig.debuff`), 0, 'legacy Ally record gains zero debuff');
         equal(await client.evaluate(`sessionStorage.getItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY)`), null, 'legacy Ally key removed after migration');
 
         await client.evaluate(`clearAllTemporaryEffects(); sessionStorage.setItem(LEGACY_ROUND_ARMOR_STORAGE_KEY, '2'); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_arm_effective').textContent === '14'`);
+        await waitFor(client, `document.readyState !== 'loading' && document.getElementById('s_arm_effective').textContent === '14'`);
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_arm.buff`), 2, 'legacy Armour bonus migrates to buff effect');
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_arm.debuff`), 0, 'legacy Armour bonus gains zero debuff');
         equal(await client.evaluate(`sessionStorage.getItem(LEGACY_ROUND_ARMOR_STORAGE_KEY)`), null, 'legacy Armour key removed after migration');
