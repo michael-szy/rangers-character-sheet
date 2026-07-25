@@ -72,6 +72,10 @@
         font-family: var(--body-font); transition: all 0.3s ease;
     }
     input:focus, select:focus { border-color: var(--accent-teal); box-shadow: 0 0 8px var(--accent-teal-glow); outline: none; }
+    button:focus-visible, .footer-action:focus-visible, select:focus-visible {
+        outline: 2px solid var(--accent-teal);
+        outline-offset: 2px;
+    }
 
     /* Archetype Section */
     .archetype-section { margin-top: 15px; border: 1px solid var(--border-col); border-radius: 8px; padding: 10px; background: rgba(0,0,0,0.2); }
@@ -92,7 +96,8 @@
         background: radial-gradient(circle, #2ecc71 0%, #16e0bd 100%); cursor: pointer;
         box-shadow: 0 0 10px var(--accent-teal-glow); transition: all 0.4s ease; flex-shrink: 0;
     }
-    .ability-toggle.used { background: #2a2e35; border-color: #555; box-shadow: none; transform: scale(0.8); }
+    /* toggleUse() marks the row, so the dot has to be selected through it. */
+    .numbered-row.used .ability-toggle { background: #2a2e35; border-color: #555; box-shadow: none; transform: scale(0.8); }
     .numbered-row.used .search-select-input { text-decoration: line-through; opacity: 0.3; filter: grayscale(1); }
     .row-number { color: var(--accent-teal); font-family: var(--fantasy-font); font-weight: bold; width: 25px; text-align: center; }
     .ability-desc {
@@ -114,8 +119,8 @@
         font-size: 1.1em; color: var(--accent-teal); transition: all 0.3s ease;
         font-family: var(--fantasy-font); font-weight: bold;
     }
-    .info-toggle:hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
     .info-toggle.active { background: var(--accent-teal); color: #000; }
+    .info-toggle:active { background: rgba(22, 224, 189, 0.28); transform: scale(0.94); }
     .top-utility {
         display: flex;
         justify-content: flex-end;
@@ -177,10 +182,10 @@
         border-bottom: 1px solid rgba(255,255,255,0.05);
     }
     .search-option:last-child { border-bottom: none; }
-    .search-option:hover,
     .search-option.active {
         background: rgba(22, 224, 189, 0.12);
     }
+    .search-option:active { background: rgba(22, 224, 189, 0.22); }
     .search-option-title {
         color: #fff;
         font-size: 0.95em;
@@ -263,7 +268,7 @@
         margin-top: 12px;
     }
 
-    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 40px; }
     .skill-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .skill-name { font-size: 0.95em; color: #cbd5e0; }
     .skill-input { width: 60px !important; text-align: center; font-weight: bold; color: var(--accent-teal); font-size: 1.1em; padding: 5px; }
@@ -293,13 +298,26 @@
         font-weight: bold; transition: all 0.3s;
         min-height: 48px;
     }
-    button:hover, .footer-action:hover { background: var(--accent-teal); color: #000; }
+    button:active, .footer-action:active { background: var(--accent-teal); color: #000; transform: scale(0.98); }
+
+    /*
+       Tablet: a layout of its own instead of a compressed desktop one. The cut sits at 900px
+       because .sheet-container caps there — above it every viewport shows the same 850px of
+       content, below it the two 40px-gapped columns would leave an ability row (about 150px of
+       toggle, numeral, info and remove controls) too little room for the ability name itself.
+    */
+    @media (max-width: 899px) {
+        body { padding: 16px 10px 24px; }
+        .sheet-container { padding: 20px 16px; }
+        h1 { font-size: 1.9em; letter-spacing: 3px; margin-bottom: 16px; }
+        .main-grid { grid-template-columns: 1fr; }
+        .grid-8 { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .section-header { margin-top: 20px; }
+    }
 
     @media (max-width: 768px) {
         body { padding: 14px 8px 20px; }
         .sheet-container { padding: 18px 14px; }
-        .main-grid { grid-template-columns: 1fr; }
-        .grid-8 { grid-template-columns: repeat(4, 1fr); }
         .grid-top { grid-template-columns: 1fr; }
         .numbered-row { gap: 8px; align-items: flex-start; }
         .row-number { width: 20px; padding-top: 11px; }
@@ -316,20 +334,52 @@
         text-transform: uppercase; font-size: 0.8em; letter-spacing: 1px;
         min-height: auto; display: block; box-sizing: border-box;
     }
-    .add-slot-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(22, 224, 189, 0.05); }
+    .add-slot-btn:active { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(22, 224, 189, 0.08); }
     .remove-slot-btn {
         background: transparent; border: none; color: #555; font-size: 1.1em; cursor: pointer;
         padding: 0 4px; line-height: 1; transition: color 0.2s;
         flex-shrink: 0; align-self: center;
     }
-    .remove-slot-btn:hover { color: var(--danger-red); }
+    .remove-slot-btn:active { color: var(--danger-red); }
 
-    /* --- Mobile number stepper --- */
-    .num-stepper {
-        display: contents; /* transparent wrapper by default */
+    /* Hover decoration only where a real hover pointer exists; taps must not leave it stuck. */
+    @media (hover: hover) {
+        .info-toggle:hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
+        .search-option:hover { background: rgba(22, 224, 189, 0.12); }
+        button:hover, .footer-action:hover { background: var(--accent-teal); color: #000; }
+        .add-slot-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(22, 224, 189, 0.05); }
+        .remove-slot-btn:hover { color: var(--danger-red); }
     }
-    /* Only show stepper buttons on touch/coarse-pointer devices (tablets, phones) */
-    @media (pointer: coarse) {
+
+    /* --- Number stepper --- */
+    .num-stepper {
+        display: contents; /* transparent wrapper: only the input participates */
+    }
+    .stepper-btn { display: none; }
+
+    /*
+       Touch pass. Keyed on the device having a coarse pointer at all, not on width and not on
+       the primary pointer, so convertibles and touchscreen laptops get usable targets without a
+       reload. Everything here must stay after the base rules to win on source order.
+    */
+    @media (any-pointer: coarse) {
+        .search-select-input { min-height: 48px; font-size: 16px; } /* 16px keeps iOS from zooming in */
+        .info-toggle { width: 44px; height: 44px; }
+        .archetype-btn { min-height: 44px; padding: 8px 16px; }
+        .add-slot-btn { min-height: 44px; }
+        /*
+           Full height, but only ~38px wide: a 44px-wide remove control would eat the ability
+           name field on a phone, and widening its hit area with a pseudo-element would overlap
+           the neighbouring info toggle — a bad trade for a destructive control.
+        */
+        .remove-slot-btn { min-height: 44px; padding: 0 12px; }
+
+        /* The dot keeps its small look; the tappable area around it grows to 44px. */
+        .ability-toggle { position: relative; }
+        .ability-toggle::after { content: ''; position: absolute; inset: -11px; border-radius: 50%; }
+        /* A used dot is scaled to 0.8, which would shrink its hit area with it — widen to compensate. */
+        .numbered-row.used .ability-toggle::after { inset: -17px; }
+
         .num-stepper {
             display: flex;
             align-items: center;
@@ -390,42 +440,47 @@
         }
         .stat-box .stepper-btn {
             width: 100%;
-            height: 26px;
-            min-height: 26px;
-            font-size: 1em;
+            height: 34px;
+            min-height: 34px;
+            font-size: 1.1em;
         }
         .stat-box .num-stepper input[type=number] {
             height: 40px;
             width: 100%;
         }
-        /* Skill-row layout: inline, compact */
+        /*
+           Skill-row layout: inline and deliberately below 44px. There are 15 of them, they are
+           set during character creation rather than during play, and full-size targets here would
+           add roughly a screen of height to the sheet.
+        */
         .skill-row .num-stepper {
-            gap: 3px;
+            gap: 4px;
             width: auto;
         }
         .skill-row .stepper-btn {
-            width: 30px;
-            height: 30px;
-            min-height: 30px;
+            width: 36px;
+            height: 36px;
+            min-height: 36px;
             font-size: 1.1em;
         }
         .skill-row .num-stepper input[type=number] {
-            width: 44px;
+            width: 48px;
+            height: 36px;
         }
         /* grid-top (Level/XP): inline row layout, overrides vertical stat-box */
         .grid-top .stat-box .num-stepper {
             flex-direction: row;
-            gap: 4px;
+            gap: 6px;
             align-items: center;
         }
         .grid-top .stat-box .stepper-btn {
-            width: 28px;
-            height: 28px;
-            min-height: 28px;
-            font-size: 1.1em;
+            width: 40px;
+            height: 40px;
+            min-height: 40px;
+            font-size: 1.2em;
         }
         .grid-top .stat-box .num-stepper input[type=number] {
-            height: 36px;
+            height: 44px;
             flex: 1;
         }
     }
@@ -1663,11 +1718,10 @@
         });
     }
 
-    // --- Mobile stepper buttons for number inputs ---
+    // --- Stepper buttons for number inputs ---
+    // Always built; CSS decides whether they are shown, so switching between mouse and touch
+    // on a convertible does not need a reload.
     function initNumberSteppers() {
-        // Only activate on coarse-pointer (touch) devices
-        if (!window.matchMedia('(pointer: coarse)').matches) return;
-
         document.querySelectorAll('input[type=number]').forEach(input => {
             // Avoid double-wrapping
             if (input.closest('.num-stepper')) return;
