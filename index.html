@@ -128,7 +128,7 @@
     .info-toggle:disabled { opacity: 0.3; cursor: default; }
     .top-utility {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
         margin-bottom: 12px;
     }
@@ -331,6 +331,95 @@
     }
     .remove-slot-btn:active { color: var(--danger-red); }
 
+    /* --- Play mode ---
+       One DOM, two presentations. Play mode removes what is never touched mid-scenario; it
+       deliberately does not lock anything, so a correction at the table stays one tap away.
+    */
+    .mode-switch {
+        display: inline-flex;
+        border: 1px solid var(--border-col);
+        border-radius: 999px;
+        overflow: hidden;
+    }
+    .mode-btn {
+        min-height: 34px; padding: 6px 16px; border: none; border-radius: 0;
+        background: transparent; color: #91a0b0;
+        font-family: var(--fantasy-font); font-weight: bold; font-size: 0.72em;
+        text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .mode-btn.active { background: var(--accent-teal); color: #000; }
+
+    .play-only { display: none; }
+    [data-mode="play"] .play-only { display: block; }
+    .archetype-name {
+        font-family: var(--fantasy-font);
+        font-size: 1.15em;
+        color: var(--accent-teal);
+        padding: 4px 0 2px;
+    }
+    .untrained-btn {
+        min-height: 34px; padding: 4px 12px; margin: 8px 0 4px;
+        border: 1px dashed #555; border-radius: 6px;
+        background: transparent; color: #91a0b0;
+        font-family: var(--fantasy-font); font-size: 0.72em;
+        text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    /*
+       Untrained skills are hidden by default but stay one tap away: a scenario can call for any
+       skill roll, and a +0 is real information rather than a missing row.
+    */
+    [data-mode="play"] #skills-block:not(.show-untrained) .skill-row.is-empty { display: none; }
+
+    /*
+       Only Current Health keeps its steppers during play. The other values do not change inside a
+       scenario, and a row of large +/- targets next to Health invites the wrong tap. Typing into
+       the field still works, so nothing is locked.
+    */
+    [data-mode="play"] .stepper-btn { display: none; }
+
+    /*
+       Skills are deliberately absent here: their rows are governed by the disclosure below, and
+       the block itself always stays visible so the disclosure is reachable even when no skill is
+       trained. `#skills-block.is-empty` therefore only feeds the empty-sheet hint.
+    */
+    [data-mode="play"] .setup-only,
+    [data-mode="play"] .archetype-section.is-empty,
+    [data-mode="play"] .ability-group.is-empty,
+    [data-mode="play"] .equipment-group.is-empty,
+    [data-mode="play"] #abilities-block.is-empty,
+    [data-mode="play"] #equipment-block.is-empty,
+    [data-mode="play"] #innate-container.is-empty { display: none; }
+
+    /* Play mode can legitimately hide everything, so say why instead of showing a bare page. */
+    .play-hint {
+        display: none;
+        margin: 24px 0 0;
+        padding: 14px 16px;
+        border: 1px dashed var(--border-col);
+        border-radius: 8px;
+        color: #91a0b0;
+        font-size: 0.9em;
+        line-height: 1.5;
+    }
+    .play-hint strong { color: var(--accent-teal); }
+    body[data-mode="play"].play-empty .play-hint { display: block; }
+
+    [data-mode="play"] h1 { font-size: 1.5em; letter-spacing: 3px; margin-bottom: 14px; }
+    [data-mode="play"] .grid-top { grid-template-columns: 2fr 1fr; }
+
+    /* Current Health is the most-touched control, so it leads on a full-width row of its own. */
+    [data-mode="play"] .grid-8 { display: flex; flex-wrap: wrap; gap: 10px; }
+    /*
+       Fixed basis rather than grow, so a partly filled second row keeps the column widths.
+       Leave a few pixels of slack: a basis that adds up to exactly 100% wraps to three per row
+       as soon as sub-pixel rounding goes the wrong way.
+    */
+    [data-mode="play"] .grid-8 .stat-box { flex: 0 1 calc(25% - 9px); box-sizing: border-box; }
+    [data-mode="play"] .grid-8 .current-hp { flex-basis: 100%; }
+    [data-mode="play"] .current-hp input { font-size: 2.4em; height: 56px; }
+    [data-mode="play"] .current-hp .stat-label { font-size: 1em; }
+
     /* Hover decoration only where a real hover pointer exists; taps must not leave it stuck. */
     @media (hover: hover) {
         .info-toggle:not(:disabled):hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
@@ -356,6 +445,10 @@
         .info-toggle { width: 44px; height: 44px; }
         .archetype-btn { min-height: 44px; padding: 8px 16px; }
         .add-slot-btn { min-height: 44px; }
+        .mode-btn { min-height: 44px; padding: 6px 20px; }
+        .untrained-btn { min-height: 44px; }
+        /* The one stepper play mode keeps. */
+        [data-mode="play"] .current-hp .stepper-btn { display: flex; }
         /*
            Full height, but only ~38px wide: a 44px-wide remove control would eat the ability
            name field on a phone, and widening its hit area with a pseudo-element would overlap
@@ -475,23 +568,25 @@
     }
 </style>
 </head>
-<body>
+<body data-mode="edit">
 
     <h1>Ranger Sheet</h1>
 
-    <div class="sheet-container">
+    <div class="sheet-container" id="sheet">
         <div class="top-utility">
+            <div class="mode-switch" role="group" aria-label="Sheet mode"><button type="button" id="mode_edit" class="mode-btn active" aria-pressed="true" onclick="setMode('edit')">Edit</button><button type="button" id="mode_play" class="mode-btn" aria-pressed="false" onclick="setMode('play')">Play</button></div>
             <div id="save_status" class="save-status saved" role="status">Saved</div>
         </div>
         <div class="grid-top">
             <div class="stat-box"><div class="stat-label">Ranger Name</div><input type="text" id="char_name" class="save-field" placeholder="Name the legend walking into the wilds"></div>
             <div class="stat-box"><div class="stat-label">Level</div><input type="number" id="char_lvl" class="save-field"></div>
-            <div class="stat-box"><div class="stat-label">Experience</div><input type="number" id="char_xp" class="save-field"></div>
+            <div class="stat-box setup-only"><div class="stat-label">Experience</div><input type="number" id="char_xp" class="save-field"></div>
         </div>
 
         <div class="archetype-section">
-            <label class="stat-label">Archetype</label>
-            <select id="char_arch" class="save-field" onchange="updateArchetype()">
+            <label class="stat-label setup-only">Archetype</label>
+                <div id="arch_name_play" class="play-only archetype-name"></div>
+            <select id="char_arch" class="save-field setup-only" onchange="updateArchetype()">
                 </select>
             <div id="arch_toggle_container" style="display:none;">
                 <button type="button" class="archetype-btn" id="arch_btn" aria-expanded="false" aria-controls="arch_details" onclick="toggleArchDetails()">Show Archetype Details</button>
@@ -499,7 +594,7 @@
             </div>
         </div>
 
-        <div class="grid-8">
+        <div class="grid-8" id="stat-grid">
             <div class="stat-box"><div class="stat-label">Mov</div><input type="number" id="s_mov" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Fig</div><input type="number" id="s_fig" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Sho</div><input type="number" id="s_sho" class="save-field"></div>
@@ -511,14 +606,15 @@
         </div>
 
         <div id="innate-container" style="margin-top: 25px;">
-            <button type="button" class="add-slot-btn" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" aria-expanded="false" aria-controls="innate-section" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
+            <button type="button" class="add-slot-btn setup-only" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" aria-expanded="false" aria-controls="innate-section" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
             <div id="innate-section" style="display: none;">
                 <div class="section-header" style="margin-top: 0;">Innate Spells & Abilities</div>
                 <div id="innate-list"></div>
-                <button type="button" class="add-slot-btn" onclick="addInnateSlot()">+ Add Innate Slot</button>
+                <button type="button" class="add-slot-btn setup-only" onclick="addInnateSlot()">+ Add Innate Slot</button>
             </div>
         </div>
 
+        <p class="play-hint">This Ranger has no abilities, equipment or skills recorded yet. Switch to <strong>Edit</strong> to set them up — nothing has been lost.</p>
         <div class="preview-panel" id="selection_preview">
             <div class="preview-label">Selection Preview</div>
             <div id="preview_title" class="preview-title">No selection focused</div>
@@ -529,16 +625,20 @@
 
         <div class="main-grid">
             <div>
+                <div id="abilities-block">
                 <div class="section-header">Heroic Abilities & Spells</div>
                 <div id="abilities-list"></div>
-                <button type="button" class="add-slot-btn" onclick="addHeroicSlot()">+ Add Ability Slot</button>
+                <button type="button" class="add-slot-btn setup-only" onclick="addHeroicSlot()">+ Add Ability Slot</button>
 
+                </div>
+                <div id="equipment-block">
                 <div class="section-header">Equipment</div>
                 <div class="equipment-group">
                     <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">1</span><div class="search-select" id="it1_box" onclick="activatePreview('it1')"><input type="text" id="it1_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it1_menu" aria-autocomplete="list" aria-label="Equipment Slot 1" oninput="handleSearchInput('it1')" onfocus="handleSearchFocus('it1')" onkeydown="handleSearchKeydown(event, 'it1')" onblur="handleSearchBlur('it1')"><div id="it1_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it1" aria-expanded="false" aria-controls="desc_it1" aria-label="Rule text for Equipment Slot 1" disabled onclick="toggleDescVisibility('it1', this)">ℹ</button></div>
                     <div id="meta_it1" class="selection-meta"></div>
                     <div id="desc_it1" class="ability-desc"></div>
                     <input type="hidden" id="it1" class="save-field">
+                </div>
                 </div>
                 <div class="equipment-group">
                     <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">2</span><div class="search-select" id="it2_box" onclick="activatePreview('it2')"><input type="text" id="it2_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it2_menu" aria-autocomplete="list" aria-label="Equipment Slot 2" oninput="handleSearchInput('it2')" onfocus="handleSearchFocus('it2')" onkeydown="handleSearchKeydown(event, 'it2')" onblur="handleSearchBlur('it2')"><div id="it2_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it2" aria-expanded="false" aria-controls="desc_it2" aria-label="Rule text for Equipment Slot 2" disabled onclick="toggleDescVisibility('it2', this)">ℹ</button></div>
@@ -573,7 +673,9 @@
             </div>
 
             <div>
+                <div id="skills-block">
                 <div class="section-header">Skills</div>
+                <button type="button" id="untrained_btn" class="play-only untrained-btn" aria-expanded="false" aria-controls="skills-block" onclick="toggleUntrainedSkills()">Show untrained skills</button>
                 <div class="skill-row"><span class="skill-name">Acrobatics</span><input type="number" id="sk_ac" class="save-field skill-input"></div>
                 <div class="skill-row"><span class="skill-name">Ancient Lore</span><input type="number" id="sk_al" class="save-field skill-input"></div>
                 <div class="skill-row"><span class="skill-name">Armoury</span><input type="number" id="sk_ar" class="save-field skill-input"></div>
@@ -589,6 +691,7 @@
                 <div class="skill-row"><span class="skill-name">Swim</span><input type="number" id="sk_sw" class="save-field skill-input"></div>
                 <div class="skill-row"><span class="skill-name">Track</span><input type="number" id="sk_tr" class="save-field skill-input"></div>
                 <div class="skill-row"><span class="skill-name">Traps</span><input type="number" id="sk_tp" class="save-field skill-input"></div>
+                </div>
             </div>
         </div>
 
@@ -599,7 +702,7 @@
             <button type="button" onclick="downloadJSON()">💾 Save Character File</button>
             <button type="button" onclick="document.getElementById('import-file').click()">📂 Load Character File</button>
             <input type="file" id="import-file" style="display:none" tabindex="-1" aria-hidden="true" onchange="importJSONFile(event)">
-            <button type="button" onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
+            <button type="button" class="setup-only" onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
         </div>
     </div>
 
@@ -834,6 +937,7 @@
             minSlots: DEFAULT_INNATE_SLOTS
         }
     };
+    const MODES = ['edit', 'play'];
     const SEARCHABLE_STATE = {};
     let activePreviewId = null;
     let saveTimer = null;
@@ -958,7 +1062,7 @@
                         <div id="${id}_menu" class="search-select-menu" role="listbox"></div>
                     </div>
                     <button type="button" class="info-toggle" data-info-for="${id}" aria-expanded="false" aria-controls="desc_${id}" disabled onclick="toggleDescVisibility('${id}', this)">ℹ</button>
-                    <button type="button" class="remove-slot-btn" onclick="removeSlot('${id}', '${type}')">✕</button>
+                    <button type="button" class="remove-slot-btn setup-only" onclick="removeSlot('${id}', '${type}')">✕</button>
                 </div>
                 <div id="meta_${id}" class="selection-meta"></div>
                 <div id="desc_${id}" class="ability-desc"></div>
@@ -1086,13 +1190,16 @@
                 innateSlots: collectSlots('innate')
             },
             uiState: {
-                showInnateSection: document.getElementById('innate-section').style.display === 'block'
+                showInnateSection: document.getElementById('innate-section').style.display === 'block',
+                mode: currentMode()
             }
         };
     }
 
     function saveNow() {
         clearTimeout(saveTimer);
+
+        refreshEmptyMarkers();
 
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collectDocument()));
@@ -1107,7 +1214,12 @@
         const val = document.getElementById('char_arch').value;
         const detailsDiv = document.getElementById('arch_details');
         const container = document.getElementById('arch_toggle_container');
-        
+
+        // Play mode hides the selector but keeps the name and the traits/limitations disclosure,
+        // because several archetype traits change how a scenario is played.
+        document.getElementById('arch_name_play').textContent = val || '';
+        document.querySelector('.archetype-section').classList.toggle('is-empty', !val);
+
         if (val && val !== "") {
             container.style.display = "block";
             let html = '<div class="type-label">Traits:</div><ul class="trait-list">';
@@ -1135,6 +1247,91 @@
     function toggleInnateSection() {
         setInnateSectionExpanded(document.getElementById('innate-section').style.display === "none");
         scheduleSave();
+    }
+
+    function currentMode() {
+        return document.body.dataset.mode === 'play' ? 'play' : 'edit';
+    }
+
+    // Play mode hides what is not needed mid-scenario; it never locks a field, so a correction
+    // at the table is always one tap away.
+    function setMode(mode, persist = true) {
+        const next = MODES.includes(mode) ? mode : 'edit';
+        const previous = document.activeElement;
+
+        // Anything open may belong to a row that is about to disappear.
+        Object.keys(SEARCHABLE_STATE).forEach(closeSearchMenu);
+
+        document.body.dataset.mode = next;
+        orderStatBoxes(next);
+
+        MODES.forEach(name => {
+            const btn = document.getElementById('mode_' + name);
+            btn.setAttribute('aria-pressed', String(name === next));
+            btn.classList.toggle('active', name === next);
+        });
+
+        refreshEmptyMarkers();
+
+        if (activePreviewId && !isVisible(getSearchBox(activePreviewId))) hidePreviewPanel();
+
+        if (previous && previous !== document.body && isVisible(previous)) {
+            previous.focus({ preventScroll: true });
+            previous.scrollIntoView({ block: 'center' });
+        } else {
+            window.scrollTo({ top: 0 });
+        }
+
+        if (persist) scheduleSave();
+    }
+
+    function isVisible(element) {
+        return !!element && element.offsetParent !== null;
+    }
+
+    // Current Health leads the stat row in play mode. Moving the node rather than using CSS
+    // `order` keeps the tab sequence matching what is on screen.
+    function orderStatBoxes(mode) {
+        const grid = document.getElementById('stat-grid');
+        const current = grid.querySelector('.current-hp');
+
+        if (mode === 'play') grid.insertBefore(current, grid.firstElementChild);
+        else grid.insertBefore(current, document.getElementById('s_rec').closest('.stat-box'));
+    }
+
+    function toggleUntrainedSkills() {
+        const block = document.getElementById('skills-block');
+        const btn = document.getElementById('untrained_btn');
+        const shown = block.classList.toggle('show-untrained');
+
+        btn.textContent = shown ? 'Hide untrained skills' : 'Show untrained skills';
+        btn.setAttribute('aria-expanded', String(shown));
+    }
+
+    // Marks what play mode may hide. Nothing else reads these classes.
+    function refreshEmptyMarkers() {
+        document.querySelectorAll('.ability-group, .equipment-group').forEach(group => {
+            const field = group.querySelector('input.save-field');
+            group.classList.toggle('is-empty', !field || !field.value.trim());
+        });
+
+        document.querySelectorAll('.skill-row').forEach(row => {
+            const value = (row.querySelector('input.save-field') || {}).value || '';
+            row.classList.toggle('is-empty', !value.trim() || Number(value) === 0);
+        });
+
+        const blocks = ['abilities-block', 'equipment-block', 'skills-block', 'innate-container'];
+        const rowSelectors = ['.ability-group', '.equipment-group', '.skill-row', '.ability-group'];
+        blocks.forEach((blockId, index) => markBlockEmpty(blockId, rowSelectors[index]));
+
+        document.body.classList.toggle('play-empty',
+            blocks.every(blockId => document.getElementById(blockId).classList.contains('is-empty')));
+    }
+
+    function markBlockEmpty(blockId, rowSelector) {
+        const block = document.getElementById(blockId);
+        const rows = Array.from(block.querySelectorAll(rowSelector));
+        block.classList.toggle('is-empty', rows.every(row => row.classList.contains('is-empty')));
     }
 
     function setInnateSectionExpanded(expanded) {
@@ -1496,7 +1693,7 @@
                 heroicSlots: blankSlots(DEFAULT_HEROIC_SLOTS),
                 innateSlots: blankSlots(DEFAULT_INNATE_SLOTS)
             },
-            uiState: { showInnateSection: false }
+            uiState: { showInnateSection: false, mode: 'edit' }
         };
     }
 
@@ -1606,7 +1803,9 @@
                     innateSlots: normalizeSlots(upgraded.character.innateSlots, DEFAULT_INNATE_SLOTS, 'Innate ability slots')
                 },
                 uiState: {
-                    showInnateSection: !!(upgraded.uiState && upgraded.uiState.showInnateSection === true)
+                    showInnateSection: !!(upgraded.uiState && upgraded.uiState.showInnateSection === true),
+                    // An unknown or missing mode falls back to editing rather than rejecting the document.
+                    mode: MODES.includes(upgraded.uiState && upgraded.uiState.mode) ? upgraded.uiState.mode : 'edit'
                 }
             },
             warnings: warnings,
@@ -1637,6 +1836,8 @@
         applySlots('innate', doc.character.innateSlots);
 
         for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, fields['it' + i] || '', true);
+
+        setMode(doc.uiState.mode, false);
 
         if (persist) saveNow();
     }
