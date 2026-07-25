@@ -449,7 +449,7 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), '{broken', 'corrupt primary data not silently removed');
 
         await freshBrowserState(client);
-        await client.evaluate(`setAllyModifier('s_arm', 2)`);
+        await client.evaluate(`setTemporaryEffects('s_arm', 2, 1)`);
         await client.evaluate(`(() => {
             const file = new File([${JSON.stringify(JSON.stringify(fixtures['format-1-character']))}], 'format-1.json', { type: 'application/json' });
             importJSONFile({ target: { files: [file], value: 'selected' } });
@@ -457,7 +457,7 @@ try {
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
         equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 3, 'file import persists current format');
-        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), null, 'file import clears temporary Ally modifiers');
+        equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'file import clears temporary stat effects');
 
         const beforeInvalid = await client.evaluate(`localStorage.getItem(STORAGE_KEY)`);
         await client.evaluate(`(() => {
@@ -468,13 +468,13 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), beforeInvalid, 'invalid file leaves storage unchanged');
         equal(await client.evaluate(`document.getElementById('char_name').value`), 'Format One', 'invalid file leaves sheet unchanged');
 
-        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setAllyModifier('s_fig', 3); window.confirm = () => true; clearSheet();`);
+        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setTemporaryEffects('s_fig', 3, 2); window.confirm = () => true; clearSheet();`);
         await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`localStorage.getItem('unrelated_test_key')`), 'keep', 'obliterate keeps unrelated storage');
         equal(await client.evaluate(`localStorage.getItem(ENEMY_CATALOG_STORAGE_KEY) !== null`), true, 'obliterate keeps catalog');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), null, 'obliterate removes character');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_RECOVERY_KEY)`), null, 'obliterate removes recovery');
-        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), null, 'obliterate clears temporary Ally modifiers');
+        equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'obliterate clears temporary stat effects');
     });
 
     await suite('dynamic slots and searchable controls', async () => {
@@ -614,13 +614,22 @@ try {
         equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible after returning to edit');
     });
 
-    await suite('temporary Ally stat modifiers', async () => {
+    await suite('temporary stat effects', async () => {
         await freshBrowserState(client);
 
-        equal(await client.evaluate(`document.querySelectorAll('[data-ally-stat]').length`), 7, 'seven base stats offer Ally modifiers');
-        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_hpc"]')`), null, 'Current Health has no modifier control');
-        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'modifier control is visible in edit mode');
-        equal(await client.evaluate(`document.getElementById('s_fig_ally').disabled`), true, 'modifier waits for a base stat value');
+        equal(await client.evaluate(`document.querySelectorAll('[data-ally-stat]').length`), 7, 'seven base stats offer temporary effects');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_hpc"]')`), null, 'Current Health has no effect control');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'effect control is visible in edit mode');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').disabled`), true, 'effect control waits for a base stat value');
+        equal(await client.evaluate(`(() => {
+            const valid = normalizeTemporaryEffects({ s_fig: { buff: 2, debuff: 1 }, s_arm: 3 });
+            return valid.s_fig.buff === 2 && valid.s_fig.debuff === 1
+                && valid.s_arm.buff === 3 && valid.s_arm.debuff === 0;
+        })()`), true, 'effect record accepts current and legacy entry shapes');
+        equal(await client.evaluate(`(() => {
+            try { normalizeTemporaryEffects({ s_fig: { buff: -1, debuff: 0 } }); return false; }
+            catch { return true; }
+        })()`), true, 'invalid effect amounts are rejected');
 
         await client.evaluate(`(() => {
             const fight = document.getElementById('s_fig');
@@ -630,36 +639,51 @@ try {
             armour.value = '12';
             armour.dispatchEvent(new InputEvent('input', { bubbles: true }));
         })()`);
-        equal(await client.evaluate(`document.getElementById('s_fig_ally').disabled`), false, 'modifier becomes available with a base stat');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').disabled`), false, 'effects become available with a base stat');
 
         await client.evaluate(`document.getElementById('s_fig_ally').click()`);
-        equal(await client.evaluate(`document.getElementById('ally_modifier_dialog').open`), true, 'stat button opens shared modifier dialog');
+        equal(await client.evaluate(`document.getElementById('ally_modifier_dialog').open`), true, 'stat button opens shared effect dialog');
         equal(await client.evaluate(`document.getElementById('ally_modifier_title').textContent.includes('Fight')`), true, 'dialog names selected stat');
-        equal(await client.evaluate(`document.getElementById('ally_modifier_value').closest('.num-stepper')`), null, 'dialog value is not wrapped in stat steppers');
+        equal(await client.evaluate(`document.getElementById('ally_bonus_value').closest('.num-stepper')`), null, 'buff input is not wrapped in stat steppers');
+        equal(await client.evaluate(`document.getElementById('debuff_penalty_value').closest('.num-stepper')`), null, 'debuff input is not wrapped in stat steppers');
         await client.evaluate(`(() => {
-            document.getElementById('ally_modifier_value').value = '4';
+            stepTemporaryEffect('ally_bonus_value', 1);
+            stepTemporaryEffect('ally_bonus_value', 1);
+            stepTemporaryEffect('ally_bonus_value', -1);
+            stepTemporaryEffect('debuff_penalty_value', -1);
+        })()`);
+        equal(await client.evaluate(`document.getElementById('ally_bonus_value').value`), '1', 'dialog steppers change bonus without keyboard');
+        equal(await client.evaluate(`document.getElementById('debuff_penalty_value').value`), '0', 'dialog steppers clamp at zero');
+        await client.evaluate(`(() => {
+            document.getElementById('ally_bonus_value').value = '4';
+            document.getElementById('debuff_penalty_value').value = '2';
             document.querySelector('#ally_modifier_dialog button[type="submit"]').click();
         })()`);
-        equal(await client.evaluate(`document.getElementById('ally_modifier_dialog').open`), false, 'Apply closes modifier dialog');
-        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('temp-active')`), true, 'active Fight bonus is visibly marked');
-        equal(await client.evaluate(`document.getElementById('s_fig_effective').textContent`), '7', 'effective Fight uses arbitrary bonus');
-        equal(await client.evaluate(`document.getElementById('s_fig_breakdown').textContent`), 'TEMP · Base 3 + Ally 4', 'Fight equation stays explicit');
-        equal(await client.evaluate(`document.getElementById('s_fig_ally').getAttribute('aria-pressed')`), 'true', 'active Fight bonus is announced');
+        equal(await client.evaluate(`document.getElementById('ally_modifier_dialog').open`), false, 'Apply closes effect dialog');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('buff-active')`), true, 'active Fight buff is visibly marked');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('debuff-active')`), true, 'active Fight debuff is visibly marked');
+        equal(await client.evaluate(`document.getElementById('s_fig_effective').textContent`), '5', 'effective Fight applies buff and debuff separately');
+        equal(await client.evaluate(`document.getElementById('s_fig_breakdown').textContent`), 'TEMP · Base 3 + Ally 4 − Debuff 2', 'Fight equation keeps both sources explicit');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').textContent`), '+4 / −2', 'mixed effect button summarizes both values');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').getAttribute('aria-pressed')`), 'true', 'active Fight effects are announced');
         equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'base Fight is unchanged');
 
-        await client.evaluate(`setAllyModifier('s_arm', 2)`);
-        equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '14', 'Armour keeps configurable effective value');
-        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), '{"s_fig":4,"s_arm":2}', 'multiple modifiers are session-scoped');
+        await client.evaluate(`setTemporaryEffects('s_arm', 0, 2)`);
+        equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '10', 'Armour supports a debuff without a buff');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_arm"]').classList.contains('debuff-active')`), true, 'debuff-only card uses debuff state');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_arm"]').classList.contains('buff-active')`), false, 'debuff-only card has no buff state');
+        equal(await client.evaluate(`document.getElementById('s_arm_ally').textContent`), 'Debuff −2', 'debuff-only button is explicit');
+        equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), '{"s_fig":{"buff":4,"debuff":2},"s_arm":{"buff":0,"debuff":2}}', 'multiple stat effects are session-scoped');
         equal(await client.evaluate(`collectDocument().character.fields.s_fig`), '3', 'character document keeps base Fight');
         equal(await client.evaluate(`collectDocument().character.fields.s_arm`), '12', 'character document keeps base Armour');
-        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes(ALLY_MODIFIER_STORAGE_KEY)`), false, 'character export excludes temporary modifiers');
+        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes(TEMP_EFFECT_STORAGE_KEY)`), false, 'character export excludes temporary effects');
 
         await client.evaluate(`setMode('play')`);
-        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'modifier control remains visible in play mode');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'effect control remains visible in play mode');
 
         await client.evaluate(`saveNow(); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_fig_effective').textContent === '7'`);
-        equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '14', 'multiple modifiers survive an accidental reload');
+        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_fig_effective').textContent === '5'`);
+        equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '10', 'multiple effects survive an accidental reload');
         equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'reload still preserves base Fight');
         equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'reload still preserves base Armour');
 
@@ -673,30 +697,42 @@ try {
             enabled: true,
             maxTouchPoints: 5
         });
-        check(await client.evaluate(`document.getElementById('s_fig_ally').getBoundingClientRect().height >= 44`), 'Ally modifier target is touch-sized');
-        check(await client.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), 'Ally modifiers cause no phone overflow');
+        check(await client.evaluate(`document.getElementById('s_fig_ally').getBoundingClientRect().height >= 44`), 'temporary effect target is touch-sized');
+        await client.evaluate(`document.getElementById('s_fig_ally').click()`);
+        check(await client.evaluate(`document.querySelector('.effect-dialog-stepper button').getBoundingClientRect().height >= 44`), 'dialog effect stepper is touch-sized');
+        check(await client.evaluate(`document.getElementById('ally_modifier_dialog').getBoundingClientRect().right <= document.documentElement.clientWidth`), 'effect dialog fits phone viewport');
+        await client.evaluate(`closeTemporaryEffects()`);
+        check(await client.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), 'temporary effects cause no phone overflow');
         await client.send('Emulation.clearDeviceMetricsOverride');
         await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });
 
         await client.evaluate(`(() => {
             document.getElementById('s_fig_ally').click();
-            document.querySelector('#ally_modifier_dialog button[onclick="clearSelectedAllyModifier()"]').click();
+            document.querySelector('#ally_modifier_dialog button[onclick="clearSelectedTemporaryEffects()"]').click();
         })()`);
-        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('temp-active')`), false, 'Clear removes selected Fight bonus');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('buff-active')`), false, 'Clear removes selected Fight buff');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('debuff-active')`), false, 'Clear removes selected Fight debuff');
         equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'Clear never changes base Fight');
-        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)).s_arm`), 2, 'Clear keeps other Ally modifiers');
+        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_arm.debuff`), 2, 'Clear keeps other stat effects');
 
         await client.evaluate(`(() => {
             document.getElementById('s_arm_ally').click();
             document.querySelector('#ally_modifier_dialog .ally-dialog-clear-all').click();
         })()`);
-        equal(await client.evaluate(`document.querySelectorAll('.ally-stat.temp-active').length`), 0, 'Clear all removes every visible modifier');
-        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), null, 'Clear all removes session modifier record');
+        equal(await client.evaluate(`document.querySelectorAll('.ally-stat.buff-active, .ally-stat.debuff-active').length`), 0, 'Clear all removes every visible effect');
+        equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'Clear all removes session effect record');
         equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'Clear all never changes base Armour');
 
-        await client.evaluate(`sessionStorage.setItem(LEGACY_ROUND_ARMOR_STORAGE_KEY, '2'); location.reload();`);
+        await client.evaluate(`sessionStorage.setItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY, '{"s_fig":4,"s_arm":2}'); location.reload();`);
+        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_fig_effective').textContent === '7'`);
+        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_fig.buff`), 4, 'legacy Ally record migrates to buff effects');
+        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_fig.debuff`), 0, 'legacy Ally record gains zero debuff');
+        equal(await client.evaluate(`sessionStorage.getItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY)`), null, 'legacy Ally key removed after migration');
+
+        await client.evaluate(`clearAllTemporaryEffects(); sessionStorage.setItem(LEGACY_ROUND_ARMOR_STORAGE_KEY, '2'); location.reload();`);
         await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_arm_effective').textContent === '14'`);
-        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)).s_arm`), 2, 'legacy Armour bonus migrates to modifier record');
+        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_arm.buff`), 2, 'legacy Armour bonus migrates to buff effect');
+        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_arm.debuff`), 0, 'legacy Armour bonus gains zero debuff');
         equal(await client.evaluate(`sessionStorage.getItem(LEGACY_ROUND_ARMOR_STORAGE_KEY)`), null, 'legacy Armour key removed after migration');
     });
 
@@ -870,9 +906,13 @@ try {
                 statColumns: getComputedStyle(document.getElementById('stat-grid')).gridTemplateColumns.split(' ').length,
                 addHeight: document.querySelector('.mission-enemy-picker > button').getBoundingClientRect().height,
                 stepHeight: document.querySelector('.mission-step').getBoundingClientRect().height,
-                nameWidth: document.querySelector('.mission-kill-row .mission-grow').getBoundingClientRect().width
+                nameWidth: document.querySelector('.mission-kill-row .mission-grow').getBoundingClientRect().width,
+                overflowElements: Array.from(document.querySelectorAll('body *'))
+                    .filter(element => element.getBoundingClientRect().right > document.documentElement.clientWidth + 0.5)
+                    .slice(0, 5)
+                    .map(element => element.tagName.toLowerCase() + '#' + element.id + '.' + element.className)
             }))()`);
-            check(layout.overflow <= 0, `${width}px has no horizontal overflow`);
+            check(layout.overflow <= 0, `${width}px has no horizontal overflow; offenders: ${layout.overflowElements.join(', ')}`);
             equal(layout.mainColumns, width <= 899 ? 1 : 2, `${width}px main column count`);
             equal(layout.statColumns, width <= 899 ? 4 : 8, `${width}px stat column count`);
             check(layout.addHeight >= 44, `${width}px add target is touch-sized`);

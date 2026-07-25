@@ -49,9 +49,10 @@
     .grid-top { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
     .grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 15px; }
 
-    .stat-box { 
-        background: rgba(0,0,0,0.3); border: 1px solid var(--border-col); 
-        text-align: center; border-radius: 6px; padding: 5px 0; 
+    .stat-box {
+        min-width: 0;
+        background: rgba(0,0,0,0.3); border: 1px solid var(--border-col);
+        text-align: center; border-radius: 6px; padding: 5px 0;
     }
     
     .stat-label { 
@@ -65,6 +66,7 @@
     }
     .ally-effective, .ally-breakdown { display: none; }
     .ally-modifier-control {
+        min-width: 0;
         display: flex;
         flex-direction: column;
         align-items: stretch;
@@ -72,42 +74,72 @@
         padding: 0 5px 6px;
     }
     .ally-modifier-btn {
+        width: 100%;
+        min-width: 0;
         min-height: 34px;
-        padding: 5px 8px;
+        padding: 5px 3px;
         border-color: #65717d;
         color: #91a0b0;
         font-size: 0.68em;
         line-height: 1.1;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    .ally-stat.temp-active {
+    .ally-stat.buff-active {
         border-color: #f0c36a;
         box-shadow: 0 0 12px rgba(240,195,106,0.22);
     }
-    .ally-stat.temp-active input.save-field {
+    .ally-stat.debuff-active {
+        border-color: #e36a6a;
+        box-shadow: 0 0 12px rgba(227,106,106,0.22);
+    }
+    .ally-stat.buff-active.debuff-active {
+        border-color: #c18cab;
+        box-shadow: -4px 0 10px rgba(240,195,106,0.18), 4px 0 10px rgba(227,106,106,0.18);
+    }
+    .ally-stat.buff-active input.save-field,
+    .ally-stat.debuff-active input.save-field {
         height: 28px;
         color: #91a0b0;
         font-size: 1em;
     }
-    .ally-stat.temp-active .ally-effective {
+    .ally-stat.buff-active .ally-effective,
+    .ally-stat.debuff-active .ally-effective {
         display: block;
-        color: #f0c36a;
         font-family: var(--fantasy-font);
         font-size: 2em;
         font-weight: bold;
         line-height: 1.05;
     }
-    .ally-stat.temp-active .ally-breakdown {
+    .ally-stat.buff-active .ally-effective { color: #f0c36a; }
+    .ally-stat.debuff-active .ally-effective { color: #e36a6a; }
+    .ally-stat.buff-active.debuff-active .ally-effective { color: #e5d8e0; }
+    .ally-stat.buff-active .ally-breakdown,
+    .ally-stat.debuff-active .ally-breakdown {
         display: block;
-        color: #f0c36a;
+        color: #aab5c0;
         font-size: 0.62em;
         line-height: 1.25;
     }
-    .ally-stat.temp-active .ally-modifier-btn {
+    .effect-buff { color: #f0c36a; }
+    .effect-debuff { color: #e36a6a; }
+    .ally-stat.buff-active .ally-modifier-btn {
         border-color: #f0c36a;
         color: #f0c36a;
         background: rgba(240,195,106,0.1);
+    }
+    .ally-stat.debuff-active .ally-modifier-btn {
+        border-color: #e36a6a;
+        color: #e36a6a;
+        background: rgba(227,106,106,0.1);
+    }
+    .ally-stat.buff-active.debuff-active .ally-modifier-btn {
+        border-color: #c18cab;
+        color: #e5d8e0;
+        background: rgba(193,140,171,0.1);
     }
     .ally-modifier-btn:disabled {
         border-color: #46505a;
@@ -138,7 +170,11 @@
         font-size: 0.88em;
         line-height: 1.45;
     }
-    .ally-modifier-dialog label {
+    .effect-field {
+        display: block;
+        margin-top: 12px;
+    }
+    .effect-field > span {
         display: block;
         color: var(--accent-teal);
         font-family: var(--fantasy-font);
@@ -146,7 +182,20 @@
         text-transform: uppercase;
         letter-spacing: 0.06em;
     }
-    .ally-modifier-dialog input { margin-top: 7px; font-size: 1.2em; text-align: center; }
+    .effect-field.debuff-field > span { color: #e36a6a; }
+    .effect-dialog-stepper {
+        display: grid;
+        grid-template-columns: 48px minmax(80px, 1fr) 48px;
+        gap: 8px;
+        margin-top: 7px;
+    }
+    .effect-dialog-stepper input { font-size: 1.2em; text-align: center; }
+    .effect-dialog-stepper button {
+        width: 48px;
+        min-height: 48px;
+        padding: 0;
+        font-size: 1.25em;
+    }
     .ally-dialog-actions {
         display: flex;
         justify-content: flex-end;
@@ -846,95 +895,113 @@
             <div class="stat-box ally-stat" data-ally-stat="s_mov">
                 <div class="stat-label">Mov</div>
                 <input type="number" id="s_mov" class="save-field" aria-label="Base Movement"
-                    oninput="renderAllyModifier('s_mov')">
+                    oninput="renderTemporaryEffects('s_mov')">
                 <div class="ally-modifier-control">
                     <output id="s_mov_effective" class="ally-effective" aria-live="polite"></output>
                     <div id="s_mov_breakdown" class="ally-breakdown"></div>
                     <button type="button" id="s_mov_ally" class="ally-modifier-btn"
-                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_mov')">Ally +</button>
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openTemporaryEffects('s_mov')">Effects ±</button>
                 </div>
             </div>
             <div class="stat-box ally-stat" data-ally-stat="s_fig">
                 <div class="stat-label">Fig</div>
                 <input type="number" id="s_fig" class="save-field" aria-label="Base Fight"
-                    oninput="renderAllyModifier('s_fig')">
+                    oninput="renderTemporaryEffects('s_fig')">
                 <div class="ally-modifier-control">
                     <output id="s_fig_effective" class="ally-effective" aria-live="polite"></output>
                     <div id="s_fig_breakdown" class="ally-breakdown"></div>
                     <button type="button" id="s_fig_ally" class="ally-modifier-btn"
-                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_fig')">Ally +</button>
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openTemporaryEffects('s_fig')">Effects ±</button>
                 </div>
             </div>
             <div class="stat-box ally-stat" data-ally-stat="s_sho">
                 <div class="stat-label">Sho</div>
                 <input type="number" id="s_sho" class="save-field" aria-label="Base Shoot"
-                    oninput="renderAllyModifier('s_sho')">
+                    oninput="renderTemporaryEffects('s_sho')">
                 <div class="ally-modifier-control">
                     <output id="s_sho_effective" class="ally-effective" aria-live="polite"></output>
                     <div id="s_sho_breakdown" class="ally-breakdown"></div>
                     <button type="button" id="s_sho_ally" class="ally-modifier-btn"
-                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_sho')">Ally +</button>
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openTemporaryEffects('s_sho')">Effects ±</button>
                 </div>
             </div>
             <div class="stat-box ally-stat" data-ally-stat="s_arm">
                 <div class="stat-label">Arm</div>
                 <input type="number" id="s_arm" class="save-field" aria-label="Base Armour"
-                    oninput="renderAllyModifier('s_arm')">
+                    oninput="renderTemporaryEffects('s_arm')">
                 <div class="ally-modifier-control">
                     <output id="s_arm_effective" class="ally-effective" aria-live="polite"></output>
                     <div id="s_arm_breakdown" class="ally-breakdown"></div>
                     <button type="button" id="s_arm_ally" class="ally-modifier-btn"
-                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_arm')">Ally +</button>
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openTemporaryEffects('s_arm')">Effects ±</button>
                 </div>
             </div>
             <div class="stat-box ally-stat" data-ally-stat="s_wil">
                 <div class="stat-label">Wil</div>
                 <input type="number" id="s_wil" class="save-field" aria-label="Base Will"
-                    oninput="renderAllyModifier('s_wil')">
+                    oninput="renderTemporaryEffects('s_wil')">
                 <div class="ally-modifier-control">
                     <output id="s_wil_effective" class="ally-effective" aria-live="polite"></output>
                     <div id="s_wil_breakdown" class="ally-breakdown"></div>
                     <button type="button" id="s_wil_ally" class="ally-modifier-btn"
-                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_wil')">Ally +</button>
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openTemporaryEffects('s_wil')">Effects ±</button>
                 </div>
             </div>
             <div class="stat-box ally-stat" data-ally-stat="s_hpm">
                 <div class="stat-label">Health</div>
                 <input type="number" id="s_hpm" class="save-field" aria-label="Base Health"
-                    oninput="renderAllyModifier('s_hpm')">
+                    oninput="renderTemporaryEffects('s_hpm')">
                 <div class="ally-modifier-control">
                     <output id="s_hpm_effective" class="ally-effective" aria-live="polite"></output>
                     <div id="s_hpm_breakdown" class="ally-breakdown"></div>
                     <button type="button" id="s_hpm_ally" class="ally-modifier-btn"
-                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_hpm')">Ally +</button>
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openTemporaryEffects('s_hpm')">Effects ±</button>
                 </div>
             </div>
             <div class="stat-box current-hp"><div class="stat-label">Current</div><input type="number" id="s_hpc" class="save-field"></div>
             <div class="stat-box ally-stat" data-ally-stat="s_rec">
                 <div class="stat-label">Recr</div>
                 <input type="number" id="s_rec" class="save-field" aria-label="Base Recruitment"
-                    oninput="renderAllyModifier('s_rec')">
+                    oninput="renderTemporaryEffects('s_rec')">
                 <div class="ally-modifier-control">
                     <output id="s_rec_effective" class="ally-effective" aria-live="polite"></output>
                     <div id="s_rec_breakdown" class="ally-breakdown"></div>
                     <button type="button" id="s_rec_ally" class="ally-modifier-btn"
-                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_rec')">Ally +</button>
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openTemporaryEffects('s_rec')">Effects ±</button>
                 </div>
             </div>
         </div>
 
         <dialog id="ally_modifier_dialog" class="ally-modifier-dialog" aria-labelledby="ally_modifier_title">
-            <form method="dialog" onsubmit="applyAllyModifier(event)">
-                <h2 id="ally_modifier_title">Ally modifier</h2>
-                <p id="ally_modifier_description">Set a temporary bonus. Enter 0 or use Clear to remove it.</p>
-                <label for="ally_modifier_value">Temporary bonus
-                    <input type="number" id="ally_modifier_value" min="0" max="99" step="1"
-                        inputmode="numeric" data-no-stepper>
+            <form method="dialog" onsubmit="applyTemporaryEffects(event)">
+                <h2 id="ally_modifier_title">Temporary effects</h2>
+                <p id="ally_modifier_description">Track bonuses and penalties separately. Both can apply at the same time.</p>
+                <label class="effect-field" for="ally_bonus_value">
+                    <span>Ally bonus</span>
+                    <span class="effect-dialog-stepper">
+                        <button type="button" aria-label="Decrease Ally bonus"
+                            onclick="stepTemporaryEffect('ally_bonus_value', -1)">−</button>
+                        <input type="number" id="ally_bonus_value" min="0" max="99" step="1"
+                            value="0" inputmode="numeric" data-no-stepper>
+                        <button type="button" aria-label="Increase Ally bonus"
+                            onclick="stepTemporaryEffect('ally_bonus_value', 1)">+</button>
+                    </span>
+                </label>
+                <label class="effect-field debuff-field" for="debuff_penalty_value">
+                    <span>Debuff penalty</span>
+                    <span class="effect-dialog-stepper">
+                        <button type="button" aria-label="Decrease Debuff penalty"
+                            onclick="stepTemporaryEffect('debuff_penalty_value', -1)">−</button>
+                        <input type="number" id="debuff_penalty_value" min="0" max="99" step="1"
+                            value="0" inputmode="numeric" data-no-stepper>
+                        <button type="button" aria-label="Increase Debuff penalty"
+                            onclick="stepTemporaryEffect('debuff_penalty_value', 1)">+</button>
+                    </span>
                 </label>
                 <div class="ally-dialog-actions">
-                    <button type="button" class="ally-dialog-clear-all" onclick="clearAllAllyModifiers(true)">Clear all</button>
-                    <button type="button" onclick="clearSelectedAllyModifier()">Clear</button>
-                    <button type="button" onclick="closeAllyModifier()">Cancel</button>
+                    <button type="button" class="ally-dialog-clear-all" onclick="clearAllTemporaryEffects(true)">Clear all</button>
+                    <button type="button" onclick="clearSelectedTemporaryEffects()">Clear</button>
+                    <button type="button" onclick="closeTemporaryEffects()">Cancel</button>
                     <button type="submit" class="mission-primary">Apply</button>
                 </div>
             </form>
@@ -1275,9 +1342,10 @@
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
     const STORAGE_RECOVERY_KEY = `${STORAGE_KEY}_recovery`;
     const ENEMY_CATALOG_STORAGE_KEY = 'rosd_ranger_enemy_catalog';
-    const ALLY_MODIFIER_STORAGE_KEY = 'rosd_ranger_round_stat_modifiers';
+    const TEMP_EFFECT_STORAGE_KEY = 'rosd_ranger_round_stat_effects';
+    const LEGACY_ALLY_MODIFIER_STORAGE_KEY = 'rosd_ranger_round_stat_modifiers';
     const LEGACY_ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
-    const MAX_ALLY_MODIFIER = 99;
+    const MAX_TEMP_EFFECT = 99;
     const ENEMY_CATALOG_FORMAT_VERSION = 1;
     const FORMAT_VERSION = 3;
     const MAX_SLOTS = 50;
@@ -1322,8 +1390,8 @@
     */
     let MISSION = { active: null, history: [] };
     let ENEMY_CATALOG = null;
-    let allyModifiers = {};
-    let activeAllyStatId = null;
+    let temporaryStatEffects = {};
+    let activeEffectStatId = null;
     let lastMissionRemoval = null;
     let missionSequence = 0;
     let activePreviewId = null;
@@ -1734,80 +1802,108 @@
         }
     }
 
-    function normalizeAllyModifiers(value) {
-        if (!isPlainObject(value)) throw new Error('Temporary Ally modifiers are not a record.');
+    function normalizeTemporaryEffects(value) {
+        if (!isPlainObject(value)) throw new Error('Temporary stat effects are not a record.');
         const normalized = {};
 
-        Object.entries(value).forEach(([statId, rawModifier]) => {
-            if (!ALLY_STAT_CONFIG[statId]) throw new Error(`Unknown temporary Ally stat "${statId}".`);
-            const modifier = Number(rawModifier);
-            if (!Number.isInteger(modifier) || modifier <= 0 || modifier > MAX_ALLY_MODIFIER) {
-                throw new Error(`Temporary Ally modifier for ${statId} is invalid.`);
+        const readAmount = (rawAmount, label) => {
+            const amount = Number(rawAmount === undefined ? 0 : rawAmount);
+            if (!Number.isInteger(amount) || amount < 0 || amount > MAX_TEMP_EFFECT) {
+                throw new Error(`${label} is invalid.`);
             }
-            normalized[statId] = modifier;
+            return amount;
+        };
+
+        Object.entries(value).forEach(([statId, rawEffect]) => {
+            if (!ALLY_STAT_CONFIG[statId]) throw new Error(`Unknown temporary stat "${statId}".`);
+
+            const effect = typeof rawEffect === 'number'
+                ? { buff: readAmount(rawEffect, `Temporary Ally bonus for ${statId}`), debuff: 0 }
+                : isPlainObject(rawEffect)
+                    ? {
+                        buff: readAmount(rawEffect.buff, `Temporary Ally bonus for ${statId}`),
+                        debuff: readAmount(rawEffect.debuff, `Temporary Debuff for ${statId}`)
+                    }
+                    : null;
+
+            if (!effect) throw new Error(`Temporary effects for ${statId} are invalid.`);
+            if (effect.buff || effect.debuff) normalized[statId] = effect;
         });
 
         return normalized;
     }
 
-    function persistAllyModifiers() {
+    function persistTemporaryEffects() {
         try {
-            const hasModifiers = Object.keys(allyModifiers).length > 0;
-            if (hasModifiers) sessionStorage.setItem(ALLY_MODIFIER_STORAGE_KEY, JSON.stringify(allyModifiers));
-            else sessionStorage.removeItem(ALLY_MODIFIER_STORAGE_KEY);
+            const hasEffects = Object.keys(temporaryStatEffects).length > 0;
+            if (hasEffects) sessionStorage.setItem(TEMP_EFFECT_STORAGE_KEY, JSON.stringify(temporaryStatEffects));
+            else sessionStorage.removeItem(TEMP_EFFECT_STORAGE_KEY);
+            sessionStorage.removeItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY);
             sessionStorage.removeItem(LEGACY_ROUND_ARMOR_STORAGE_KEY);
         } catch (error) {
-            console.error('Temporary Ally modifiers could not be stored.', error);
+            console.error('Temporary stat effects could not be stored.', error);
         }
     }
 
-    function loadAllyModifiers() {
+    function loadTemporaryEffects() {
         try {
-            const raw = sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY);
+            const raw = sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY);
+            const legacyAlly = sessionStorage.getItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY);
+
             if (raw) {
-                allyModifiers = normalizeAllyModifiers(JSON.parse(raw));
+                temporaryStatEffects = normalizeTemporaryEffects(JSON.parse(raw));
+            } else if (legacyAlly) {
+                temporaryStatEffects = normalizeTemporaryEffects(JSON.parse(legacyAlly));
             } else if (sessionStorage.getItem(LEGACY_ROUND_ARMOR_STORAGE_KEY) === '2') {
-                allyModifiers = { s_arm: 2 };
+                temporaryStatEffects = { s_arm: { buff: 2, debuff: 0 } };
             } else {
-                allyModifiers = {};
+                temporaryStatEffects = {};
             }
-            persistAllyModifiers();
+            persistTemporaryEffects();
         } catch (error) {
-            console.error('Temporary Ally modifiers could not be restored.', error);
-            allyModifiers = {};
+            console.error('Temporary stat effects could not be restored.', error);
+            temporaryStatEffects = {};
             try {
-                sessionStorage.removeItem(ALLY_MODIFIER_STORAGE_KEY);
+                sessionStorage.removeItem(TEMP_EFFECT_STORAGE_KEY);
+                sessionStorage.removeItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY);
                 sessionStorage.removeItem(LEGACY_ROUND_ARMOR_STORAGE_KEY);
             } catch {
                 // The controls still work for this page even when session storage is unavailable.
             }
         }
-        renderAllAllyModifiers();
+        renderAllTemporaryEffects();
     }
 
-    function setAllyModifier(statId, rawModifier) {
+    function clampTemporaryEffect(rawAmount) {
+        return Math.min(MAX_TEMP_EFFECT, Math.max(0, Math.trunc(Number(rawAmount) || 0)));
+    }
+
+    function setTemporaryEffects(statId, rawBuff, rawDebuff) {
         if (!ALLY_STAT_CONFIG[statId]) return;
-        const modifier = Math.min(MAX_ALLY_MODIFIER, Math.max(0, Math.trunc(Number(rawModifier) || 0)));
+        const effect = {
+            buff: clampTemporaryEffect(rawBuff),
+            debuff: clampTemporaryEffect(rawDebuff)
+        };
 
-        if (modifier) allyModifiers[statId] = modifier;
-        else delete allyModifiers[statId];
+        if (effect.buff || effect.debuff) temporaryStatEffects[statId] = effect;
+        else delete temporaryStatEffects[statId];
 
-        persistAllyModifiers();
-        renderAllyModifier(statId);
+        persistTemporaryEffects();
+        renderTemporaryEffects(statId);
     }
 
-    function clearAllAllyModifiers(closeDialog = false) {
-        allyModifiers = {};
-        persistAllyModifiers();
-        renderAllAllyModifiers();
-        if (closeDialog) closeAllyModifier();
+    function clearAllTemporaryEffects(closeDialog = false) {
+        temporaryStatEffects = {};
+        persistTemporaryEffects();
+        renderAllTemporaryEffects();
+        if (closeDialog) closeTemporaryEffects();
     }
 
-    function renderAllAllyModifiers() {
-        Object.keys(ALLY_STAT_CONFIG).forEach(renderAllyModifier);
+    function renderAllTemporaryEffects() {
+        Object.keys(ALLY_STAT_CONFIG).forEach(renderTemporaryEffects);
     }
 
-    function renderAllyModifier(statId) {
+    function renderTemporaryEffects(statId) {
         const config = ALLY_STAT_CONFIG[statId];
         const field = document.getElementById(statId);
         const card = document.querySelector(`[data-ally-stat="${statId}"]`);
@@ -1819,58 +1915,77 @@
         const baseText = field.value.trim();
         const base = Number(baseText);
         const hasBase = baseText !== '' && Number.isFinite(base);
-        const modifier = allyModifiers[statId] || 0;
-        const active = modifier > 0;
-        const effective = hasBase ? base + modifier : null;
+        const effect = temporaryStatEffects[statId] || { buff: 0, debuff: 0 };
+        const active = effect.buff > 0 || effect.debuff > 0;
+        const effective = hasBase ? base + effect.buff - effect.debuff : null;
 
-        card.classList.toggle('temp-active', active);
+        card.classList.toggle('buff-active', effect.buff > 0);
+        card.classList.toggle('debuff-active', effect.debuff > 0);
         output.textContent = active && hasBase ? String(effective) : '';
         output.setAttribute('aria-label', active && hasBase ? `Effective ${config.label} ${effective}` : '');
-        breakdown.textContent = active
-            ? `TEMP · Base ${hasBase ? base : '—'} + Ally ${modifier}`
-            : '';
-        button.textContent = active ? `Ally +${modifier}` : 'Ally +';
+
+        const equation = [`<span>Base ${hasBase ? base : '—'}</span>`];
+        if (effect.buff) equation.push(`<span class="effect-buff">+ Ally ${effect.buff}</span>`);
+        if (effect.debuff) equation.push(`<span class="effect-debuff">− Debuff ${effect.debuff}</span>`);
+        breakdown.innerHTML = active ? `TEMP · ${equation.join(' ')}` : '';
+
+        if (effect.buff && effect.debuff) button.textContent = `+${effect.buff} / −${effect.debuff}`;
+        else if (effect.buff) button.textContent = `Ally +${effect.buff}`;
+        else if (effect.debuff) button.textContent = `Debuff −${effect.debuff}`;
+        else button.textContent = 'Effects ±';
         button.setAttribute('aria-pressed', String(active));
         button.setAttribute('aria-label', active
-            ? `Change temporary plus ${modifier} ${config.label} bonus`
-            : `Set temporary Ally bonus for ${config.label}`);
+            ? `Change temporary effects for ${config.label}: Ally plus ${effect.buff}, Debuff minus ${effect.debuff}`
+            : `Set temporary effects for ${config.label}`);
         button.disabled = !active && !hasBase;
     }
 
-    function openAllyModifier(statId) {
+    function openTemporaryEffects(statId) {
         if (!ALLY_STAT_CONFIG[statId]) return;
-        activeAllyStatId = statId;
+        activeEffectStatId = statId;
 
         const dialog = document.getElementById('ally_modifier_dialog');
-        const input = document.getElementById('ally_modifier_value');
+        const buffInput = document.getElementById('ally_bonus_value');
+        const debuffInput = document.getElementById('debuff_penalty_value');
         const config = ALLY_STAT_CONFIG[statId];
-        document.getElementById('ally_modifier_title').textContent = `Ally modifier · ${config.label}`;
-        input.value = allyModifiers[statId] || '';
+        const effect = temporaryStatEffects[statId] || { buff: 0, debuff: 0 };
+        document.getElementById('ally_modifier_title').textContent = `Temporary effects · ${config.label}`;
+        buffInput.value = effect.buff;
+        debuffInput.value = effect.debuff;
 
         if (typeof dialog.showModal === 'function') dialog.showModal();
         else dialog.setAttribute('open', '');
-        input.focus();
-        input.select();
+        buffInput.focus();
+        buffInput.select();
     }
 
-    function closeAllyModifier() {
+    function closeTemporaryEffects() {
         const dialog = document.getElementById('ally_modifier_dialog');
         if (dialog.open && typeof dialog.close === 'function') dialog.close();
         else dialog.removeAttribute('open');
-        activeAllyStatId = null;
+        activeEffectStatId = null;
     }
 
-    function applyAllyModifier(event) {
+    function stepTemporaryEffect(inputId, delta) {
+        const input = document.getElementById(inputId);
+        input.value = String(clampTemporaryEffect(Number(input.value) + delta));
+    }
+
+    function applyTemporaryEffects(event) {
         event.preventDefault();
-        if (!activeAllyStatId) return;
-        setAllyModifier(activeAllyStatId, document.getElementById('ally_modifier_value').value);
-        closeAllyModifier();
+        if (!activeEffectStatId) return;
+        setTemporaryEffects(
+            activeEffectStatId,
+            document.getElementById('ally_bonus_value').value,
+            document.getElementById('debuff_penalty_value').value
+        );
+        closeTemporaryEffects();
     }
 
-    function clearSelectedAllyModifier() {
-        if (!activeAllyStatId) return;
-        setAllyModifier(activeAllyStatId, 0);
-        closeAllyModifier();
+    function clearSelectedTemporaryEffects() {
+        if (!activeEffectStatId) return;
+        setTemporaryEffects(activeEffectStatId, 0, 0);
+        closeTemporaryEffects();
     }
 
     function updateArchetype(skipSave = false) {
@@ -3072,7 +3187,7 @@
             f.value = Object.prototype.hasOwnProperty.call(fields, f.id) ? fields[f.id] : '';
             if (f.id === 'char_arch') updateArchetype(true);
         });
-        renderAllAllyModifiers();
+        renderAllTemporaryEffects();
 
         clearSlots('heroic');
         clearSlots('innate');
@@ -3234,12 +3349,12 @@
         populateDropdowns();
         loadEnemyCatalog();
         initSearchables();
-        loadAllyModifiers();
+        loadTemporaryEffects();
         attachSaveListeners();
         load();
         initNumberSteppers();
         document.getElementById('ally_modifier_dialog').addEventListener('close', () => {
-            activeAllyStatId = null;
+            activeEffectStatId = null;
         });
         document.addEventListener('click', handleDocumentClick);
         hidePreviewPanel();
@@ -3277,7 +3392,7 @@
                 return;
             }
 
-            clearAllAllyModifiers();
+            clearAllTemporaryEffects();
             applyDocument(result.document);
 
             if (result.warnings.length) {
@@ -3301,7 +3416,7 @@
         );
         if (!confirmed) return;
 
-        clearAllAllyModifiers();
+        clearAllTemporaryEffects();
         try {
             localStorage.removeItem(STORAGE_KEY);
             localStorage.removeItem(STORAGE_RECOVERY_KEY);
