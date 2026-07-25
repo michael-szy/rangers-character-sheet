@@ -9,7 +9,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Archetypen mit Traits und Einschränkungen anzeigen
 - Missionen mit Gegnern, Zielen, Anpassungen und bestätigter XP-Übertragung dokumentieren
 - Einen optionalen Gegnerkatalog laden und Gegner samt vorgeschlagenen XP per Dropdown hinzufügen
-- Einen temporären **Ally +2**-Rüstungsbonus direkt am effektiven Armor-Wert anzeigen
+- Frei wählbare temporäre Ally-Boni direkt an den effektiven Charakterwerten anzeigen
 - Änderungen automatisch im Browser speichern
 - Charaktere als JSON-Datei sichern und auf einem anderen Gerät laden
 - Ohne Konto, Backend oder Installation verwenden
@@ -30,7 +30,7 @@ Der aktuelle Charakter wird ausschließlich im lokalen Browserspeicher (`localSt
 
 Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen und ebenfalls nur in diesem Browser gespeichert. Danach lassen sich Gegner in einer Auswahlliste samt vorgeschlagenem XP-Wert zur aktiven Mission hinzufügen. **Add blank enemy** bleibt für eigene oder szenariospezifische Gegner verfügbar. Die vorgeschlagenen Gegner-XP ersetzen nicht die **Outcome and Experience**-Regeln des gespielten Szenarios; Name und Wert bleiben deshalb in jedem Missionsbericht manuell korrigierbar.
 
-Im Play-Modus kann **Ally +2** direkt in der Armor-Karte aktiviert werden. Die Karte zeigt dann den effektiven Wert und die Rechnung aus Grundwert und temporärem Bonus. Der Grundwert und die Charakterdatei werden nicht verändert; **Clear +2** entfernt den Effekt wieder. Der Bonus überlebt ein versehentliches Neuladen desselben Tabs, aber keine neue Browser-Sitzung.
+In Edit und Play können temporäre Ally-Boni direkt an Movement, Fight, Shoot, Armor, Will, Health und Recruitment gesetzt werden. Ein Tippen auf **Ally +** öffnet die gemeinsame Zahlenauswahl; aktive Karten zeigen den effektiven Wert und die Rechnung aus Grundwert und Bonus. Grundwerte und Charakterdatei werden nicht verändert. Einzelne oder alle Boni lassen sich im selben Dialog entfernen. Die Boni überleben ein versehentliches Neuladen desselben Tabs, aber keine neue Browser-Sitzung.
 
 ## Technik
 

@@ -63,15 +63,15 @@
         border: none; background: transparent; text-align: center; font-size: 1.5em;
         font-weight: bold; height: 40px; width: 100%; color: #fff; font-family: var(--body-font);
     }
-    .armor-effective, .armor-breakdown { display: none; }
-    [data-mode="play"] .armor-round-control {
+    .ally-effective, .ally-breakdown { display: none; }
+    .ally-modifier-control {
         display: flex;
         flex-direction: column;
         align-items: stretch;
         gap: 5px;
         padding: 0 5px 6px;
     }
-    .armor-temp-toggle {
+    .ally-modifier-btn {
         min-height: 34px;
         padding: 5px 8px;
         border-color: #65717d;
@@ -81,16 +81,16 @@
         text-transform: uppercase;
         letter-spacing: 0.04em;
     }
-    [data-mode="play"] .armor-stat.temp-active {
+    .ally-stat.temp-active {
         border-color: #f0c36a;
         box-shadow: 0 0 12px rgba(240,195,106,0.22);
     }
-    [data-mode="play"] .armor-stat.temp-active input {
+    .ally-stat.temp-active input.save-field {
         height: 28px;
         color: #91a0b0;
         font-size: 1em;
     }
-    [data-mode="play"] .armor-stat.temp-active .armor-effective {
+    .ally-stat.temp-active .ally-effective {
         display: block;
         color: #f0c36a;
         font-family: var(--fantasy-font);
@@ -98,22 +98,67 @@
         font-weight: bold;
         line-height: 1.05;
     }
-    [data-mode="play"] .armor-stat.temp-active .armor-breakdown {
+    .ally-stat.temp-active .ally-breakdown {
         display: block;
         color: #f0c36a;
         font-size: 0.62em;
         line-height: 1.25;
     }
-    [data-mode="play"] .armor-stat.temp-active .armor-temp-toggle {
+    .ally-stat.temp-active .ally-modifier-btn {
         border-color: #f0c36a;
         color: #f0c36a;
         background: rgba(240,195,106,0.1);
     }
-    .armor-temp-toggle:disabled {
+    .ally-modifier-btn:disabled {
         border-color: #46505a;
         color: #65717d;
         cursor: not-allowed;
         opacity: 0.7;
+    }
+    .ally-modifier-dialog {
+        width: min(420px, calc(100vw - 32px));
+        box-sizing: border-box;
+        padding: 20px;
+        border: 1px solid #f0c36a;
+        border-radius: 10px;
+        background: #171b21;
+        color: var(--text-main);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+    .ally-modifier-dialog::backdrop { background: rgba(3,5,8,0.78); }
+    .ally-modifier-dialog h2 {
+        margin: 0 0 8px;
+        color: #f0c36a;
+        font-family: var(--fantasy-font);
+        font-size: 1.05em;
+    }
+    .ally-modifier-dialog p {
+        margin: 0 0 14px;
+        color: #aab5c0;
+        font-size: 0.88em;
+        line-height: 1.45;
+    }
+    .ally-modifier-dialog label {
+        display: block;
+        color: var(--accent-teal);
+        font-family: var(--fantasy-font);
+        font-size: 0.72em;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .ally-modifier-dialog input { margin-top: 7px; font-size: 1.2em; text-align: center; }
+    .ally-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+    .ally-dialog-actions button { padding: 9px 14px; min-height: 42px; }
+    .ally-dialog-clear-all {
+        border-color: #65717d;
+        color: #91a0b0;
+        margin-right: auto;
     }
     
     .current-hp { border: 2px solid var(--danger-red); background: rgba(192, 57, 43, 0.1); }
@@ -618,7 +663,7 @@
         .add-slot-btn { min-height: 44px; }
         .mode-btn { min-height: 44px; padding: 6px 20px; }
         .untrained-btn { min-height: 44px; }
-        .armor-temp-toggle { min-height: 44px; }
+        .ally-modifier-btn { min-height: 44px; }
         .mission-step, .mission-check { width: 44px; height: 44px; min-height: 44px; }
         .mission-add, .mission-undo button { min-height: 44px; }
         .mission-remove { min-height: 44px; padding: 0 12px; }
@@ -770,25 +815,102 @@
         </div>
 
         <div class="grid-8" id="stat-grid">
-            <div class="stat-box"><div class="stat-label">Mov</div><input type="number" id="s_mov" class="save-field"></div>
-            <div class="stat-box"><div class="stat-label">Fig</div><input type="number" id="s_fig" class="save-field"></div>
-            <div class="stat-box"><div class="stat-label">Sho</div><input type="number" id="s_sho" class="save-field"></div>
-            <div class="stat-box armor-stat" id="armor_stat">
-                <div class="stat-label">Arm</div>
-                <input type="number" id="s_arm" class="save-field" aria-label="Base Armour"
-                    oninput="renderRoundArmorBonus()">
-                <div class="play-only armor-round-control">
-                    <output id="armor_effective" class="armor-effective" aria-live="polite"></output>
-                    <div id="armor_breakdown" class="armor-breakdown"></div>
-                    <button type="button" id="armor_ally_bonus" class="armor-temp-toggle"
-                        aria-pressed="false" onclick="toggleRoundArmorBonus()">Ally +2</button>
+            <div class="stat-box ally-stat" data-ally-stat="s_mov">
+                <div class="stat-label">Mov</div>
+                <input type="number" id="s_mov" class="save-field" aria-label="Base Movement"
+                    oninput="renderAllyModifier('s_mov')">
+                <div class="ally-modifier-control">
+                    <output id="s_mov_effective" class="ally-effective" aria-live="polite"></output>
+                    <div id="s_mov_breakdown" class="ally-breakdown"></div>
+                    <button type="button" id="s_mov_ally" class="ally-modifier-btn"
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_mov')">Ally +</button>
                 </div>
             </div>
-            <div class="stat-box"><div class="stat-label">Wil</div><input type="number" id="s_wil" class="save-field"></div>
-            <div class="stat-box"><div class="stat-label">Health</div><input type="number" id="s_hpm" class="save-field"></div>
+            <div class="stat-box ally-stat" data-ally-stat="s_fig">
+                <div class="stat-label">Fig</div>
+                <input type="number" id="s_fig" class="save-field" aria-label="Base Fight"
+                    oninput="renderAllyModifier('s_fig')">
+                <div class="ally-modifier-control">
+                    <output id="s_fig_effective" class="ally-effective" aria-live="polite"></output>
+                    <div id="s_fig_breakdown" class="ally-breakdown"></div>
+                    <button type="button" id="s_fig_ally" class="ally-modifier-btn"
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_fig')">Ally +</button>
+                </div>
+            </div>
+            <div class="stat-box ally-stat" data-ally-stat="s_sho">
+                <div class="stat-label">Sho</div>
+                <input type="number" id="s_sho" class="save-field" aria-label="Base Shoot"
+                    oninput="renderAllyModifier('s_sho')">
+                <div class="ally-modifier-control">
+                    <output id="s_sho_effective" class="ally-effective" aria-live="polite"></output>
+                    <div id="s_sho_breakdown" class="ally-breakdown"></div>
+                    <button type="button" id="s_sho_ally" class="ally-modifier-btn"
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_sho')">Ally +</button>
+                </div>
+            </div>
+            <div class="stat-box ally-stat" data-ally-stat="s_arm">
+                <div class="stat-label">Arm</div>
+                <input type="number" id="s_arm" class="save-field" aria-label="Base Armour"
+                    oninput="renderAllyModifier('s_arm')">
+                <div class="ally-modifier-control">
+                    <output id="s_arm_effective" class="ally-effective" aria-live="polite"></output>
+                    <div id="s_arm_breakdown" class="ally-breakdown"></div>
+                    <button type="button" id="s_arm_ally" class="ally-modifier-btn"
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_arm')">Ally +</button>
+                </div>
+            </div>
+            <div class="stat-box ally-stat" data-ally-stat="s_wil">
+                <div class="stat-label">Wil</div>
+                <input type="number" id="s_wil" class="save-field" aria-label="Base Will"
+                    oninput="renderAllyModifier('s_wil')">
+                <div class="ally-modifier-control">
+                    <output id="s_wil_effective" class="ally-effective" aria-live="polite"></output>
+                    <div id="s_wil_breakdown" class="ally-breakdown"></div>
+                    <button type="button" id="s_wil_ally" class="ally-modifier-btn"
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_wil')">Ally +</button>
+                </div>
+            </div>
+            <div class="stat-box ally-stat" data-ally-stat="s_hpm">
+                <div class="stat-label">Health</div>
+                <input type="number" id="s_hpm" class="save-field" aria-label="Base Health"
+                    oninput="renderAllyModifier('s_hpm')">
+                <div class="ally-modifier-control">
+                    <output id="s_hpm_effective" class="ally-effective" aria-live="polite"></output>
+                    <div id="s_hpm_breakdown" class="ally-breakdown"></div>
+                    <button type="button" id="s_hpm_ally" class="ally-modifier-btn"
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_hpm')">Ally +</button>
+                </div>
+            </div>
             <div class="stat-box current-hp"><div class="stat-label">Current</div><input type="number" id="s_hpc" class="save-field"></div>
-            <div class="stat-box"><div class="stat-label">Recr</div><input type="number" id="s_rec" class="save-field"></div>
+            <div class="stat-box ally-stat" data-ally-stat="s_rec">
+                <div class="stat-label">Recr</div>
+                <input type="number" id="s_rec" class="save-field" aria-label="Base Recruitment"
+                    oninput="renderAllyModifier('s_rec')">
+                <div class="ally-modifier-control">
+                    <output id="s_rec_effective" class="ally-effective" aria-live="polite"></output>
+                    <div id="s_rec_breakdown" class="ally-breakdown"></div>
+                    <button type="button" id="s_rec_ally" class="ally-modifier-btn"
+                        aria-pressed="false" aria-haspopup="dialog" onclick="openAllyModifier('s_rec')">Ally +</button>
+                </div>
+            </div>
         </div>
+
+        <dialog id="ally_modifier_dialog" class="ally-modifier-dialog" aria-labelledby="ally_modifier_title">
+            <form method="dialog" onsubmit="applyAllyModifier(event)">
+                <h2 id="ally_modifier_title">Ally modifier</h2>
+                <p id="ally_modifier_description">Set a temporary bonus. Enter 0 or use Clear to remove it.</p>
+                <label for="ally_modifier_value">Temporary bonus
+                    <input type="number" id="ally_modifier_value" min="0" max="99" step="1"
+                        inputmode="numeric" data-no-stepper>
+                </label>
+                <div class="ally-dialog-actions">
+                    <button type="button" class="ally-dialog-clear-all" onclick="clearAllAllyModifiers(true)">Clear all</button>
+                    <button type="button" onclick="clearSelectedAllyModifier()">Clear</button>
+                    <button type="button" onclick="closeAllyModifier()">Cancel</button>
+                    <button type="submit" class="mission-primary">Apply</button>
+                </div>
+            </form>
+        </dialog>
 
         <div id="innate-container" style="margin-top: 25px;">
             <button type="button" class="add-slot-btn setup-only" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" aria-expanded="false" aria-controls="innate-section" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
@@ -1119,8 +1241,9 @@
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
     const STORAGE_RECOVERY_KEY = `${STORAGE_KEY}_recovery`;
     const ENEMY_CATALOG_STORAGE_KEY = 'rosd_ranger_enemy_catalog';
-    const ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
-    const ROUND_ARMOR_BONUS = 2;
+    const ALLY_MODIFIER_STORAGE_KEY = 'rosd_ranger_round_stat_modifiers';
+    const LEGACY_ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
+    const MAX_ALLY_MODIFIER = 99;
     const ENEMY_CATALOG_FORMAT_VERSION = 1;
     const FORMAT_VERSION = 3;
     const MAX_SLOTS = 50;
@@ -1148,6 +1271,15 @@
         }
     };
     const MODES = ['edit', 'play'];
+    const ALLY_STAT_CONFIG = {
+        s_mov: { label: 'Movement', shortLabel: 'Mov' },
+        s_fig: { label: 'Fight', shortLabel: 'Fig' },
+        s_sho: { label: 'Shoot', shortLabel: 'Sho' },
+        s_arm: { label: 'Armour', shortLabel: 'Arm' },
+        s_wil: { label: 'Will', shortLabel: 'Wil' },
+        s_hpm: { label: 'Health', shortLabel: 'Health' },
+        s_rec: { label: 'Recruitment', shortLabel: 'Recr' }
+    };
     const SEARCHABLE_STATE = {};
     /*
        Missions are nested records rather than flat fields, so they live in a state object instead
@@ -1156,7 +1288,8 @@
     */
     let MISSION = { active: null, history: [] };
     let ENEMY_CATALOG = null;
-    let roundArmorBonus = 0;
+    let allyModifiers = {};
+    let activeAllyStatId = null;
     let lastMissionRemoval = null;
     let missionSequence = 0;
     let activePreviewId = null;
@@ -1566,65 +1699,143 @@
         }
     }
 
-    function loadRoundArmorBonus() {
+    function normalizeAllyModifiers(value) {
+        if (!isPlainObject(value)) throw new Error('Temporary Ally modifiers are not a record.');
+        const normalized = {};
+
+        Object.entries(value).forEach(([statId, rawModifier]) => {
+            if (!ALLY_STAT_CONFIG[statId]) throw new Error(`Unknown temporary Ally stat "${statId}".`);
+            const modifier = Number(rawModifier);
+            if (!Number.isInteger(modifier) || modifier <= 0 || modifier > MAX_ALLY_MODIFIER) {
+                throw new Error(`Temporary Ally modifier for ${statId} is invalid.`);
+            }
+            normalized[statId] = modifier;
+        });
+
+        return normalized;
+    }
+
+    function persistAllyModifiers() {
         try {
-            roundArmorBonus = sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY) === String(ROUND_ARMOR_BONUS)
-                ? ROUND_ARMOR_BONUS
-                : 0;
-            if (!roundArmorBonus) sessionStorage.removeItem(ROUND_ARMOR_STORAGE_KEY);
+            const hasModifiers = Object.keys(allyModifiers).length > 0;
+            if (hasModifiers) sessionStorage.setItem(ALLY_MODIFIER_STORAGE_KEY, JSON.stringify(allyModifiers));
+            else sessionStorage.removeItem(ALLY_MODIFIER_STORAGE_KEY);
+            sessionStorage.removeItem(LEGACY_ROUND_ARMOR_STORAGE_KEY);
         } catch (error) {
-            console.error('The temporary Armour bonus could not be restored.', error);
-            roundArmorBonus = 0;
+            console.error('Temporary Ally modifiers could not be stored.', error);
         }
-        renderRoundArmorBonus();
     }
 
-    function setRoundArmorBonus(active) {
-        roundArmorBonus = active ? ROUND_ARMOR_BONUS : 0;
+    function loadAllyModifiers() {
         try {
-            if (roundArmorBonus) sessionStorage.setItem(ROUND_ARMOR_STORAGE_KEY, String(roundArmorBonus));
-            else sessionStorage.removeItem(ROUND_ARMOR_STORAGE_KEY);
+            const raw = sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY);
+            if (raw) {
+                allyModifiers = normalizeAllyModifiers(JSON.parse(raw));
+            } else if (sessionStorage.getItem(LEGACY_ROUND_ARMOR_STORAGE_KEY) === '2') {
+                allyModifiers = { s_arm: 2 };
+            } else {
+                allyModifiers = {};
+            }
+            persistAllyModifiers();
         } catch (error) {
-            console.error('The temporary Armour bonus could not be stored.', error);
+            console.error('Temporary Ally modifiers could not be restored.', error);
+            allyModifiers = {};
+            try {
+                sessionStorage.removeItem(ALLY_MODIFIER_STORAGE_KEY);
+                sessionStorage.removeItem(LEGACY_ROUND_ARMOR_STORAGE_KEY);
+            } catch {
+                // The controls still work for this page even when session storage is unavailable.
+            }
         }
-        renderRoundArmorBonus();
+        renderAllAllyModifiers();
     }
 
-    function clearRoundArmorBonus() {
-        setRoundArmorBonus(false);
+    function setAllyModifier(statId, rawModifier) {
+        if (!ALLY_STAT_CONFIG[statId]) return;
+        const modifier = Math.min(MAX_ALLY_MODIFIER, Math.max(0, Math.trunc(Number(rawModifier) || 0)));
+
+        if (modifier) allyModifiers[statId] = modifier;
+        else delete allyModifiers[statId];
+
+        persistAllyModifiers();
+        renderAllyModifier(statId);
     }
 
-    function toggleRoundArmorBonus() {
-        setRoundArmorBonus(roundArmorBonus !== ROUND_ARMOR_BONUS);
+    function clearAllAllyModifiers(closeDialog = false) {
+        allyModifiers = {};
+        persistAllyModifiers();
+        renderAllAllyModifiers();
+        if (closeDialog) closeAllyModifier();
     }
 
-    function renderRoundArmorBonus() {
-        const field = document.getElementById('s_arm');
-        const card = document.getElementById('armor_stat');
-        const output = document.getElementById('armor_effective');
-        const breakdown = document.getElementById('armor_breakdown');
-        const button = document.getElementById('armor_ally_bonus');
-        if (!field || !card || !output || !breakdown || !button) return;
+    function renderAllAllyModifiers() {
+        Object.keys(ALLY_STAT_CONFIG).forEach(renderAllyModifier);
+    }
+
+    function renderAllyModifier(statId) {
+        const config = ALLY_STAT_CONFIG[statId];
+        const field = document.getElementById(statId);
+        const card = document.querySelector(`[data-ally-stat="${statId}"]`);
+        const output = document.getElementById(`${statId}_effective`);
+        const breakdown = document.getElementById(`${statId}_breakdown`);
+        const button = document.getElementById(`${statId}_ally`);
+        if (!config || !field || !card || !output || !breakdown || !button) return;
 
         const baseText = field.value.trim();
         const base = Number(baseText);
         const hasBase = baseText !== '' && Number.isFinite(base);
-        const active = roundArmorBonus === ROUND_ARMOR_BONUS;
+        const modifier = allyModifiers[statId] || 0;
+        const active = modifier > 0;
+        const effective = hasBase ? base + modifier : null;
 
         card.classList.toggle('temp-active', active);
-        output.textContent = active && hasBase ? String(base + ROUND_ARMOR_BONUS) : '';
-        output.setAttribute('aria-label', active && hasBase
-            ? `Effective Armour ${base + ROUND_ARMOR_BONUS}`
-            : '');
+        output.textContent = active && hasBase ? String(effective) : '';
+        output.setAttribute('aria-label', active && hasBase ? `Effective ${config.label} ${effective}` : '');
         breakdown.textContent = active
-            ? `TEMP · Base ${hasBase ? base : '—'} + Ally ${ROUND_ARMOR_BONUS}`
+            ? `TEMP · Base ${hasBase ? base : '—'} + Ally ${modifier}`
             : '';
-        button.textContent = active ? `Clear +${ROUND_ARMOR_BONUS}` : `Ally +${ROUND_ARMOR_BONUS}`;
+        button.textContent = active ? `Ally +${modifier}` : 'Ally +';
         button.setAttribute('aria-pressed', String(active));
         button.setAttribute('aria-label', active
-            ? `Remove temporary plus ${ROUND_ARMOR_BONUS} Armour bonus`
-            : `Apply temporary plus ${ROUND_ARMOR_BONUS} Armour bonus`);
+            ? `Change temporary plus ${modifier} ${config.label} bonus`
+            : `Set temporary Ally bonus for ${config.label}`);
         button.disabled = !active && !hasBase;
+    }
+
+    function openAllyModifier(statId) {
+        if (!ALLY_STAT_CONFIG[statId]) return;
+        activeAllyStatId = statId;
+
+        const dialog = document.getElementById('ally_modifier_dialog');
+        const input = document.getElementById('ally_modifier_value');
+        const config = ALLY_STAT_CONFIG[statId];
+        document.getElementById('ally_modifier_title').textContent = `Ally modifier · ${config.label}`;
+        input.value = allyModifiers[statId] || '';
+
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+        input.focus();
+        input.select();
+    }
+
+    function closeAllyModifier() {
+        const dialog = document.getElementById('ally_modifier_dialog');
+        if (dialog.open && typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+        activeAllyStatId = null;
+    }
+
+    function applyAllyModifier(event) {
+        event.preventDefault();
+        if (!activeAllyStatId) return;
+        setAllyModifier(activeAllyStatId, document.getElementById('ally_modifier_value').value);
+        closeAllyModifier();
+    }
+
+    function clearSelectedAllyModifier() {
+        if (!activeAllyStatId) return;
+        setAllyModifier(activeAllyStatId, 0);
+        closeAllyModifier();
     }
 
     function updateArchetype(skipSave = false) {
@@ -2807,7 +3018,7 @@
             f.value = Object.prototype.hasOwnProperty.call(fields, f.id) ? fields[f.id] : '';
             if (f.id === 'char_arch') updateArchetype(true);
         });
-        renderRoundArmorBonus();
+        renderAllAllyModifiers();
 
         clearSlots('heroic');
         clearSlots('innate');
@@ -2921,7 +3132,7 @@
     function initNumberSteppers() {
         document.querySelectorAll('input[type=number]').forEach(input => {
             // Avoid double-wrapping
-            if (input.closest('.num-stepper')) return;
+            if (input.closest('.num-stepper') || input.hasAttribute('data-no-stepper')) return;
 
             const wrapper = document.createElement('div');
             wrapper.className = 'num-stepper';
@@ -2968,10 +3179,13 @@
         populateDropdowns();
         loadEnemyCatalog();
         initSearchables();
-        loadRoundArmorBonus();
+        loadAllyModifiers();
         attachSaveListeners();
         load();
         initNumberSteppers();
+        document.getElementById('ally_modifier_dialog').addEventListener('close', () => {
+            activeAllyStatId = null;
+        });
         document.addEventListener('click', handleDocumentClick);
         hidePreviewPanel();
     };
@@ -3008,7 +3222,7 @@
                 return;
             }
 
-            clearRoundArmorBonus();
+            clearAllAllyModifiers();
             applyDocument(result.document);
 
             if (result.warnings.length) {
@@ -3032,7 +3246,7 @@
         );
         if (!confirmed) return;
 
-        clearRoundArmorBonus();
+        clearAllAllyModifiers();
         try {
             localStorage.removeItem(STORAGE_KEY);
             localStorage.removeItem(STORAGE_RECOVERY_KEY);

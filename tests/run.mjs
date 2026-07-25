@@ -444,7 +444,7 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), '{broken', 'corrupt primary data not silently removed');
 
         await freshBrowserState(client);
-        await client.evaluate(`setRoundArmorBonus(true)`);
+        await client.evaluate(`setAllyModifier('s_arm', 2)`);
         await client.evaluate(`(() => {
             const file = new File([${JSON.stringify(JSON.stringify(fixtures['format-1-character']))}], 'format-1.json', { type: 'application/json' });
             importJSONFile({ target: { files: [file], value: 'selected' } });
@@ -452,7 +452,7 @@ try {
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
         equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 3, 'file import persists current format');
-        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), null, 'file import clears temporary Armour bonus');
+        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), null, 'file import clears temporary Ally modifiers');
 
         const beforeInvalid = await client.evaluate(`localStorage.getItem(STORAGE_KEY)`);
         await client.evaluate(`(() => {
@@ -463,13 +463,13 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), beforeInvalid, 'invalid file leaves storage unchanged');
         equal(await client.evaluate(`document.getElementById('char_name').value`), 'Format One', 'invalid file leaves sheet unchanged');
 
-        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setRoundArmorBonus(true); window.confirm = () => true; clearSheet();`);
+        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setAllyModifier('s_fig', 3); window.confirm = () => true; clearSheet();`);
         await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`localStorage.getItem('unrelated_test_key')`), 'keep', 'obliterate keeps unrelated storage');
         equal(await client.evaluate(`localStorage.getItem(ENEMY_CATALOG_STORAGE_KEY) !== null`), true, 'obliterate keeps catalog');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), null, 'obliterate removes character');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_RECOVERY_KEY)`), null, 'obliterate removes recovery');
-        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), null, 'obliterate clears temporary Armour bonus');
+        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), null, 'obliterate clears temporary Ally modifiers');
     });
 
     await suite('dynamic slots and searchable controls', async () => {
@@ -572,33 +572,53 @@ try {
         equal(await client.evaluate(`document.getElementById('it1_box').classList.contains('open')`), false, 'mode switch closes combobox');
     });
 
-    await suite('temporary Armour bonus', async () => {
+    await suite('temporary Ally stat modifiers', async () => {
         await freshBrowserState(client);
 
-        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').disabled`), true, 'bonus waits for a base Armour value');
+        equal(await client.evaluate(`document.querySelectorAll('[data-ally-stat]').length`), 7, 'seven base stats offer Ally modifiers');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_hpc"]')`), null, 'Current Health has no modifier control');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'modifier control is visible in edit mode');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').disabled`), true, 'modifier waits for a base stat value');
 
         await client.evaluate(`(() => {
+            const fight = document.getElementById('s_fig');
+            fight.value = '3';
+            fight.dispatchEvent(new InputEvent('input', { bubbles: true }));
             const armour = document.getElementById('s_arm');
             armour.value = '12';
             armour.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            setMode('play');
         })()`);
-        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').disabled`), false, 'bonus becomes available with base Armour');
-        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').offsetParent !== null`), true, 'bonus control is visible in play mode');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').disabled`), false, 'modifier becomes available with a base stat');
 
-        await client.evaluate(`document.getElementById('armor_ally_bonus').click()`);
-        equal(await client.evaluate(`document.getElementById('armor_stat').classList.contains('temp-active')`), true, 'active bonus is visibly marked');
-        equal(await client.evaluate(`document.getElementById('armor_effective').textContent`), '14', 'effective Armour includes temporary bonus');
-        equal(await client.evaluate(`document.getElementById('armor_breakdown').textContent`), 'TEMP · Base 12 + Ally 2', 'bonus equation stays explicit');
-        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').getAttribute('aria-pressed')`), 'true', 'active bonus is announced');
-        equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'base Armour is unchanged');
-        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), '2', 'temporary bonus is session-scoped');
+        await client.evaluate(`document.getElementById('s_fig_ally').click()`);
+        equal(await client.evaluate(`document.getElementById('ally_modifier_dialog').open`), true, 'stat button opens shared modifier dialog');
+        equal(await client.evaluate(`document.getElementById('ally_modifier_title').textContent.includes('Fight')`), true, 'dialog names selected stat');
+        equal(await client.evaluate(`document.getElementById('ally_modifier_value').closest('.num-stepper')`), null, 'dialog value is not wrapped in stat steppers');
+        await client.evaluate(`(() => {
+            document.getElementById('ally_modifier_value').value = '4';
+            document.querySelector('#ally_modifier_dialog button[type="submit"]').click();
+        })()`);
+        equal(await client.evaluate(`document.getElementById('ally_modifier_dialog').open`), false, 'Apply closes modifier dialog');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('temp-active')`), true, 'active Fight bonus is visibly marked');
+        equal(await client.evaluate(`document.getElementById('s_fig_effective').textContent`), '7', 'effective Fight uses arbitrary bonus');
+        equal(await client.evaluate(`document.getElementById('s_fig_breakdown').textContent`), 'TEMP · Base 3 + Ally 4', 'Fight equation stays explicit');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').getAttribute('aria-pressed')`), 'true', 'active Fight bonus is announced');
+        equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'base Fight is unchanged');
+
+        await client.evaluate(`setAllyModifier('s_arm', 2)`);
+        equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '14', 'Armour keeps configurable effective value');
+        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), '{"s_fig":4,"s_arm":2}', 'multiple modifiers are session-scoped');
+        equal(await client.evaluate(`collectDocument().character.fields.s_fig`), '3', 'character document keeps base Fight');
         equal(await client.evaluate(`collectDocument().character.fields.s_arm`), '12', 'character document keeps base Armour');
-        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes(ROUND_ARMOR_STORAGE_KEY)`), false, 'character export excludes temporary bonus');
+        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes(ALLY_MODIFIER_STORAGE_KEY)`), false, 'character export excludes temporary modifiers');
+
+        await client.evaluate(`setMode('play')`);
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'modifier control remains visible in play mode');
 
         await client.evaluate(`saveNow(); location.reload();`);
-        await waitFor(client, `document.readyState === 'complete' && document.getElementById('armor_effective').textContent === '14'`);
-        equal(await client.evaluate(`document.getElementById('armor_stat').classList.contains('temp-active')`), true, 'bonus survives an accidental reload');
+        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_fig_effective').textContent === '7'`);
+        equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '14', 'multiple modifiers survive an accidental reload');
+        equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'reload still preserves base Fight');
         equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'reload still preserves base Armour');
 
         await client.send('Emulation.setDeviceMetricsOverride', {
@@ -611,15 +631,31 @@ try {
             enabled: true,
             maxTouchPoints: 5
         });
-        check(await client.evaluate(`document.getElementById('armor_ally_bonus').getBoundingClientRect().height >= 44`), 'Armour bonus target is touch-sized');
-        check(await client.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), 'Armour bonus causes no phone overflow');
+        check(await client.evaluate(`document.getElementById('s_fig_ally').getBoundingClientRect().height >= 44`), 'Ally modifier target is touch-sized');
+        check(await client.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), 'Ally modifiers cause no phone overflow');
         await client.send('Emulation.clearDeviceMetricsOverride');
         await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });
 
-        await client.evaluate(`document.getElementById('armor_ally_bonus').click()`);
-        equal(await client.evaluate(`document.getElementById('armor_stat').classList.contains('temp-active')`), false, 'Clear removes visible bonus state');
-        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), null, 'Clear removes session bonus');
-        equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'Clear never changes base Armour');
+        await client.evaluate(`(() => {
+            document.getElementById('s_fig_ally').click();
+            document.querySelector('#ally_modifier_dialog button[onclick="clearSelectedAllyModifier()"]').click();
+        })()`);
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('temp-active')`), false, 'Clear removes selected Fight bonus');
+        equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'Clear never changes base Fight');
+        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)).s_arm`), 2, 'Clear keeps other Ally modifiers');
+
+        await client.evaluate(`(() => {
+            document.getElementById('s_arm_ally').click();
+            document.querySelector('#ally_modifier_dialog .ally-dialog-clear-all').click();
+        })()`);
+        equal(await client.evaluate(`document.querySelectorAll('.ally-stat.temp-active').length`), 0, 'Clear all removes every visible modifier');
+        equal(await client.evaluate(`sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)`), null, 'Clear all removes session modifier record');
+        equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'Clear all never changes base Armour');
+
+        await client.evaluate(`sessionStorage.setItem(LEGACY_ROUND_ARMOR_STORAGE_KEY, '2'); location.reload();`);
+        await waitFor(client, `document.readyState === 'complete' && document.getElementById('s_arm_effective').textContent === '14'`);
+        equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(ALLY_MODIFIER_STORAGE_KEY)).s_arm`), 2, 'legacy Armour bonus migrates to modifier record');
+        equal(await client.evaluate(`sessionStorage.getItem(LEGACY_ROUND_ARMOR_STORAGE_KEY)`), null, 'legacy Armour key removed after migration');
     });
 
     await suite('enemy catalog and mission lifecycle', async () => {
