@@ -772,11 +772,28 @@
     const MAX_SLOTS = 50;
     const DEFAULT_HEROIC_SLOTS = 5;
     const DEFAULT_INNATE_SLOTS = 4;
+    const SLOT_TYPES = {
+        heroic: {
+            prefix: 'ab',
+            containerId: 'abilities-list',
+            label: 'Ability Slot',
+            placeholder: 'Search ability or spell...',
+            allowCustom: false,
+            minSlots: DEFAULT_HEROIC_SLOTS
+        },
+        innate: {
+            prefix: 'in',
+            containerId: 'innate-list',
+            label: 'Innate Slot',
+            placeholder: 'Search innate spell or type custom...',
+            allowCustom: true,
+            minSlots: DEFAULT_INNATE_SLOTS
+        }
+    };
     const SEARCHABLE_STATE = {};
     let activePreviewId = null;
     let saveTimer = null;
-    let heroicSlotsCount = 0;
-    let innateSlotsCount = 0;
+    let slotSequence = 0;
 
     function toRoman(num) {
         const lookup = {M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};
@@ -866,91 +883,93 @@
         }
     }
 
-    function addHeroicSlot() {
-        heroicSlotsCount++;
-        const i = heroicSlotsCount;
-        const id = 'ab' + i;
-        const roman = toRoman(i);
-        
+    function slotGroups(type) {
+        const container = document.getElementById(SLOT_TYPES[type].containerId);
+        return Array.from(container.querySelectorAll('.ability-group'));
+    }
+
+    // Slot ids come from a sequence that never counts down, so a removed id is never handed out again.
+    function addSlot(type) {
+        const config = SLOT_TYPES[type];
+        const id = `${config.prefix}_${++slotSequence}`;
+
         SEARCHABLE_STATE[id] = {
             id: id,
             options: buildAbilityOptions(),
-            allowCustom: false,
-            slotLabel: `Ability Slot ${roman}`,
+            allowCustom: config.allowCustom,
+            slotLabel: config.label,
             renderedOptions: [],
             selectedOption: null,
             selectedValue: '',
             highlightIndex: -1
         };
 
-        const isExtra = i > 5;
-        const container = document.getElementById('abilities-list');
-        const html = `
-            <div class="ability-group" id="group_${id}">
+        document.getElementById(config.containerId).insertAdjacentHTML('beforeend', `
+            <div class="ability-group" id="group_${id}" data-slot-id="${id}" data-slot-type="${type}">
                 <div class="numbered-row" id="row_${id}">
                     <div class="ability-toggle" onclick="toggleUse('${id}')"></div>
-                    <span class="row-number">${roman}</span>
+                    <span class="row-number"></span>
                     <div class="search-select" id="${id}_box" onclick="activatePreview('${id}')">
-                        <input type="text" id="${id}_search" class="search-select-input" placeholder="Search ability or spell..." autocomplete="off" oninput="handleSearchInput('${id}')" onfocus="openSearchMenu('${id}')" onkeydown="handleSearchKeydown(event, '${id}')" onblur="handleSearchBlur('${id}')">
+                        <input type="text" id="${id}_search" class="search-select-input" placeholder="${config.placeholder}" autocomplete="off" oninput="handleSearchInput('${id}')" onfocus="openSearchMenu('${id}')" onkeydown="handleSearchKeydown(event, '${id}')" onblur="handleSearchBlur('${id}')">
                         <div id="${id}_menu" class="search-select-menu"></div>
                     </div>
                     <div class="info-toggle" data-info-for="${id}" onclick="toggleDescVisibility('${id}', this)">ℹ</div>
-                    ${isExtra ? `<button class="remove-slot-btn" title="Remove this slot" onclick="removeSlot('${id}', 'heroic')">✕</button>` : ''}
+                    <button class="remove-slot-btn" title="Remove this slot" onclick="removeSlot('${id}', '${type}')">✕</button>
                 </div>
                 <div id="meta_${id}" class="selection-meta"></div>
                 <div id="desc_${id}" class="ability-desc"></div>
                 <input type="hidden" id="${id}" class="save-field">
             </div>
-        `;
-        container.insertAdjacentHTML('beforeend', html);
+        `);
+
+        renumberSlots(type);
+        return id;
+    }
+
+    // Position-derived presentation only: the numeral and whether a slot may be removed.
+    function renumberSlots(type) {
+        const config = SLOT_TYPES[type];
+
+        slotGroups(type).forEach((group, index) => {
+            const position = index + 1;
+            const roman = toRoman(position);
+            const state = SEARCHABLE_STATE[group.dataset.slotId];
+            const removeBtn = group.querySelector('.remove-slot-btn');
+
+            group.querySelector('.row-number').textContent = roman;
+            if (state) {
+                state.slotLabel = `${config.label} ${roman}`;
+                if (activePreviewId === state.id) renderPreviewPanel(state.id);
+            }
+            removeBtn.style.display = position > config.minSlots ? '' : 'none';
+        });
+    }
+
+    function addHeroicSlot() {
+        addSlot('heroic');
+        scheduleSave();
     }
 
     function addInnateSlot() {
-        innateSlotsCount++;
-        const i = innateSlotsCount;
-        const id = 'in' + i;
-        const roman = toRoman(i);
-        
-        SEARCHABLE_STATE[id] = {
-            id: id,
-            options: buildAbilityOptions(), 
-            allowCustom: true,
-            slotLabel: `Innate Slot ${roman}`,
-            renderedOptions: [],
-            selectedOption: null,
-            selectedValue: '',
-            highlightIndex: -1
-        };
-
-        const isExtra = i > 4;
-        const container = document.getElementById('innate-list');
-        const html = `
-            <div class="ability-group" id="group_${id}">
-                <div class="numbered-row" id="row_${id}">
-                    <div class="ability-toggle" onclick="toggleUse('${id}')"></div>
-                    <span class="row-number">${roman}</span>
-                    <div class="search-select" id="${id}_box" onclick="activatePreview('${id}')">
-                        <input type="text" id="${id}_search" class="search-select-input" placeholder="Search innate spell or type custom..." autocomplete="off" oninput="handleSearchInput('${id}')" onfocus="openSearchMenu('${id}')" onkeydown="handleSearchKeydown(event, '${id}')" onblur="handleSearchBlur('${id}')">
-                        <div id="${id}_menu" class="search-select-menu"></div>
-                    </div>
-                    <div class="info-toggle" data-info-for="${id}" onclick="toggleDescVisibility('${id}', this)">ℹ</div>
-                    ${isExtra ? `<button class="remove-slot-btn" title="Remove this slot" onclick="removeSlot('${id}', 'innate')">✕</button>` : ''}
-                </div>
-                <div id="meta_${id}" class="selection-meta"></div>
-                <div id="desc_${id}" class="ability-desc"></div>
-                <input type="hidden" id="${id}" class="save-field">
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', html);
+        addSlot('innate');
+        scheduleSave();
     }
 
     function removeSlot(id, type) {
+        if (slotGroups(type).length <= SLOT_TYPES[type].minSlots) return;
+
         const group = document.getElementById('group_' + id);
         if (group) group.remove();
         delete SEARCHABLE_STATE[id];
-        if (type === 'heroic') heroicSlotsCount--;
-        else innateSlotsCount--;
+        if (activePreviewId === id) hidePreviewPanel();
+
+        renumberSlots(type);
         scheduleSave();
+    }
+
+    function clearSlots(type) {
+        slotGroups(type).forEach(group => delete SEARCHABLE_STATE[group.dataset.slotId]);
+        document.getElementById(SLOT_TYPES[type].containerId).innerHTML = '';
     }
 
     function normalizeSearchValue(value) {
@@ -991,9 +1010,8 @@
         }, 180);
     }
 
-    function collectSlots(containerId) {
-        const groups = document.getElementById(containerId).querySelectorAll('.ability-group');
-        return Array.from(groups).map(group => {
+    function collectSlots(type) {
+        return slotGroups(type).map(group => {
             const field = group.querySelector('input.save-field');
             const row = group.querySelector('.numbered-row');
             return {
@@ -1011,8 +1029,8 @@
             formatVersion: FORMAT_VERSION,
             character: {
                 fields: fields,
-                heroicSlots: collectSlots('abilities-list'),
-                innateSlots: collectSlots('innate-list')
+                heroicSlots: collectSlots('heroic'),
+                innateSlots: collectSlots('innate')
             },
             uiState: {
                 showInnateSection: document.getElementById('innate-section').style.display === 'block'
@@ -1147,6 +1165,11 @@
 
     function renderPreviewPanel(id) {
         const state = SEARCHABLE_STATE[id];
+        if (!state) {
+            hidePreviewPanel();
+            return;
+        }
+
         const option = getSearchPreviewOption(id);
         const panel = document.getElementById('selection_preview');
         const title = document.getElementById('preview_title');
@@ -1154,7 +1177,7 @@
         const description = document.getElementById('preview_description');
         const context = document.getElementById('preview_context');
 
-        if (!state || !option) {
+        if (!option) {
             hidePreviewPanel();
             return;
         }
@@ -1534,14 +1557,8 @@
             if (f.id === 'char_arch') updateArchetype(true);
         });
 
-        document.getElementById('abilities-list').innerHTML = '';
-        document.getElementById('innate-list').innerHTML = '';
-        heroicSlotsCount = 0;
-        innateSlotsCount = 0;
-
-        Object.keys(SEARCHABLE_STATE).forEach(id => {
-            if (id.startsWith('ab') || id.startsWith('in')) delete SEARCHABLE_STATE[id];
-        });
+        clearSlots('heroic');
+        clearSlots('innate');
 
         if (doc.uiState.showInnateSection) {
             document.getElementById('innate-section').style.display = 'block';
@@ -1551,20 +1568,17 @@
             document.getElementById('innate_toggle_btn').textContent = 'Show Innate Spells & Abilities';
         }
 
-        doc.character.heroicSlots.forEach(() => addHeroicSlot());
-        doc.character.innateSlots.forEach(() => addInnateSlot());
-
-        applySlotValues('ab', doc.character.heroicSlots);
-        applySlotValues('in', doc.character.innateSlots);
+        applySlots('heroic', doc.character.heroicSlots);
+        applySlots('innate', doc.character.innateSlots);
 
         for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, fields['it' + i] || '', true);
 
         if (persist) saveNow();
     }
 
-    function applySlotValues(prefix, slots) {
-        slots.forEach((slot, index) => {
-            const id = prefix + (index + 1);
+    function applySlots(type, slots) {
+        slots.forEach(slot => {
+            const id = addSlot(type);
             applySearchableValue(id, slot.value, true);
             document.getElementById('row_' + id).classList.toggle('used', slot.used);
         });
