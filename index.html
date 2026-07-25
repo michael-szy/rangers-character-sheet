@@ -69,10 +69,10 @@
     input, textarea, select {
         background: var(--input-bg); border: 1px solid var(--border-col); color: #fff;
         padding: 10px; width: 100%; box-sizing: border-box; border-radius: 6px;
-        font-family: var(--body-font); transition: all 0.3s ease;
+        font-family: var(--body-font); transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     input:focus, select:focus { border-color: var(--accent-teal); box-shadow: 0 0 8px var(--accent-teal-glow); outline: none; }
-    button:focus-visible, .footer-action:focus-visible, select:focus-visible {
+    button:focus-visible, select:focus-visible {
         outline: 2px solid var(--accent-teal);
         outline-offset: 2px;
     }
@@ -91,10 +91,12 @@
 
     /* Abilities & Skills */
     .numbered-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    /* Both toggles are real buttons, so they have to opt out of the generic button sizing. */
     .ability-toggle {
         width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent-teal);
         background: radial-gradient(circle, #2ecc71 0%, #16e0bd 100%); cursor: pointer;
-        box-shadow: 0 0 10px var(--accent-teal-glow); transition: all 0.4s ease; flex-shrink: 0;
+        box-shadow: 0 0 10px var(--accent-teal-glow); transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease; flex-shrink: 0;
+        padding: 0; min-height: 0;
     }
     /* toggleUse() marks the row, so the dot has to be selected through it. */
     .numbered-row.used .ability-toggle { background: #2a2e35; border-color: #555; box-shadow: none; transform: scale(0.8); }
@@ -116,11 +118,14 @@
         width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--accent-teal);
         background: rgba(22, 224, 189, 0.1); cursor: pointer; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
-        font-size: 1.1em; color: var(--accent-teal); transition: all 0.3s ease;
+        font-size: 1.1em; color: var(--accent-teal); transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
         font-family: var(--fantasy-font); font-weight: bold;
+        padding: 0; min-height: 0;
     }
     .info-toggle.active { background: var(--accent-teal); color: #000; }
-    .info-toggle:active { background: rgba(22, 224, 189, 0.28); transform: scale(0.94); }
+    .info-toggle:not(:disabled):active { background: rgba(22, 224, 189, 0.28); transform: scale(0.94); }
+    /* A slot with no rule text has nothing to expand; say so instead of offering a dead control. */
+    .info-toggle:disabled { opacity: 0.3; cursor: default; }
     .top-utility {
         display: flex;
         justify-content: flex-end;
@@ -276,29 +281,13 @@
     .notes-area { height: 180px; margin-top: 15px; background: rgba(0,0,0,0.2); font-style: italic; }
 
     .footer-btns { margin-top: 40px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-    .footer-action {
-        cursor: pointer;
-        border: 1px solid var(--accent-teal);
-        padding: 12px 24px;
-        border-radius: 6px;
-        font-family: var(--fantasy-font);
-        font-weight: bold;
-        font-size: 0.85em;
-        color: var(--accent-teal);
-        background: transparent;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 48px;
-        box-sizing: border-box;
-    }
     button { 
         background: transparent; color: var(--accent-teal); border: 1px solid var(--accent-teal);
         padding: 12px 24px; border-radius: 6px; cursor: pointer; font-family: var(--fantasy-font);
-        font-weight: bold; transition: all 0.3s;
+        font-weight: bold; transition: background 0.3s, color 0.3s, border-color 0.3s, transform 0.3s;
         min-height: 48px;
     }
-    button:active, .footer-action:active { background: var(--accent-teal); color: #000; transform: scale(0.98); }
+    button:active { background: var(--accent-teal); color: #000; transform: scale(0.98); }
 
     /*
        Tablet: a layout of its own instead of a compressed desktop one. The cut sits at 900px
@@ -330,7 +319,7 @@
     .add-slot-btn { 
         background: transparent; color: #91a0b0; border: 1px dashed #555; 
         width: 100%; border-radius: 6px; padding: 10px; margin-top: 15px; 
-        font-family: var(--fantasy-font); cursor: pointer; transition: all 0.3s;
+        font-family: var(--fantasy-font); cursor: pointer; transition: background 0.3s, color 0.3s, border-color 0.3s;
         text-transform: uppercase; font-size: 0.8em; letter-spacing: 1px;
         min-height: auto; display: block; box-sizing: border-box;
     }
@@ -344,9 +333,9 @@
 
     /* Hover decoration only where a real hover pointer exists; taps must not leave it stuck. */
     @media (hover: hover) {
-        .info-toggle:hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
+        .info-toggle:not(:disabled):hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
         .search-option:hover { background: rgba(22, 224, 189, 0.12); }
-        button:hover, .footer-action:hover { background: var(--accent-teal); color: #000; }
+        button:hover { background: var(--accent-teal); color: #000; }
         .add-slot-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(22, 224, 189, 0.05); }
         .remove-slot-btn:hover { color: var(--danger-red); }
     }
@@ -492,7 +481,7 @@
 
     <div class="sheet-container">
         <div class="top-utility">
-            <div id="save_status" class="save-status saved">Saved</div>
+            <div id="save_status" class="save-status saved" role="status">Saved</div>
         </div>
         <div class="grid-top">
             <div class="stat-box"><div class="stat-label">Ranger Name</div><input type="text" id="char_name" class="save-field" placeholder="Name the legend walking into the wilds"></div>
@@ -505,7 +494,7 @@
             <select id="char_arch" class="save-field" onchange="updateArchetype()">
                 </select>
             <div id="arch_toggle_container" style="display:none;">
-                <button class="archetype-btn" id="arch_btn" onclick="toggleArchDetails()">Show Archetype Details</button>
+                <button type="button" class="archetype-btn" id="arch_btn" aria-expanded="false" aria-controls="arch_details" onclick="toggleArchDetails()">Show Archetype Details</button>
                 <div id="arch_details" class="archetype-details"></div>
             </div>
         </div>
@@ -522,11 +511,11 @@
         </div>
 
         <div id="innate-container" style="margin-top: 25px;">
-            <button class="add-slot-btn" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
+            <button type="button" class="add-slot-btn" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" aria-expanded="false" aria-controls="innate-section" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
             <div id="innate-section" style="display: none;">
                 <div class="section-header" style="margin-top: 0;">Innate Spells & Abilities</div>
                 <div id="innate-list"></div>
-                <button class="add-slot-btn" onclick="addInnateSlot()">+ Add Innate Slot</button>
+                <button type="button" class="add-slot-btn" onclick="addInnateSlot()">+ Add Innate Slot</button>
             </div>
         </div>
 
@@ -542,41 +531,41 @@
             <div>
                 <div class="section-header">Heroic Abilities & Spells</div>
                 <div id="abilities-list"></div>
-                <button class="add-slot-btn" onclick="addHeroicSlot()">+ Add Ability Slot</button>
+                <button type="button" class="add-slot-btn" onclick="addHeroicSlot()">+ Add Ability Slot</button>
 
                 <div class="section-header">Equipment</div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">1</span><div class="search-select" id="it1_box" onclick="activatePreview('it1')"><input type="text" id="it1_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it1')" onfocus="openSearchMenu('it1')" onkeydown="handleSearchKeydown(event, 'it1')" onblur="handleSearchBlur('it1')"><div id="it1_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it1" onclick="toggleDescVisibility('it1', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">1</span><div class="search-select" id="it1_box" onclick="activatePreview('it1')"><input type="text" id="it1_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it1_menu" aria-autocomplete="list" aria-label="Equipment Slot 1" oninput="handleSearchInput('it1')" onfocus="handleSearchFocus('it1')" onkeydown="handleSearchKeydown(event, 'it1')" onblur="handleSearchBlur('it1')"><div id="it1_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it1" aria-expanded="false" aria-controls="desc_it1" aria-label="Rule text for Equipment Slot 1" disabled onclick="toggleDescVisibility('it1', this)">ℹ</button></div>
                     <div id="meta_it1" class="selection-meta"></div>
                     <div id="desc_it1" class="ability-desc"></div>
                     <input type="hidden" id="it1" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">2</span><div class="search-select" id="it2_box" onclick="activatePreview('it2')"><input type="text" id="it2_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it2')" onfocus="openSearchMenu('it2')" onkeydown="handleSearchKeydown(event, 'it2')" onblur="handleSearchBlur('it2')"><div id="it2_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it2" onclick="toggleDescVisibility('it2', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">2</span><div class="search-select" id="it2_box" onclick="activatePreview('it2')"><input type="text" id="it2_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it2_menu" aria-autocomplete="list" aria-label="Equipment Slot 2" oninput="handleSearchInput('it2')" onfocus="handleSearchFocus('it2')" onkeydown="handleSearchKeydown(event, 'it2')" onblur="handleSearchBlur('it2')"><div id="it2_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it2" aria-expanded="false" aria-controls="desc_it2" aria-label="Rule text for Equipment Slot 2" disabled onclick="toggleDescVisibility('it2', this)">ℹ</button></div>
                     <div id="meta_it2" class="selection-meta"></div>
                     <div id="desc_it2" class="ability-desc"></div>
                     <input type="hidden" id="it2" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">3</span><div class="search-select" id="it3_box" onclick="activatePreview('it3')"><input type="text" id="it3_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it3')" onfocus="openSearchMenu('it3')" onkeydown="handleSearchKeydown(event, 'it3')" onblur="handleSearchBlur('it3')"><div id="it3_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it3" onclick="toggleDescVisibility('it3', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">3</span><div class="search-select" id="it3_box" onclick="activatePreview('it3')"><input type="text" id="it3_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it3_menu" aria-autocomplete="list" aria-label="Equipment Slot 3" oninput="handleSearchInput('it3')" onfocus="handleSearchFocus('it3')" onkeydown="handleSearchKeydown(event, 'it3')" onblur="handleSearchBlur('it3')"><div id="it3_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it3" aria-expanded="false" aria-controls="desc_it3" aria-label="Rule text for Equipment Slot 3" disabled onclick="toggleDescVisibility('it3', this)">ℹ</button></div>
                     <div id="meta_it3" class="selection-meta"></div>
                     <div id="desc_it3" class="ability-desc"></div>
                     <input type="hidden" id="it3" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">4</span><div class="search-select" id="it4_box" onclick="activatePreview('it4')"><input type="text" id="it4_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it4')" onfocus="openSearchMenu('it4')" onkeydown="handleSearchKeydown(event, 'it4')" onblur="handleSearchBlur('it4')"><div id="it4_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it4" onclick="toggleDescVisibility('it4', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">4</span><div class="search-select" id="it4_box" onclick="activatePreview('it4')"><input type="text" id="it4_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it4_menu" aria-autocomplete="list" aria-label="Equipment Slot 4" oninput="handleSearchInput('it4')" onfocus="handleSearchFocus('it4')" onkeydown="handleSearchKeydown(event, 'it4')" onblur="handleSearchBlur('it4')"><div id="it4_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it4" aria-expanded="false" aria-controls="desc_it4" aria-label="Rule text for Equipment Slot 4" disabled onclick="toggleDescVisibility('it4', this)">ℹ</button></div>
                     <div id="meta_it4" class="selection-meta"></div>
                     <div id="desc_it4" class="ability-desc"></div>
                     <input type="hidden" id="it4" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">5</span><div class="search-select" id="it5_box" onclick="activatePreview('it5')"><input type="text" id="it5_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it5')" onfocus="openSearchMenu('it5')" onkeydown="handleSearchKeydown(event, 'it5')" onblur="handleSearchBlur('it5')"><div id="it5_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it5" onclick="toggleDescVisibility('it5', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">5</span><div class="search-select" id="it5_box" onclick="activatePreview('it5')"><input type="text" id="it5_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it5_menu" aria-autocomplete="list" aria-label="Equipment Slot 5" oninput="handleSearchInput('it5')" onfocus="handleSearchFocus('it5')" onkeydown="handleSearchKeydown(event, 'it5')" onblur="handleSearchBlur('it5')"><div id="it5_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it5" aria-expanded="false" aria-controls="desc_it5" aria-label="Rule text for Equipment Slot 5" disabled onclick="toggleDescVisibility('it5', this)">ℹ</button></div>
                     <div id="meta_it5" class="selection-meta"></div>
                     <div id="desc_it5" class="ability-desc"></div>
                     <input type="hidden" id="it5" class="save-field">
                 </div>
                 <div class="equipment-group">
-                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);">6</span><div class="search-select" id="it6_box" onclick="activatePreview('it6')"><input type="text" id="it6_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" oninput="handleSearchInput('it6')" onfocus="openSearchMenu('it6')" onkeydown="handleSearchKeydown(event, 'it6')" onblur="handleSearchBlur('it6')"><div id="it6_menu" class="search-select-menu"></div></div><div class="info-toggle" data-info-for="it6" onclick="toggleDescVisibility('it6', this)">ℹ</div></div>
+                    <div class="numbered-row"><span style="color:var(--accent-teal); width:20px; font-family:var(--fantasy-font);" aria-hidden="true">6</span><div class="search-select" id="it6_box" onclick="activatePreview('it6')"><input type="text" id="it6_search" class="search-select-input" placeholder="Search equipment or type custom..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="it6_menu" aria-autocomplete="list" aria-label="Equipment Slot 6" oninput="handleSearchInput('it6')" onfocus="handleSearchFocus('it6')" onkeydown="handleSearchKeydown(event, 'it6')" onblur="handleSearchBlur('it6')"><div id="it6_menu" class="search-select-menu" role="listbox"></div></div><button type="button" class="info-toggle" data-info-for="it6" aria-expanded="false" aria-controls="desc_it6" aria-label="Rule text for Equipment Slot 6" disabled onclick="toggleDescVisibility('it6', this)">ℹ</button></div>
                     <div id="meta_it6" class="selection-meta"></div>
                     <div id="desc_it6" class="ability-desc"></div>
                     <input type="hidden" id="it6" class="save-field">
@@ -607,10 +596,10 @@
         <textarea id="quest_notes" class="save-field notes-area" placeholder="Record the omens, the scars, and the trophies of each expedition."></textarea>
 
         <div class="footer-btns">
-            <button onclick="downloadJSON()">💾 Save Character File</button>
-            <label for="import-file" class="footer-action">📂 Load Character File</label>
-            <input type="file" id="import-file" style="display:none" onchange="importJSONFile(event)">
-            <button onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
+            <button type="button" onclick="downloadJSON()">💾 Save Character File</button>
+            <button type="button" onclick="document.getElementById('import-file').click()">📂 Load Character File</button>
+            <input type="file" id="import-file" style="display:none" tabindex="-1" aria-hidden="true" onchange="importJSONFile(event)">
+            <button type="button" onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
         </div>
     </div>
 
@@ -962,14 +951,14 @@
         document.getElementById(config.containerId).insertAdjacentHTML('beforeend', `
             <div class="ability-group" id="group_${id}" data-slot-id="${id}" data-slot-type="${type}">
                 <div class="numbered-row" id="row_${id}">
-                    <div class="ability-toggle" onclick="toggleUse('${id}')"></div>
-                    <span class="row-number"></span>
+                    <button type="button" class="ability-toggle" onclick="toggleUse('${id}')" aria-pressed="false"></button>
+                    <span class="row-number" aria-hidden="true"></span>
                     <div class="search-select" id="${id}_box" onclick="activatePreview('${id}')">
-                        <input type="text" id="${id}_search" class="search-select-input" placeholder="${config.placeholder}" autocomplete="off" oninput="handleSearchInput('${id}')" onfocus="openSearchMenu('${id}')" onkeydown="handleSearchKeydown(event, '${id}')" onblur="handleSearchBlur('${id}')">
-                        <div id="${id}_menu" class="search-select-menu"></div>
+                        <input type="text" id="${id}_search" class="search-select-input" placeholder="${config.placeholder}" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="${id}_menu" aria-autocomplete="list" oninput="handleSearchInput('${id}')" onfocus="handleSearchFocus('${id}')" onkeydown="handleSearchKeydown(event, '${id}')" onblur="handleSearchBlur('${id}')">
+                        <div id="${id}_menu" class="search-select-menu" role="listbox"></div>
                     </div>
-                    <div class="info-toggle" data-info-for="${id}" onclick="toggleDescVisibility('${id}', this)">ℹ</div>
-                    <button class="remove-slot-btn" title="Remove this slot" onclick="removeSlot('${id}', '${type}')">✕</button>
+                    <button type="button" class="info-toggle" data-info-for="${id}" aria-expanded="false" aria-controls="desc_${id}" disabled onclick="toggleDescVisibility('${id}', this)">ℹ</button>
+                    <button type="button" class="remove-slot-btn" onclick="removeSlot('${id}', '${type}')">✕</button>
                 </div>
                 <div id="meta_${id}" class="selection-meta"></div>
                 <div id="desc_${id}" class="ability-desc"></div>
@@ -988,14 +977,23 @@
         slotGroups(type).forEach((group, index) => {
             const position = index + 1;
             const roman = toRoman(position);
+            const label = `${config.label} ${roman}`;
             const state = SEARCHABLE_STATE[group.dataset.slotId];
             const removeBtn = group.querySelector('.remove-slot-btn');
 
             group.querySelector('.row-number').textContent = roman;
             if (state) {
-                state.slotLabel = `${config.label} ${roman}`;
+                state.slotLabel = label;
                 if (activePreviewId === state.id) renderPreviewPanel(state.id);
             }
+
+            // The numeral is decorative, so every control in the row has to carry the position itself.
+            group.querySelector('.ability-toggle').setAttribute('aria-label', label);
+            group.querySelector('.search-select-input').setAttribute('aria-label', label);
+            group.querySelector('.info-toggle').setAttribute('aria-label', `Rule text for ${label}`);
+            removeBtn.setAttribute('aria-label', `Remove ${label}`);
+            removeBtn.title = `Remove ${label}`;
+
             removeBtn.style.display = position > config.minSlots ? '' : 'none';
         });
     }
@@ -1127,26 +1125,24 @@
     function toggleArchDetails() {
         const div = document.getElementById('arch_details');
         const btn = document.getElementById('arch_btn');
-        if (div.style.display === "block") {
-            div.style.display = "none";
-            btn.innerHTML = "Show Archetype Details";
-        } else {
-            div.style.display = "block";
-            btn.innerHTML = "Hide Archetype Details";
-        }
+        const expanded = div.style.display !== "block";
+
+        div.style.display = expanded ? "block" : "none";
+        btn.textContent = expanded ? "Hide Archetype Details" : "Show Archetype Details";
+        btn.setAttribute('aria-expanded', String(expanded));
     }
 
     function toggleInnateSection() {
-        const sec = document.getElementById('innate-section');
-        const btn = document.getElementById('innate_toggle_btn');
-        if (sec.style.display === "none") {
-            sec.style.display = "block";
-            btn.innerHTML = "Hide Innate Spells & Abilities";
-        } else {
-            sec.style.display = "none";
-            btn.innerHTML = "Show Innate Spells & Abilities";
-        }
+        setInnateSectionExpanded(document.getElementById('innate-section').style.display === "none");
         scheduleSave();
+    }
+
+    function setInnateSectionExpanded(expanded) {
+        const btn = document.getElementById('innate_toggle_btn');
+
+        document.getElementById('innate-section').style.display = expanded ? 'block' : 'none';
+        btn.textContent = expanded ? 'Hide Innate Spells & Abilities' : 'Show Innate Spells & Abilities';
+        btn.setAttribute('aria-expanded', String(expanded));
     }
 
     function getEquipmentDescription(value) {
@@ -1161,15 +1157,10 @@
         const infoBtn = document.querySelector(`[data-info-for="${id}"]`);
 
         descDiv.innerHTML = desc;
-        descDiv.style.display = "none";
-        if (infoBtn) {
-            infoBtn.classList.remove('active');
-            infoBtn.textContent = 'ℹ';
-        }
+        setDescExpanded(id, false, infoBtn);
 
-        if (!desc) {
-            descDiv.style.display = "none";
-        }
+        // Nothing to expand without rule text, so the control stops being a focus stop.
+        if (infoBtn) infoBtn.disabled = !desc;
 
         if (activePreviewId === id) renderPreviewPanel(id);
     }
@@ -1288,8 +1279,11 @@
 
     function closeSearchMenu(id) {
         const box = getSearchBox(id);
+        const input = getSearchInput(id);
         SEARCHABLE_STATE[id].highlightIndex = -1;
         box.classList.remove('open');
+        input.setAttribute('aria-expanded', 'false');
+        input.removeAttribute('aria-activedescendant');
     }
 
     function getFilteredOptions(id, query) {
@@ -1328,6 +1322,7 @@
 
         if (!state.renderedOptions.length) {
             menu.innerHTML = '<div class="search-option"><div class="search-option-title">No matches found</div></div>';
+            getSearchInput(id).removeAttribute('aria-activedescendant');
             return;
         }
 
@@ -1337,6 +1332,9 @@
         state.renderedOptions.forEach((option, index) => {
             const item = document.createElement('div');
             item.className = `search-option${index === state.highlightIndex ? ' active' : ''}`;
+            item.id = `${id}_opt${index}`;
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', String(index === state.highlightIndex));
             item.innerHTML = `
                 <div class="search-option-title">${escapeHtml(option.label)}</div>
                 <div class="search-option-meta">
@@ -1351,6 +1349,10 @@
             });
             menu.appendChild(item);
         });
+
+        const active = menu.children[state.highlightIndex];
+        getSearchInput(id).setAttribute('aria-activedescendant', active ? active.id : '');
+        if (active) active.scrollIntoView({ block: 'nearest' });
     }
 
     function openSearchMenu(id) {
@@ -1358,7 +1360,14 @@
             if (otherId !== id) closeSearchMenu(otherId);
         });
         getSearchBox(id).classList.add('open');
+        getSearchInput(id).setAttribute('aria-expanded', 'true');
         renderSearchMenu(id);
+    }
+
+    // Focus is the keyboard equivalent of clicking the field, so it does what the click does.
+    function handleSearchFocus(id) {
+        openSearchMenu(id);
+        if (SEARCHABLE_STATE[id].selectedOption) setActivePreview(id);
     }
 
     function commitSearchInput(id, showPreview = false) {
@@ -1433,8 +1442,14 @@
         }
     }
 
+    function setSlotUsed(id, used) {
+        const row = document.getElementById('row_' + id);
+        row.classList.toggle('used', used);
+        row.querySelector('.ability-toggle').setAttribute('aria-pressed', String(used));
+    }
+
     function toggleUse(id) {
-        document.getElementById('row_' + id).classList.toggle('used');
+        setSlotUsed(id, !document.getElementById('row_' + id).classList.contains('used'));
         scheduleSave();
     }
 
@@ -1444,18 +1459,19 @@
 
         if (!descDiv.innerHTML.trim()) return;
 
-        if (descDiv.style.display === "block") {
-            descDiv.style.display = "none";
-            if (button) {
-                button.classList.remove('active');
-                button.textContent = 'ℹ';
-            }
-        } else {
-            descDiv.style.display = "block";
-            if (button) {
-                button.classList.add('active');
-                button.textContent = '^';
-            }
+        setDescExpanded(id, descDiv.style.display !== 'block', button);
+    }
+
+    function setDescExpanded(id, expanded, infoBtn) {
+        const descDiv = document.getElementById('desc_' + id);
+        const button = infoBtn || document.querySelector(`[data-info-for="${id}"]`);
+
+        descDiv.style.display = expanded ? 'block' : 'none';
+
+        if (button) {
+            button.classList.toggle('active', expanded);
+            button.textContent = expanded ? '^' : 'ℹ';
+            button.setAttribute('aria-expanded', String(expanded));
         }
     }
 
@@ -1615,13 +1631,7 @@
         clearSlots('heroic');
         clearSlots('innate');
 
-        if (doc.uiState.showInnateSection) {
-            document.getElementById('innate-section').style.display = 'block';
-            document.getElementById('innate_toggle_btn').textContent = 'Hide Innate Spells & Abilities';
-        } else {
-            document.getElementById('innate-section').style.display = 'none';
-            document.getElementById('innate_toggle_btn').textContent = 'Show Innate Spells & Abilities';
-        }
+        setInnateSectionExpanded(doc.uiState.showInnateSection);
 
         applySlots('heroic', doc.character.heroicSlots);
         applySlots('innate', doc.character.innateSlots);
@@ -1635,7 +1645,7 @@
         slots.forEach(slot => {
             const id = addSlot(type);
             applySearchableValue(id, slot.value, true);
-            document.getElementById('row_' + id).classList.toggle('used', slot.used);
+            setSlotUsed(id, slot.used);
         });
     }
 
