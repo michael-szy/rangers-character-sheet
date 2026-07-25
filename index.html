@@ -59,9 +59,61 @@
         text-transform: uppercase; font-weight: bold; margin-bottom: 2px;
     }
 
-    .stat-box input { 
-        border: none; background: transparent; text-align: center; font-size: 1.5em; 
+    .stat-box input {
+        border: none; background: transparent; text-align: center; font-size: 1.5em;
         font-weight: bold; height: 40px; width: 100%; color: #fff; font-family: var(--body-font);
+    }
+    .armor-effective, .armor-breakdown { display: none; }
+    [data-mode="play"] .armor-round-control {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+        padding: 0 5px 6px;
+    }
+    .armor-temp-toggle {
+        min-height: 34px;
+        padding: 5px 8px;
+        border-color: #65717d;
+        color: #91a0b0;
+        font-size: 0.68em;
+        line-height: 1.1;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    [data-mode="play"] .armor-stat.temp-active {
+        border-color: #f0c36a;
+        box-shadow: 0 0 12px rgba(240,195,106,0.22);
+    }
+    [data-mode="play"] .armor-stat.temp-active input {
+        height: 28px;
+        color: #91a0b0;
+        font-size: 1em;
+    }
+    [data-mode="play"] .armor-stat.temp-active .armor-effective {
+        display: block;
+        color: #f0c36a;
+        font-family: var(--fantasy-font);
+        font-size: 2em;
+        font-weight: bold;
+        line-height: 1.05;
+    }
+    [data-mode="play"] .armor-stat.temp-active .armor-breakdown {
+        display: block;
+        color: #f0c36a;
+        font-size: 0.62em;
+        line-height: 1.25;
+    }
+    [data-mode="play"] .armor-stat.temp-active .armor-temp-toggle {
+        border-color: #f0c36a;
+        color: #f0c36a;
+        background: rgba(240,195,106,0.1);
+    }
+    .armor-temp-toggle:disabled {
+        border-color: #46505a;
+        color: #65717d;
+        cursor: not-allowed;
+        opacity: 0.7;
     }
     
     .current-hp { border: 2px solid var(--danger-red); background: rgba(192, 57, 43, 0.1); }
@@ -566,6 +618,7 @@
         .add-slot-btn { min-height: 44px; }
         .mode-btn { min-height: 44px; padding: 6px 20px; }
         .untrained-btn { min-height: 44px; }
+        .armor-temp-toggle { min-height: 44px; }
         .mission-step, .mission-check { width: 44px; height: 44px; min-height: 44px; }
         .mission-add, .mission-undo button { min-height: 44px; }
         .mission-remove { min-height: 44px; padding: 0 12px; }
@@ -720,7 +773,17 @@
             <div class="stat-box"><div class="stat-label">Mov</div><input type="number" id="s_mov" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Fig</div><input type="number" id="s_fig" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Sho</div><input type="number" id="s_sho" class="save-field"></div>
-            <div class="stat-box"><div class="stat-label">Arm</div><input type="number" id="s_arm" class="save-field"></div>
+            <div class="stat-box armor-stat" id="armor_stat">
+                <div class="stat-label">Arm</div>
+                <input type="number" id="s_arm" class="save-field" aria-label="Base Armour"
+                    oninput="renderRoundArmorBonus()">
+                <div class="play-only armor-round-control">
+                    <output id="armor_effective" class="armor-effective" aria-live="polite"></output>
+                    <div id="armor_breakdown" class="armor-breakdown"></div>
+                    <button type="button" id="armor_ally_bonus" class="armor-temp-toggle"
+                        aria-pressed="false" onclick="toggleRoundArmorBonus()">Ally +2</button>
+                </div>
+            </div>
             <div class="stat-box"><div class="stat-label">Wil</div><input type="number" id="s_wil" class="save-field"></div>
             <div class="stat-box"><div class="stat-label">Health</div><input type="number" id="s_hpm" class="save-field"></div>
             <div class="stat-box current-hp"><div class="stat-label">Current</div><input type="number" id="s_hpc" class="save-field"></div>
@@ -1056,6 +1119,8 @@
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
     const STORAGE_RECOVERY_KEY = `${STORAGE_KEY}_recovery`;
     const ENEMY_CATALOG_STORAGE_KEY = 'rosd_ranger_enemy_catalog';
+    const ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
+    const ROUND_ARMOR_BONUS = 2;
     const ENEMY_CATALOG_FORMAT_VERSION = 1;
     const FORMAT_VERSION = 3;
     const MAX_SLOTS = 50;
@@ -1091,6 +1156,7 @@
     */
     let MISSION = { active: null, history: [] };
     let ENEMY_CATALOG = null;
+    let roundArmorBonus = 0;
     let lastMissionRemoval = null;
     let missionSequence = 0;
     let activePreviewId = null;
@@ -1498,6 +1564,67 @@
             console.error('Character data could not be saved.', error);
             setSaveStatus('unsaved', 'Not saved');
         }
+    }
+
+    function loadRoundArmorBonus() {
+        try {
+            roundArmorBonus = sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY) === String(ROUND_ARMOR_BONUS)
+                ? ROUND_ARMOR_BONUS
+                : 0;
+            if (!roundArmorBonus) sessionStorage.removeItem(ROUND_ARMOR_STORAGE_KEY);
+        } catch (error) {
+            console.error('The temporary Armour bonus could not be restored.', error);
+            roundArmorBonus = 0;
+        }
+        renderRoundArmorBonus();
+    }
+
+    function setRoundArmorBonus(active) {
+        roundArmorBonus = active ? ROUND_ARMOR_BONUS : 0;
+        try {
+            if (roundArmorBonus) sessionStorage.setItem(ROUND_ARMOR_STORAGE_KEY, String(roundArmorBonus));
+            else sessionStorage.removeItem(ROUND_ARMOR_STORAGE_KEY);
+        } catch (error) {
+            console.error('The temporary Armour bonus could not be stored.', error);
+        }
+        renderRoundArmorBonus();
+    }
+
+    function clearRoundArmorBonus() {
+        setRoundArmorBonus(false);
+    }
+
+    function toggleRoundArmorBonus() {
+        setRoundArmorBonus(roundArmorBonus !== ROUND_ARMOR_BONUS);
+    }
+
+    function renderRoundArmorBonus() {
+        const field = document.getElementById('s_arm');
+        const card = document.getElementById('armor_stat');
+        const output = document.getElementById('armor_effective');
+        const breakdown = document.getElementById('armor_breakdown');
+        const button = document.getElementById('armor_ally_bonus');
+        if (!field || !card || !output || !breakdown || !button) return;
+
+        const baseText = field.value.trim();
+        const base = Number(baseText);
+        const hasBase = baseText !== '' && Number.isFinite(base);
+        const active = roundArmorBonus === ROUND_ARMOR_BONUS;
+
+        card.classList.toggle('temp-active', active);
+        output.textContent = active && hasBase ? String(base + ROUND_ARMOR_BONUS) : '';
+        output.setAttribute('aria-label', active && hasBase
+            ? `Effective Armour ${base + ROUND_ARMOR_BONUS}`
+            : '');
+        breakdown.textContent = active
+            ? `TEMP · Base ${hasBase ? base : '—'} + Ally ${ROUND_ARMOR_BONUS}`
+            : '';
+        button.textContent = active ? `Clear +${ROUND_ARMOR_BONUS}` : `Ally +${ROUND_ARMOR_BONUS}`;
+        button.setAttribute('aria-pressed', String(active));
+        button.setAttribute('aria-label', active
+            ? `Remove temporary plus ${ROUND_ARMOR_BONUS} Armour bonus`
+            : `Apply temporary plus ${ROUND_ARMOR_BONUS} Armour bonus`);
+        button.disabled = !active && !hasBase;
     }
 
     function updateArchetype(skipSave = false) {
@@ -2680,6 +2807,7 @@
             f.value = Object.prototype.hasOwnProperty.call(fields, f.id) ? fields[f.id] : '';
             if (f.id === 'char_arch') updateArchetype(true);
         });
+        renderRoundArmorBonus();
 
         clearSlots('heroic');
         clearSlots('innate');
@@ -2840,6 +2968,7 @@
         populateDropdowns();
         loadEnemyCatalog();
         initSearchables();
+        loadRoundArmorBonus();
         attachSaveListeners();
         load();
         initNumberSteppers();
@@ -2879,6 +3008,7 @@
                 return;
             }
 
+            clearRoundArmorBonus();
             applyDocument(result.document);
 
             if (result.warnings.length) {
@@ -2902,6 +3032,7 @@
         );
         if (!confirmed) return;
 
+        clearRoundArmorBonus();
         try {
             localStorage.removeItem(STORAGE_KEY);
             localStorage.removeItem(STORAGE_RECOVERY_KEY);

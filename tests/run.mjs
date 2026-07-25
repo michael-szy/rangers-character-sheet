@@ -240,7 +240,7 @@ async function waitFor(client, expression, timeoutMs = 5000) {
 }
 
 async function freshBrowserState(client) {
-    await client.evaluate('localStorage.clear(); location.reload();');
+    await client.evaluate('localStorage.clear(); sessionStorage.clear(); location.reload();');
     await waitFor(client, `document.readyState === 'complete' && typeof FORMAT_VERSION !== 'undefined'`);
 }
 
@@ -444,6 +444,7 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), '{broken', 'corrupt primary data not silently removed');
 
         await freshBrowserState(client);
+        await client.evaluate(`setRoundArmorBonus(true)`);
         await client.evaluate(`(() => {
             const file = new File([${JSON.stringify(JSON.stringify(fixtures['format-1-character']))}], 'format-1.json', { type: 'application/json' });
             importJSONFile({ target: { files: [file], value: 'selected' } });
@@ -451,6 +452,7 @@ try {
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
         equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 3, 'file import persists current format');
+        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), null, 'file import clears temporary Armour bonus');
 
         const beforeInvalid = await client.evaluate(`localStorage.getItem(STORAGE_KEY)`);
         await client.evaluate(`(() => {
@@ -461,12 +463,13 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), beforeInvalid, 'invalid file leaves storage unchanged');
         equal(await client.evaluate(`document.getElementById('char_name').value`), 'Format One', 'invalid file leaves sheet unchanged');
 
-        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); window.confirm = () => true; clearSheet();`);
+        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setRoundArmorBonus(true); window.confirm = () => true; clearSheet();`);
         await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`localStorage.getItem('unrelated_test_key')`), 'keep', 'obliterate keeps unrelated storage');
         equal(await client.evaluate(`localStorage.getItem(ENEMY_CATALOG_STORAGE_KEY) !== null`), true, 'obliterate keeps catalog');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), null, 'obliterate removes character');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_RECOVERY_KEY)`), null, 'obliterate removes recovery');
+        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), null, 'obliterate clears temporary Armour bonus');
     });
 
     await suite('dynamic slots and searchable controls', async () => {
@@ -567,6 +570,56 @@ try {
 
         await client.evaluate(`setMode('edit'); openSearchMenu('it1'); setMode('play')`);
         equal(await client.evaluate(`document.getElementById('it1_box').classList.contains('open')`), false, 'mode switch closes combobox');
+    });
+
+    await suite('temporary Armour bonus', async () => {
+        await freshBrowserState(client);
+
+        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').disabled`), true, 'bonus waits for a base Armour value');
+
+        await client.evaluate(`(() => {
+            const armour = document.getElementById('s_arm');
+            armour.value = '12';
+            armour.dispatchEvent(new InputEvent('input', { bubbles: true }));
+            setMode('play');
+        })()`);
+        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').disabled`), false, 'bonus becomes available with base Armour');
+        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').offsetParent !== null`), true, 'bonus control is visible in play mode');
+
+        await client.evaluate(`document.getElementById('armor_ally_bonus').click()`);
+        equal(await client.evaluate(`document.getElementById('armor_stat').classList.contains('temp-active')`), true, 'active bonus is visibly marked');
+        equal(await client.evaluate(`document.getElementById('armor_effective').textContent`), '14', 'effective Armour includes temporary bonus');
+        equal(await client.evaluate(`document.getElementById('armor_breakdown').textContent`), 'TEMP · Base 12 + Ally 2', 'bonus equation stays explicit');
+        equal(await client.evaluate(`document.getElementById('armor_ally_bonus').getAttribute('aria-pressed')`), 'true', 'active bonus is announced');
+        equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'base Armour is unchanged');
+        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), '2', 'temporary bonus is session-scoped');
+        equal(await client.evaluate(`collectDocument().character.fields.s_arm`), '12', 'character document keeps base Armour');
+        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes(ROUND_ARMOR_STORAGE_KEY)`), false, 'character export excludes temporary bonus');
+
+        await client.evaluate(`saveNow(); location.reload();`);
+        await waitFor(client, `document.readyState === 'complete' && document.getElementById('armor_effective').textContent === '14'`);
+        equal(await client.evaluate(`document.getElementById('armor_stat').classList.contains('temp-active')`), true, 'bonus survives an accidental reload');
+        equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'reload still preserves base Armour');
+
+        await client.send('Emulation.setDeviceMetricsOverride', {
+            width: 360,
+            height: 900,
+            deviceScaleFactor: 1,
+            mobile: true
+        });
+        await client.send('Emulation.setTouchEmulationEnabled', {
+            enabled: true,
+            maxTouchPoints: 5
+        });
+        check(await client.evaluate(`document.getElementById('armor_ally_bonus').getBoundingClientRect().height >= 44`), 'Armour bonus target is touch-sized');
+        check(await client.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), 'Armour bonus causes no phone overflow');
+        await client.send('Emulation.clearDeviceMetricsOverride');
+        await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+
+        await client.evaluate(`document.getElementById('armor_ally_bonus').click()`);
+        equal(await client.evaluate(`document.getElementById('armor_stat').classList.contains('temp-active')`), false, 'Clear removes visible bonus state');
+        equal(await client.evaluate(`sessionStorage.getItem(ROUND_ARMOR_STORAGE_KEY)`), null, 'Clear removes session bonus');
+        equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'Clear never changes base Armour');
     });
 
     await suite('enemy catalog and mission lifecycle', async () => {
