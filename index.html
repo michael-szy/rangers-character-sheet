@@ -768,6 +768,10 @@
     const saveFields = document.querySelectorAll('.save-field');
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
     const STORAGE_RECOVERY_KEY = `${STORAGE_KEY}_recovery`;
+    const FORMAT_VERSION = 1;
+    const MAX_SLOTS = 50;
+    const DEFAULT_HEROIC_SLOTS = 5;
+    const DEFAULT_INNATE_SLOTS = 4;
     const SEARCHABLE_STATE = {};
     let activePreviewId = null;
     let saveTimer = null;
@@ -987,31 +991,45 @@
         }, 180);
     }
 
+    function collectSlots(containerId) {
+        const groups = document.getElementById(containerId).querySelectorAll('.ability-group');
+        return Array.from(groups).map(group => {
+            const field = group.querySelector('input.save-field');
+            const row = group.querySelector('.numbered-row');
+            return {
+                value: field ? field.value : '',
+                used: !!(row && row.classList.contains('used'))
+            };
+        });
+    }
+
+    function collectDocument() {
+        const fields = {};
+        saveFields.forEach(f => fields[f.id] = f.value);
+
+        return {
+            formatVersion: FORMAT_VERSION,
+            character: {
+                fields: fields,
+                heroicSlots: collectSlots('abilities-list'),
+                innateSlots: collectSlots('innate-list')
+            },
+            uiState: {
+                showInnateSection: document.getElementById('innate-section').style.display === 'block'
+            }
+        };
+    }
+
     function saveNow() {
         clearTimeout(saveTimer);
-        const data = {};
-        saveFields.forEach(f => data[f.id] = f.value);
-        
-        data.heroicSlotsCount = heroicSlotsCount;
-        data.innateSlotsCount = innateSlotsCount;
-        data.showInnateSection = document.getElementById('innate-section').style.display === 'block';
-        
-        for (let i = 1; i <= heroicSlotsCount; i++) {
-            const hField = document.getElementById('ab' + i);
-            if(hField) data['ab' + i] = hField.value;
-            const rField = document.getElementById('row_ab' + i);
-            if(rField) data['ab' + i + '_used'] = rField.classList.contains('used');
-        }
 
-        for (let i = 1; i <= innateSlotsCount; i++) {
-            const hField = document.getElementById('in' + i);
-            if(hField) data['in' + i] = hField.value;
-            const rField = document.getElementById('row_in' + i);
-            if(rField) data['in' + i + '_used'] = rField.classList.contains('used');
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collectDocument()));
+            setSaveStatus('saved', 'Saved');
+        } catch (error) {
+            console.error('Character data could not be saved.', error);
+            setSaveStatus('unsaved', 'Not saved');
         }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        setSaveStatus('saved', 'Saved');
     }
 
     function updateArchetype(skipSave = false) {
@@ -1363,54 +1381,157 @@
         }
     }
 
-    function applyData(data) {
-        saveFields.forEach(f => {
-            if (SEARCHABLE_STATE[f.id] && f.id.startsWith('it')) return;
-            if(data[f.id] !== undefined) f.value = data[f.id];
-            if(f.id === 'char_arch') updateArchetype(true);
-        });
-
-        document.getElementById('abilities-list').innerHTML = '';
-        document.getElementById('innate-list').innerHTML = '';
-        heroicSlotsCount = 0;
-        innateSlotsCount = 0;
-
-        const hCount = data.heroicSlotsCount || 5;
-        const iCount = data.innateSlotsCount || 4;
-
-        if (data.showInnateSection) {
-            document.getElementById('innate-section').style.display = "block";
-            document.getElementById('innate_toggle_btn').innerHTML = "Hide Innate Spells & Abilities";
-        } else {
-            document.getElementById('innate-section').style.display = "none";
-            document.getElementById('innate_toggle_btn').innerHTML = "Show Innate Spells & Abilities";
-        }
-
-        for(let j=0; j<hCount; j++) addHeroicSlot();
-        for(let j=0; j<iCount; j++) addInnateSlot();
-
-        for (let i = 1; i <= heroicSlotsCount; i++) {
-            applySearchableValue('ab' + i, data['ab' + i] || '', true);
-            const row = document.getElementById('row_ab' + i);
-            if(data['ab' + i + '_used']) row.classList.add('used');
-            else row.classList.remove('used');
-        }
-
-        for (let i = 1; i <= innateSlotsCount; i++) {
-            applySearchableValue('in' + i, data['in' + i] || '', true);
-            const row = document.getElementById('row_in' + i);
-            if(data['in' + i + '_used']) row.classList.add('used');
-            else row.classList.remove('used');
-        }
-
-        for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, data['it' + i] || '', true);
-
-        saveNow();
+    function isPlainObject(value) {
+        return typeof value === 'object' && value !== null && !Array.isArray(value);
     }
 
-    function initializeBlankSheet() {
-        saveFields.forEach(field => {
-            field.value = '';
+    function describeDataError(error) {
+        if (error instanceof SyntaxError) return 'The data is not valid JSON.';
+        return error instanceof Error ? error.message : String(error);
+    }
+
+    function blankSlots(count) {
+        return Array.from({ length: count }, () => ({ value: '', used: false }));
+    }
+
+    function createBlankDocument() {
+        return {
+            formatVersion: FORMAT_VERSION,
+            character: {
+                fields: {},
+                heroicSlots: blankSlots(DEFAULT_HEROIC_SLOTS),
+                innateSlots: blankSlots(DEFAULT_INNATE_SLOTS)
+            },
+            uiState: { showInnateSection: false }
+        };
+    }
+
+    function normalizeFields(rawFields) {
+        if (rawFields === undefined || rawFields === null) return {};
+        if (!isPlainObject(rawFields)) throw new Error('The character fields are not stored as an object.');
+
+        const fields = {};
+
+        saveFields.forEach(f => {
+            const value = rawFields[f.id];
+            if (value === undefined || value === null) return;
+            if (typeof value === 'string') fields[f.id] = value;
+            else if (typeof value === 'number' || typeof value === 'boolean') fields[f.id] = String(value);
+            else throw new Error(`The value stored for "${f.id}" is not a text value.`);
+        });
+
+        return fields;
+    }
+
+    function normalizeSlotEntry(entry, label) {
+        if (typeof entry === 'string') return { value: entry, used: false };
+        if (!isPlainObject(entry)) throw new Error(`${label} contain an entry that is not a slot.`);
+
+        const value = entry.value === undefined || entry.value === null ? '' : entry.value;
+        if (typeof value !== 'string') throw new Error(`${label} contain a slot value that is not text.`);
+
+        return { value: value, used: entry.used === true };
+    }
+
+    function normalizeSlots(rawSlots, defaultCount, label) {
+        if (rawSlots === undefined || rawSlots === null) return blankSlots(defaultCount);
+        if (!Array.isArray(rawSlots)) throw new Error(`${label} must be stored as a list.`);
+        if (rawSlots.length > MAX_SLOTS) throw new Error(`${label} exceed the supported maximum of ${MAX_SLOTS} slots.`);
+        return rawSlots.map(entry => normalizeSlotEntry(entry, label));
+    }
+
+    // Legacy documents stored the slot count separately; 0 or a missing value meant "use the default".
+    function legacySlotCount(rawCount, defaultCount, label) {
+        if (rawCount === undefined || rawCount === null || rawCount === '') return defaultCount;
+        const count = Number(rawCount);
+        if (!Number.isInteger(count) || count < 0 || count > MAX_SLOTS) {
+            throw new Error(`The stored ${label} count is outside the supported range.`);
+        }
+        return count || defaultCount;
+    }
+
+    // Format 0: one flat object of field ids, ab*/in* slot values, *_used flags, and slot counts.
+    function migrateLegacyDocument(legacy) {
+        const readSlots = (prefix, count) => {
+            const slots = [];
+            for (let i = 1; i <= count; i++) {
+                const value = legacy[prefix + i];
+                slots.push({
+                    value: typeof value === 'string' ? value : '',
+                    used: legacy[prefix + i + '_used'] === true
+                });
+            }
+            return slots;
+        };
+
+        return {
+            formatVersion: FORMAT_VERSION,
+            character: {
+                fields: legacy,
+                heroicSlots: readSlots('ab', legacySlotCount(legacy.heroicSlotsCount, DEFAULT_HEROIC_SLOTS, 'heroic slot')),
+                innateSlots: readSlots('in', legacySlotCount(legacy.innateSlotsCount, DEFAULT_INNATE_SLOTS, 'innate slot'))
+            },
+            uiState: { showInnateSection: legacy.showInnateSection === true }
+        };
+    }
+
+    // Returns a fully validated document plus non-blocking notes. Throws if the data cannot be trusted at all.
+    function normalizeDocument(parsed) {
+        if (!isPlainObject(parsed)) throw new Error('The character data is not a JSON object.');
+
+        let version;
+        if (parsed.formatVersion === undefined) version = 0;
+        else if (Number.isInteger(parsed.formatVersion) && parsed.formatVersion >= 0) version = parsed.formatVersion;
+        else throw new Error('The format version is not a whole number.');
+
+        if (version > FORMAT_VERSION) {
+            throw new Error(`This character uses format version ${version}, which is newer than this sheet (${FORMAT_VERSION}).`);
+        }
+
+        const upgraded = version === 0 ? migrateLegacyDocument(parsed) : parsed;
+
+        if (!isPlainObject(upgraded.character)) throw new Error('The character section is missing or invalid.');
+        if (upgraded.uiState !== undefined && upgraded.uiState !== null && !isPlainObject(upgraded.uiState)) {
+            throw new Error('The interface state is invalid.');
+        }
+
+        const warnings = [];
+        const fields = normalizeFields(upgraded.character.fields);
+
+        if (fields.char_arch && !ARCHETYPE_LIBRARY[fields.char_arch]) {
+            warnings.push(`The archetype "${fields.char_arch}" is unknown and was left empty.`);
+            fields.char_arch = '';
+        }
+
+        return {
+            document: {
+                formatVersion: FORMAT_VERSION,
+                character: {
+                    fields: fields,
+                    heroicSlots: normalizeSlots(upgraded.character.heroicSlots, DEFAULT_HEROIC_SLOTS, 'Heroic ability slots'),
+                    innateSlots: normalizeSlots(upgraded.character.innateSlots, DEFAULT_INNATE_SLOTS, 'Innate ability slots')
+                },
+                uiState: {
+                    showInnateSection: !!(upgraded.uiState && upgraded.uiState.showInnateSection === true)
+                }
+            },
+            warnings: warnings,
+            migratedFrom: version === FORMAT_VERSION ? null : version
+        };
+    }
+
+    function parseDocument(raw) {
+        return normalizeDocument(JSON.parse(raw));
+    }
+
+    // Only ever called with a normalized document, so the sheet is never left half-written.
+    function applyDocument(doc, persist = true) {
+        const fields = doc.character.fields;
+
+        saveFields.forEach(f => {
+            if (SEARCHABLE_STATE[f.id] && f.id.startsWith('it')) return;
+            f.value = Object.prototype.hasOwnProperty.call(fields, f.id) ? fields[f.id] : '';
+            if (f.id === 'char_arch') updateArchetype(true);
         });
 
         document.getElementById('abilities-list').innerHTML = '';
@@ -1422,36 +1543,42 @@
             if (id.startsWith('ab') || id.startsWith('in')) delete SEARCHABLE_STATE[id];
         });
 
-        updateArchetype(true);
-        document.getElementById('innate-section').style.display = 'none';
-        document.getElementById('innate_toggle_btn').textContent = 'Show Innate Spells & Abilities';
-
-        for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, '', true);
-        for (let i = 0; i < 5; i++) addHeroicSlot();
-        for (let i = 0; i < 4; i++) addInnateSlot();
-    }
-
-    function parseStoredData(raw) {
-        const data = JSON.parse(raw);
-        if (!data || typeof data !== 'object' || Array.isArray(data)) {
-            throw new Error('Stored character data must be a JSON object.');
+        if (doc.uiState.showInnateSection) {
+            document.getElementById('innate-section').style.display = 'block';
+            document.getElementById('innate_toggle_btn').textContent = 'Hide Innate Spells & Abilities';
+        } else {
+            document.getElementById('innate-section').style.display = 'none';
+            document.getElementById('innate_toggle_btn').textContent = 'Show Innate Spells & Abilities';
         }
 
-        ['heroicSlotsCount', 'innateSlotsCount'].forEach(key => {
-            if (data[key] === undefined) return;
-            if (!Number.isInteger(data[key]) || data[key] < 0 || data[key] > 50) {
-                throw new Error(`Stored ${key} is outside the safe range.`);
-            }
-        });
+        doc.character.heroicSlots.forEach(() => addHeroicSlot());
+        doc.character.innateSlots.forEach(() => addInnateSlot());
 
-        return data;
+        applySlotValues('ab', doc.character.heroicSlots);
+        applySlotValues('in', doc.character.innateSlots);
+
+        for (let i = 1; i <= 6; i++) applySearchableValue('it' + i, fields['it' + i] || '', true);
+
+        if (persist) saveNow();
     }
 
-    function preserveRecoveryCopy(raw, error) {
+    function applySlotValues(prefix, slots) {
+        slots.forEach((slot, index) => {
+            const id = prefix + (index + 1);
+            applySearchableValue(id, slot.value, true);
+            document.getElementById('row_' + id).classList.toggle('used', slot.used);
+        });
+    }
+
+    function initializeBlankSheet() {
+        applyDocument(createBlankDocument(), false);
+    }
+
+    function preserveRecoveryCopy(raw, reason) {
         try {
             localStorage.setItem(STORAGE_RECOVERY_KEY, JSON.stringify({
                 capturedAt: new Date().toISOString(),
-                reason: error instanceof Error ? error.message : String(error),
+                reason: reason instanceof Error ? reason.message : String(reason),
                 raw
             }));
             return true;
@@ -1479,20 +1606,31 @@
             return;
         }
 
+        let result;
+
         try {
-            applyData(parseStoredData(raw));
+            result = parseDocument(raw);
         } catch (error) {
             console.error('Saved character data could not be loaded.', error);
             const recoverySaved = preserveRecoveryCopy(raw, error);
             initializeBlankSheet();
             setSaveStatus('unsaved', 'Recovery needed');
             alert(
-                'Saved character data could not be loaded, so a blank sheet was opened. ' +
+                `Saved character data could not be loaded, so a blank sheet was opened.\n\n${describeDataError(error)}\n\n` +
                 (recoverySaved
                     ? 'The original data was preserved in a browser recovery copy. Do not use Obliterate if you still need it.'
                     : 'The original storage value was not deliberately removed.')
             );
+            return;
         }
+
+        if (result.migratedFrom !== null) {
+            console.info(`Migrated stored character data from format version ${result.migratedFrom} to ${FORMAT_VERSION}.`);
+            preserveRecoveryCopy(raw, `Backup taken before migrating format ${result.migratedFrom} to ${FORMAT_VERSION}.`);
+        }
+
+        result.warnings.forEach(warning => console.warn(warning));
+        applyDocument(result.document);
     }
 
     function handleDocumentClick(event) {
@@ -1573,22 +1711,49 @@
 
     function downloadJSON() {
         saveNow();
-        const data = localStorage.getItem(STORAGE_KEY);
         const name = document.getElementById('char_name').value || 'Ranger';
         const now = new Date();
         const dateStr = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
         const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
-        const blob = new Blob([data], {type: 'application/json'});
+        const blob = new Blob([JSON.stringify(collectDocument(), null, 2)], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = `RoSD_${name}_${dateStr}_${timeStr}.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
     function importJSONFile(event) {
-        const file = event.target.files[0];
+        const input = event.target;
+        const file = input.files[0];
         if (!file) return;
+
         const reader = new FileReader();
-        reader.onload = e => { try { applyData(JSON.parse(e.target.result)); } catch (err) { alert("Invalid File!"); } };
+
+        reader.onload = e => {
+            input.value = '';
+            let result;
+
+            try {
+                result = parseDocument(e.target.result);
+            } catch (error) {
+                console.error('The character file could not be imported.', error);
+                alert(`This character file could not be imported, so the current Ranger was kept.\n\n${describeDataError(error)}`);
+                return;
+            }
+
+            applyDocument(result.document);
+
+            if (result.warnings.length) {
+                alert(`The character file was loaded with notes:\n\n• ${result.warnings.join('\n• ')}`);
+            }
+        };
+
+        reader.onerror = () => {
+            input.value = '';
+            console.error('The character file could not be read.', reader.error);
+            alert('This character file could not be read, so the current Ranger was kept.');
+        };
+
         reader.readAsText(file);
     }
 
