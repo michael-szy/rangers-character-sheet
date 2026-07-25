@@ -42,7 +42,7 @@ Unter **Conditions** lassen sich die allgemeinen Regelzustände **Poisoned**, **
 
 Die Überschrift **Mission** ist in beiden Modi ein Ein-/Ausklappschalter. Das Einklappen blendet lediglich die Oberfläche aus; eine aktive Mission und die Historie bleiben gespeichert. Der gewählte Zustand wird mit dem Charakter gesichert.
 
-Kurze visuelle Effekte bestätigen drei wichtige Spielaktionen: Eine Ability wird verbraucht oder wieder verfügbar, Current Health sinkt oder steigt, und ein abgeschlossener Missionsbericht erhält ein Siegel. Die Effekte ändern keine Spieldaten und blockieren keine Eingabe. Wenn das Betriebssystem reduzierte Bewegung anfordert, bleiben sie vollständig aus.
+Kurze visuelle Effekte bestätigen wichtige Spielaktionen: Eine Ability wird verbraucht oder wieder verfügbar, Current Health sinkt oder steigt, temporäre Boni und Debuffs rasten farblich am Wert ein, neue Conditions werden markiert, und ein abgeschlossener Missionsbericht erhält ein Siegel. Beim Übertragen von Missions-XP werden sowohl der Bericht als auch der Ranger-Wert hervorgehoben. Die Effekte ändern keine Spieldaten und blockieren keine Eingabe. Wenn das Betriebssystem reduzierte Bewegung anfordert, bleiben sie vollständig aus.
 
 ## Technik
 

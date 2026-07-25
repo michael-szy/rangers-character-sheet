@@ -679,6 +679,33 @@
     .fx-health-heal::after {
         animation: fx-health-heal 420ms ease-out;
     }
+    .fx-stat-buff { --fx-stat-color: rgba(226,183,101,0.95); --fx-stat-glow: rgba(226,183,101,0.3); }
+    .fx-stat-debuff { --fx-stat-color: rgba(227,106,106,0.95); --fx-stat-glow: rgba(227,106,106,0.3); }
+    .fx-stat-mixed { --fx-stat-color: rgba(193,140,171,0.95); --fx-stat-glow: rgba(193,140,171,0.3); }
+    .fx-stat-buff::after,
+    .fx-stat-debuff::after,
+    .fx-stat-mixed::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        z-index: 3;
+        border: 2px solid var(--fx-stat-color);
+        border-radius: inherit;
+        pointer-events: none;
+        animation: fx-stat-aura 620ms ease-out;
+    }
+    .fx-stat-buff .ally-effective,
+    .fx-stat-debuff .ally-effective,
+    .fx-stat-mixed .ally-effective {
+        animation: fx-stat-value 620ms ease-out;
+    }
+    .condition-card { position: relative; overflow: hidden; }
+    .condition-card.fx-condition-marked {
+        animation: fx-condition-marked 720ms ease-out;
+    }
+    .condition-card.fx-condition-marked .condition-title {
+        animation: fx-condition-title 720ms ease-out;
+    }
     .mission-card.past { position: relative; overflow: hidden; }
     .mission-card.past.fx-mission-sealed {
         animation: fx-mission-card 760ms ease-out;
@@ -703,6 +730,33 @@
         white-space: nowrap;
         pointer-events: none;
         animation: fx-mission-seal 760ms cubic-bezier(0.18, 0.78, 0.28, 1);
+    }
+    .mission-card.past.fx-xp-applied {
+        animation: fx-xp-card 820ms ease-out;
+    }
+    .mission-card.past.fx-xp-applied::after {
+        content: "XP Applied";
+        position: absolute;
+        right: 18px;
+        top: 18px;
+        z-index: 4;
+        padding: 7px 12px;
+        border: 1px solid rgba(226,183,101,0.9);
+        border-radius: 999px;
+        background: rgba(19,15,10,0.92);
+        color: var(--accent-gold);
+        box-shadow: 0 0 20px var(--accent-gold-glow);
+        font-family: var(--fantasy-font);
+        font-size: 0.68em;
+        font-weight: bold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        pointer-events: none;
+        animation: fx-xp-badge 820ms ease-out;
+    }
+    .stat-box.fx-xp-total {
+        animation: fx-xp-total 820ms ease-out;
     }
 
     @keyframes fx-ability-spent {
@@ -734,6 +788,26 @@
         38% { opacity: 1; box-shadow: inset 0 0 34px rgba(111,223,159,0.46), 0 0 21px rgba(226,183,101,0.32); }
         100% { opacity: 0; box-shadow: inset 0 0 8px rgba(111,223,159,0); }
     }
+    @keyframes fx-stat-aura {
+        0% { opacity: 0; box-shadow: 0 0 0 var(--fx-stat-glow); }
+        34% { opacity: 1; box-shadow: 0 0 24px var(--fx-stat-glow), inset 0 0 18px var(--fx-stat-glow); }
+        100% { opacity: 0; box-shadow: 0 0 4px transparent; }
+    }
+    @keyframes fx-stat-value {
+        0% { transform: scale(0.88); }
+        38% { transform: scale(1.2); color: var(--fx-stat-color); text-shadow: 0 0 12px var(--fx-stat-glow); }
+        100% { transform: scale(1); }
+    }
+    @keyframes fx-condition-marked {
+        0% { border-color: rgba(227,106,106,0.35); box-shadow: none; }
+        36% { border-color: #e36a6a; box-shadow: 0 0 24px rgba(192,57,43,0.28), inset 0 0 22px rgba(192,57,43,0.12); }
+        100% { border-color: rgba(227,106,106,0.55); box-shadow: none; }
+    }
+    @keyframes fx-condition-title {
+        0% { letter-spacing: 0.05em; text-shadow: none; }
+        36% { letter-spacing: 0.085em; color: #ffc0c0; text-shadow: 0 0 13px rgba(227,106,106,0.42); }
+        100% { letter-spacing: 0.05em; text-shadow: none; }
+    }
     @keyframes fx-mission-card {
         0% { border-color: var(--border-col); box-shadow: none; }
         38% { border-color: var(--accent-gold); box-shadow: 0 0 26px rgba(226,183,101,0.24), inset 0 0 22px rgba(226,183,101,0.08); }
@@ -744,6 +818,22 @@
         32% { opacity: 0.96; transform: translate(-50%, -50%) scale(0.96) rotate(-2deg); filter: blur(0); }
         58% { opacity: 0.9; transform: translate(-50%, -50%) scale(1) rotate(-2deg); }
         100% { opacity: 0; transform: translate(-50%, -50%) scale(1.03) rotate(-2deg); }
+    }
+    @keyframes fx-xp-card {
+        0% { border-color: var(--border-col); box-shadow: none; }
+        32% { border-color: var(--accent-gold); box-shadow: 0 0 28px rgba(226,183,101,0.26), inset 0 0 24px rgba(226,183,101,0.08); }
+        100% { border-color: var(--border-col); box-shadow: none; }
+    }
+    @keyframes fx-xp-badge {
+        0% { opacity: 0; transform: translateY(-8px) scale(0.82); }
+        30% { opacity: 1; transform: translateY(0) scale(1.04); }
+        65% { opacity: 0.94; transform: translateY(0) scale(1); }
+        100% { opacity: 0; transform: translateY(-3px) scale(1); }
+    }
+    @keyframes fx-xp-total {
+        0% { border-color: var(--border-col); box-shadow: none; }
+        34% { border-color: var(--accent-gold); box-shadow: 0 0 22px var(--accent-gold-glow), inset 0 0 18px rgba(226,183,101,0.1); }
+        100% { border-color: var(--border-col); box-shadow: none; }
     }
 
     /* --- Change history --- */
@@ -1246,12 +1336,23 @@
         .fx-ability-restored .ability-toggle,
         .fx-health-damage::after,
         .fx-health-heal::after,
-        .mission-card.past.fx-mission-sealed {
+        .fx-stat-buff .ally-effective,
+        .fx-stat-debuff .ally-effective,
+        .fx-stat-mixed .ally-effective,
+        .condition-card.fx-condition-marked,
+        .condition-card.fx-condition-marked .condition-title,
+        .mission-card.past.fx-mission-sealed,
+        .mission-card.past.fx-xp-applied,
+        .stat-box.fx-xp-total {
             animation: none !important;
         }
         .fx-health-damage::after,
         .fx-health-heal::after,
-        .mission-card.past.fx-mission-sealed::after {
+        .fx-stat-buff::after,
+        .fx-stat-debuff::after,
+        .fx-stat-mixed::after,
+        .mission-card.past.fx-mission-sealed::after,
+        .mission-card.past.fx-xp-applied::after {
             display: none;
         }
     }
@@ -3139,12 +3240,17 @@
     function applyTemporaryEffects(event) {
         event.preventDefault();
         if (!activeEffectStatId) return;
-        setTemporaryEffects(
-            activeEffectStatId,
-            document.getElementById('ally_bonus_value').value,
-            document.getElementById('debuff_penalty_value').value
-        );
+        const statId = activeEffectStatId;
+        const buff = clampTemporaryEffect(document.getElementById('ally_bonus_value').value);
+        const debuff = clampTemporaryEffect(document.getElementById('debuff_penalty_value').value);
+        setTemporaryEffects(statId, buff, debuff);
         closeTemporaryEffects();
+
+        if (buff || debuff) {
+            const card = document.querySelector(`[data-ally-stat="${statId}"]`);
+            ['stat-buff', 'stat-debuff', 'stat-mixed'].forEach(effectName => stopEffect(card, effectName));
+            playEffect(card, buff && debuff ? 'stat-mixed' : buff ? 'stat-buff' : 'stat-debuff', 800);
+        }
     }
 
     function clearSelectedTemporaryEffects() {
@@ -3226,6 +3332,7 @@
         renderConditions();
         scheduleSave();
         closeConditionDialog();
+        playEffect(document.querySelector(`[data-condition="${key}"]`), 'condition-marked', 850);
     }
 
     function stepCondition(key, delta) {
@@ -4124,6 +4231,9 @@
 
         renderMissions();
         saveNow();
+
+        playEffect(document.querySelector(`.mission-card.past[data-mission="${missionId}"]`), 'xp-applied', 950);
+        playEffect(xpField.closest('.stat-box'), 'xp-total', 950);
     }
 
     function renderMissions() {

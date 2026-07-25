@@ -984,6 +984,8 @@ try {
             window.confirm = () => true;
             startMission();
             MISSION.active.title = 'The Silent Crypt';
+            addMissionRow('adjustments');
+            updateMissionRow(MISSION.active.id, 'adjustments', MISSION.active.adjustments[0].id, 'value', 5);
             const missionId = MISSION.active.id;
             completeMission();
             const card = document.querySelector('.mission-card.past[data-mission="' + missionId + '"]');
@@ -1011,15 +1013,40 @@ try {
                 document.querySelector('#group_' + slotId + ' .ability-toggle').click();
                 const hp = document.querySelector('.current-hp');
                 document.getElementById('s_hpc').closest('.num-stepper').querySelector('.stepper-minus').click();
+                const fight = document.getElementById('s_fig');
+                fight.value = '3';
+                fight.dispatchEvent(new InputEvent('input', { bubbles: true }));
+                openTemporaryEffects('s_fig');
+                document.getElementById('ally_bonus_value').value = '2';
+                document.getElementById('debuff_penalty_value').value = '1';
+                document.querySelector('#ally_modifier_dialog button[type="submit"]').click();
+                addCondition('poisoned');
+                applyMissionXp(MISSION.history[0].id);
+                const statCard = document.querySelector('[data-ally-stat="s_fig"]');
+                const conditionCard = document.querySelector('[data-condition="poisoned"]');
+                const missionCard = document.querySelector('.mission-card.past');
+                const xpCard = document.getElementById('char_xp').closest('.stat-box');
                 return {
                     preference: matchMedia('(prefers-reduced-motion: reduce)').matches,
                     abilityAnimation: getComputedStyle(document.querySelector('#group_' + slotId + ' .ability-toggle')).animationName,
-                    healthEffectDisplay: getComputedStyle(hp, '::after').display
+                    healthEffectDisplay: getComputedStyle(hp, '::after').display,
+                    statEffectDisplay: getComputedStyle(statCard, '::after').display,
+                    statValueAnimation: getComputedStyle(document.getElementById('s_fig_effective')).animationName,
+                    conditionAnimation: getComputedStyle(conditionCard).animationName,
+                    xpAnimation: getComputedStyle(missionCard).animationName,
+                    xpBadgeDisplay: getComputedStyle(missionCard, '::after').display,
+                    xpTotalAnimation: getComputedStyle(xpCard).animationName
                 };
             })()`);
             equal(reducedMotion.preference, true, 'reduced-motion preference is detected');
             equal(reducedMotion.abilityAnimation, 'none', 'ability animation is suppressed for reduced motion');
             equal(reducedMotion.healthEffectDisplay, 'none', 'health flash is suppressed for reduced motion');
+            equal(reducedMotion.statEffectDisplay, 'none', 'temporary stat aura is suppressed for reduced motion');
+            equal(reducedMotion.statValueAnimation, 'none', 'temporary stat value animation is suppressed for reduced motion');
+            equal(reducedMotion.conditionAnimation, 'none', 'condition animation is suppressed for reduced motion');
+            equal(reducedMotion.xpAnimation, 'none', 'XP card animation is suppressed for reduced motion');
+            equal(reducedMotion.xpBadgeDisplay, 'none', 'XP badge is suppressed for reduced motion');
+            equal(reducedMotion.xpTotalAnimation, 'none', 'XP total animation is suppressed for reduced motion');
         } finally {
             await client.send('Emulation.setEmulatedMedia', { features: [] });
         }
@@ -1042,6 +1069,9 @@ try {
         equal(await client.evaluate(`document.getElementById('condition_dialog').open`), false, 'adding a condition closes the dialog');
         equal(await client.evaluate(`CONDITIONS.poisoned`), true, 'Poisoned becomes active');
         equal(await client.evaluate(`document.querySelector('[data-condition="poisoned"] .condition-rule').textContent.includes('one action per activation')`), true, 'Poisoned rule reminder shown');
+        equal(await client.evaluate(`document.querySelector('[data-condition="poisoned"]').classList.contains('fx-condition-marked')`), true, 'adding a condition plays marked effect');
+        equal(await client.evaluate(`getComputedStyle(document.querySelector('[data-condition="poisoned"]')).animationName`), 'fx-condition-marked', 'condition uses intended animation');
+        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes('fx-condition-marked')`), false, 'condition effect never enters character document');
 
         await client.evaluate(`openConditionDialog()`);
         equal(await client.evaluate(`document.getElementById('condition_option_poisoned').disabled`), true, 'active Poisoned option is disabled');
@@ -1158,6 +1188,8 @@ try {
         equal(await client.evaluate(`document.getElementById('ally_modifier_dialog').open`), false, 'Apply closes effect dialog');
         equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('buff-active')`), true, 'active Fight buff is visibly marked');
         equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('debuff-active')`), true, 'active Fight debuff is visibly marked');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_fig"]').classList.contains('fx-stat-mixed')`), true, 'mixed Fight effects play combined aura');
+        equal(await client.evaluate(`getComputedStyle(document.getElementById('s_fig_effective')).animationName`), 'fx-stat-value', 'effective Fight value uses intended animation');
         equal(await client.evaluate(`document.getElementById('s_fig_effective').textContent`), '5', 'effective Fight applies buff and debuff separately');
         equal(await client.evaluate(`document.getElementById('s_fig_breakdown').textContent`), 'TEMP · Base 3 + Ally 4 − Debuff 2', 'Fight equation keeps both sources explicit');
         equal(await client.evaluate(`document.getElementById('s_fig_ally').textContent`), '+4 / −2', 'mixed effect button summarizes both values');
@@ -1168,6 +1200,7 @@ try {
         equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '10', 'Armour supports a debuff without a buff');
         equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_arm"]').classList.contains('debuff-active')`), true, 'debuff-only card uses debuff state');
         equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_arm"]').classList.contains('buff-active')`), false, 'debuff-only card has no buff state');
+        equal(await client.evaluate(`document.querySelector('[data-ally-stat="s_arm"]').className.includes('fx-stat-')`), false, 'passive stat helper does not play an effect');
         equal(await client.evaluate(`document.getElementById('s_arm_ally').textContent`), 'Debuff −2', 'debuff-only button is explicit');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), '{"s_fig":{"buff":4,"debuff":2},"s_arm":{"buff":0,"debuff":2}}', 'multiple stat effects are session-scoped');
         equal(await client.evaluate(`collectDocument().character.fields.s_fig`), '3', 'character document keeps base Fight');
@@ -1370,6 +1403,10 @@ try {
         await client.evaluate(`applyMissionXp(MISSION.history[0].id)`);
         equal(await client.evaluate(`Number(document.getElementById('char_xp').value)`), 18, 'explicit XP application updates ranger');
         equal(await client.evaluate(`MISSION.history[0].appliedXp`), 18, 'applied XP recorded');
+        equal(await client.evaluate(`document.querySelector('.mission-card.past').classList.contains('fx-xp-applied')`), true, 'applying XP plays mission-card effect');
+        equal(await client.evaluate(`document.getElementById('char_xp').closest('.stat-box').classList.contains('fx-xp-total')`), true, 'applying XP highlights Ranger total');
+        equal(await client.evaluate(`getComputedStyle(document.querySelector('.mission-card.past'), '::after').animationName`), 'fx-xp-badge', 'XP feedback uses intended badge animation');
+        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes('fx-xp-applied')`), false, 'XP effect never enters character document');
         await client.evaluate(`applyMissionXp(MISSION.history[0].id)`);
         equal(await client.evaluate(`Number(document.getElementById('char_xp').value)`), 18, 'XP cannot double-apply');
 
