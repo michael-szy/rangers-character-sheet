@@ -1,0 +1,51 @@
+{
+  "formatVersion": 5,
+  "character": {
+    "fields": {
+      "char_name": "History Ranger",
+      "s_hpc": "11"
+    },
+    "heroicSlots": [
+      { "value": "Flashing Blade", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "innateSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "conditions": {
+      "poisoned": false,
+      "diseased": false,
+      "hungerThirst": 0
+    }
+  },
+  "uiState": {
+    "showInnateSection": false,
+    "missionSectionExpanded": true,
+    "mode": "edit"
+  },
+  "activeMission": null,
+  "missionHistory": [],
+  "changeHistory": [
+    {
+      "id": "fixture-change-1",
+      "timestamp": "2026-07-25T15:30:00.000Z",
+      "category": "character",
+      "summary": "Current Health: 11",
+      "changes": [
+        {
+          "category": "character",
+          "path": "character.fields.s_hpc",
+          "label": "Current Health",
+          "before": "14",
+          "after": "11"
+        }
+      ]
+    }
+  ]
+}

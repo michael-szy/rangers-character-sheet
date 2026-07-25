@@ -13,6 +13,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Frei wählbare temporäre Ally-Boni und Debuffs direkt an den effektiven Charakterwerten anzeigen
 - Poisoned, Diseased sowie gestapeltes Hunger & Thirst als aktive Zustände mit Regelerinnerung festhalten
 - Änderungen automatisch im Browser speichern
+- Fachliche Änderungen in einer filterbaren, exportierbaren Historie nachvollziehen
 - Charaktere als JSON-Datei sichern und auf einem anderen Gerät laden
 - Ohne Konto, Backend oder Installation verwenden
 
@@ -29,6 +30,8 @@ Anschließend ist der Charakterbogen unter `http://localhost:5500` erreichbar.
 ## Daten und Backups
 
 Der aktuelle Charakter wird ausschließlich im lokalen Browserspeicher (`localStorage`) abgelegt. Browserdaten zu löschen oder einen anderen Browser beziehungsweise ein anderes Gerät zu verwenden, übernimmt diese Daten nicht automatisch. Nutze deshalb regelmäßig **Save Character File** und stelle Sicherungen mit **Load Character File** wieder her.
+
+Über **History** lässt sich nachvollziehen, wann Charakterwerte, Ausrüstung, Abilities, Conditions oder Missionen geändert wurden. Schnelle Änderungen desselben Bereichs werden zu einem verständlichen Eintrag zusammengefasst. Reine Oberflächenpräferenzen sowie temporäre Ally-Boni und Debuffs werden nicht dauerhaft protokolliert. Die Historie gehört zur Charakterdatei, wird beim Export mitgenommen und auf die 200 neuesten Einträge begrenzt. **Clear history** löscht nur das Protokoll, nicht den aktuellen Charakter.
 
 Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen und ebenfalls nur in diesem Browser gespeichert. Danach lassen sich Gegner in einer Auswahlliste samt vorgeschlagenem XP-Wert zur aktiven Mission hinzufügen. **Add blank enemy** bleibt für eigene oder szenariospezifische Gegner verfügbar. Die vorgeschlagenen Gegner-XP ersetzen nicht die **Outcome and Experience**-Regeln des gespielten Szenarios; Name und Wert bleiben deshalb in jedem Missionsbericht manuell korrigierbar.
 

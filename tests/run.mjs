@@ -251,6 +251,7 @@ for (const name of [
     'format-2-mission',
     'format-3-catalog-snapshot',
     'format-4-conditions',
+    'format-5-change-history',
     'enemy-catalog'
 ]) {
     fixtures[name] = JSON.parse(await readFile(join(fixtureDir, `${name}.json`), 'utf8'));
@@ -312,7 +313,7 @@ try {
     await suite('blank sheet and schema migrations', async () => {
         await freshBrowserState(client);
 
-        equal(await client.evaluate('FORMAT_VERSION'), 4, 'current document format');
+        equal(await client.evaluate('FORMAT_VERSION'), 5, 'current document format');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 5, 'default heroic slots');
         equal(await client.evaluate(`document.querySelectorAll('#innate-list .ability-group').length`), 4, 'default innate slots');
         equal(await client.evaluate('currentMode()'), 'edit', 'blank sheet mode');
@@ -342,7 +343,7 @@ try {
             };
         })()`);
         equal(legacy.migratedFrom, 0, 'legacy migration source');
-        equal(legacy.version, 4, 'legacy migration target');
+        equal(legacy.version, 5, 'legacy migration target');
         equal(legacy.name, 'Legacy Ranger', 'legacy character field');
         equal(legacy.heroicCount, 6, 'legacy heroic count');
         equal(legacy.innateCount, 5, 'legacy innate count');
@@ -369,7 +370,7 @@ try {
             };
         })()`);
         equal(format1.migratedFrom, 1, 'format 1 migration source');
-        equal(format1.version, 4, 'format 1 migration target');
+        equal(format1.version, 5, 'format 1 migration target');
         equal(format1.name, 'Format One', 'format 1 character');
         equal(format1.missionExpanded, true, 'older version Mission section defaults expanded');
         equal(format1.mode, 'play', 'format 1 mode preserved');
@@ -390,7 +391,7 @@ try {
             };
         })()`);
         equal(format2.migratedFrom, 2, 'format 2 migration source');
-        equal(format2.version, 4, 'format 2 migration target');
+        equal(format2.version, 5, 'format 2 migration target');
         equal(format2.enemyId, null, 'format 2 enemy id default');
         equal(format2.catalogVersion, null, 'format 2 catalog version default');
         equal(format2.name, 'Old Beast', 'format 2 name snapshot');
@@ -422,20 +423,40 @@ try {
                 migratedFrom: result.migratedFrom,
                 version: result.document.formatVersion,
                 mode: result.document.uiState.mode,
-                conditions: result.document.character.conditions
+                conditions: result.document.character.conditions,
+                historyLength: result.document.changeHistory.length
             };
         })()`);
-        equal(format4.migratedFrom, null, 'format 4 needs no migration');
-        equal(format4.version, 4, 'format 4 remains current');
+        equal(format4.migratedFrom, 4, 'format 4 migration source');
+        equal(format4.version, 5, 'format 4 migration target');
         equal(format4.mode, 'play', 'format 4 mode preserved');
         equal(JSON.stringify(format4.conditions), '{"poisoned":true,"diseased":false,"hungerThirst":2}', 'format 4 conditions preserved');
+        equal(format4.historyLength, 0, 'format 4 starts with empty change history');
+
+        const format5 = await client.evaluate(`(() => {
+            const result = normalizeDocument(${JSON.stringify(fixtures['format-5-change-history'])});
+            return {
+                migratedFrom: result.migratedFrom,
+                version: result.document.formatVersion,
+                historyLength: result.document.changeHistory.length,
+                summary: result.document.changeHistory[0].summary,
+                before: result.document.changeHistory[0].changes[0].before,
+                after: result.document.changeHistory[0].changes[0].after
+            };
+        })()`);
+        equal(format5.migratedFrom, null, 'format 5 needs no migration');
+        equal(format5.version, 5, 'format 5 remains current');
+        equal(format5.historyLength, 1, 'format 5 history preserved');
+        equal(format5.summary, 'Current Health: 11', 'format 5 history summary preserved');
+        equal(format5.before, '14', 'format 5 previous value preserved');
+        equal(format5.after, '11', 'format 5 new value preserved');
 
         equal(await client.evaluate(`(() => {
-            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 5 }); return false; }
+            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 6 }); return false; }
             catch { return true; }
         })()`), true, 'newer character format refused');
         equal(await client.evaluate(`(() => {
-            try { normalizeDocument({ formatVersion: 4, character: null }); return false; }
+            try { normalizeDocument({ formatVersion: 5, character: null }); return false; }
             catch { return true; }
         })()`), true, 'missing character section refused');
         equal(await client.evaluate(`(() => {
@@ -462,6 +483,36 @@ try {
             try { normalizeDocument(doc); return false; }
             catch { return true; }
         })()`), true, 'invalid condition flag refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-5-change-history'])};
+            doc.changeHistory[0].changes[0].before = 14;
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'non-text history value refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-5-change-history'])};
+            doc.changeHistory[0].category = 'mission';
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'mismatched history category refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-5-change-history'])};
+            doc.changeHistory.push(structuredClone(doc.changeHistory[0]));
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'duplicate history id refused');
+        equal(await client.evaluate(`(() => {
+            const doc = createBlankDocument();
+            doc.changeHistory = Array.from({ length: MAX_CHANGE_HISTORY + 1 }, (_, index) => ({
+                id: 'change-' + index,
+                timestamp: '2026-01-01T00:00:00.000Z',
+                category: 'system',
+                summary: 'Imported',
+                changes: []
+            }));
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'excessive history refused');
     });
 
     await suite('storage recovery and file import', async () => {
@@ -469,7 +520,7 @@ try {
 
         await client.evaluate(`localStorage.setItem(STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['format-0-legacy']))}); location.reload();`);
         await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === 'Legacy Ranger'`);
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 4, 'stored legacy data upgraded');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 5, 'stored legacy data upgraded');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_RECOVERY_KEY)).raw.length > 0`), true, 'pre-migration recovery stored');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 6, 'migrated slot count applied');
         equal(await client.evaluate(`document.querySelector('#abilities-list .numbered-row').classList.contains('used')`), true, 'migrated used state applied');
@@ -488,8 +539,11 @@ try {
         })()`);
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
         equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 4, 'file import persists current format');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 5, 'file import persists current format');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'file import clears temporary stat effects');
+        equal(await client.evaluate(`CHANGE_HISTORY.length`), 1, 'file import records one system event');
+        equal(await client.evaluate(`CHANGE_HISTORY[0].category`), 'system', 'file import event category');
+        equal(await client.evaluate(`CHANGE_HISTORY[0].summary`), 'Character file imported', 'file import event summary');
 
         const beforeInvalid = await client.evaluate(`localStorage.getItem(STORAGE_KEY)`);
         await client.evaluate(`(() => {
@@ -500,6 +554,16 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), beforeInvalid, 'invalid file leaves storage unchanged');
         equal(await client.evaluate(`document.getElementById('char_name').value`), 'Format One', 'invalid file leaves sheet unchanged');
 
+        const invalidHistoryFixture = structuredClone(fixtures['format-5-change-history']);
+        invalidHistoryFixture.changeHistory[0].changes[0].after = 11;
+        await client.evaluate(`(() => {
+            const file = new File([${JSON.stringify(JSON.stringify(invalidHistoryFixture))}], 'bad-history.json', { type: 'application/json' });
+            importJSONFile({ target: { files: [file], value: 'selected' } });
+        })()`);
+        await new Promise(resolveWait => setTimeout(resolveWait, 150));
+        equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), beforeInvalid, 'invalid history import leaves storage unchanged');
+        equal(await client.evaluate(`document.getElementById('char_name').value`), 'Format One', 'invalid history import leaves sheet unchanged');
+
         await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setTemporaryEffects('s_fig', 3, 2); window.confirm = () => true; clearSheet();`);
         await waitFor(client, `document.readyState === 'complete' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`localStorage.getItem('unrelated_test_key')`), 'keep', 'obliterate keeps unrelated storage');
@@ -507,6 +571,179 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), null, 'obliterate removes character');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_RECOVERY_KEY)`), null, 'obliterate removes recovery');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'obliterate clears temporary stat effects');
+    });
+
+    await suite('change history', async () => {
+        await freshBrowserState(client);
+
+        equal(await client.evaluate('CHANGE_HISTORY.length'), 0, 'blank history starts empty');
+        equal(await client.evaluate(`document.getElementById('history_count').textContent`), '0', 'blank history count');
+        equal(await client.evaluate(`document.getElementById('history_clear').disabled`), true, 'blank history cannot be cleared');
+
+        await client.evaluate(`setMode('play'); setMissionSectionExpanded(false); saveNow();`);
+        equal(await client.evaluate('CHANGE_HISTORY.length'), 0, 'interface preferences are not tracked');
+        await client.evaluate(`setTemporaryEffects('s_arm', 2, 1); saveNow();`);
+        equal(await client.evaluate('CHANGE_HISTORY.length'), 0, 'temporary effects are not tracked');
+
+        const failedSave = await client.evaluate(`(() => {
+            const original = Storage.prototype.setItem;
+            document.getElementById('char_lvl').value = '1';
+            Storage.prototype.setItem = () => { throw new Error('Synthetic storage failure'); };
+            saveNow();
+            Storage.prototype.setItem = original;
+            return {
+                historyLength: CHANGE_HISTORY.length,
+                baseline: lastTrackedState.character.fields.char_lvl,
+                status: document.getElementById('save_status').textContent
+            };
+        })()`);
+        equal(failedSave.historyLength, 0, 'failed save does not advance history');
+        equal(failedSave.baseline, '', 'failed save does not advance baseline');
+        equal(failedSave.status, 'Not saved', 'failed save remains visible');
+        await client.evaluate(`saveNow()`);
+        equal(await client.evaluate(`CHANGE_HISTORY[0].changes[0].after`), '1', 'retry records the unsaved change');
+        await client.evaluate(`clearChangeHistory(false); document.getElementById('char_lvl').value = ''; saveNow({ track: false });`);
+
+        await client.evaluate(`(() => {
+            const field = document.getElementById('char_name');
+            field.value = 'History Ranger';
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            openChangeHistory();
+            closeChangeHistory();
+        })()`);
+        equal(await client.evaluate(`CHANGE_HISTORY.length`), 1, 'opening history flushes a pending edit');
+        const nameChange = await client.evaluate(`(() => ({
+            category: CHANGE_HISTORY[0].category,
+            summary: CHANGE_HISTORY[0].summary,
+            label: CHANGE_HISTORY[0].changes[0].label,
+            before: CHANGE_HISTORY[0].changes[0].before,
+            after: CHANGE_HISTORY[0].changes[0].after,
+            stored: JSON.parse(localStorage.getItem(STORAGE_KEY)).changeHistory.length
+        }))()`);
+        equal(nameChange.category, 'character', 'field change category');
+        equal(nameChange.summary, 'Ranger Name added', 'field change summary');
+        equal(nameChange.label, 'Ranger Name', 'field change label');
+        equal(nameChange.before, '', 'field previous value');
+        equal(nameChange.after, 'History Ranger', 'field new value');
+        equal(nameChange.stored, 1, 'history stored with character');
+
+        await client.evaluate(`clearChangeHistory(false); document.getElementById('s_hpc').value = '14'; saveNow(); clearChangeHistory(false);`);
+        await client.evaluate(`document.getElementById('s_hpc').value = '13'; saveNow(); document.getElementById('s_hpc').value = '11'; saveNow();`);
+        const coalesced = await client.evaluate(`(() => ({
+            length: CHANGE_HISTORY.length,
+            changes: CHANGE_HISTORY[0].changes.length,
+            label: CHANGE_HISTORY[0].changes[0].label,
+            before: CHANGE_HISTORY[0].changes[0].before,
+            after: CHANGE_HISTORY[0].changes[0].after
+        }))()`);
+        equal(coalesced.length, 1, 'rapid edits coalesce into one entry');
+        equal(coalesced.changes, 1, 'coalesced entry keeps one field change');
+        equal(coalesced.label, 'Current Health', 'coalesced field label');
+        equal(coalesced.before, '14', 'coalescing keeps first value');
+        equal(coalesced.after, '11', 'coalescing keeps latest value');
+
+        await client.evaluate(`clearChangeHistory(false); (() => {
+            const slotId = slotGroups('heroic')[0].dataset.slotId;
+            applySearchableValue(slotId, 'Flashing Blade', false);
+            saveNow();
+            setSlotUsed(slotId, true);
+            saveNow();
+        })()`);
+        const abilityEntry = await client.evaluate(`(() => ({
+            category: CHANGE_HISTORY[0].category,
+            labels: CHANGE_HISTORY[0].changes.map(change => change.label).join('|'),
+            values: CHANGE_HISTORY[0].changes.map(change => change.after).join('|')
+        }))()`);
+        equal(abilityEntry.category, 'abilities', 'ability change category');
+        check(abilityEntry.labels.includes('Heroic Ability I'), 'ability selection is named');
+        check(abilityEntry.labels.includes('Heroic Ability I status'), 'ability use status is named');
+        check(abilityEntry.values.includes('Flashing Blade'), 'selected ability is recorded');
+        check(abilityEntry.values.includes('Used'), 'used marker is recorded');
+
+        await client.evaluate(`clearChangeHistory(false); CONDITIONS.poisoned = true; renderConditions(); saveNow();`);
+        const conditionEntry = await client.evaluate(`(() => ({
+            category: CHANGE_HISTORY[0].category,
+            label: CHANGE_HISTORY[0].changes[0].label,
+            before: CHANGE_HISTORY[0].changes[0].before,
+            after: CHANGE_HISTORY[0].changes[0].after
+        }))()`);
+        equal(conditionEntry.category, 'conditions', 'condition change category');
+        equal(conditionEntry.label, 'Condition · Poisoned', 'condition change label');
+        equal(conditionEntry.before, 'Inactive', 'condition previous state');
+        equal(conditionEntry.after, 'Active', 'condition new state');
+
+        await client.evaluate(`clearChangeHistory(false); startMission(); saveNow(); clearChangeHistory(false); (() => {
+            MISSION.active.kills.push({
+                id: 'history-kill',
+                enemyId: null,
+                catalogVersion: null,
+                name: 'Giant Rat',
+                count: 1,
+                value: 3
+            });
+            saveNow();
+            clearChangeHistory(false);
+            MISSION.active.kills[0].count = 2;
+            saveNow();
+            MISSION.active.kills[0].count = 3;
+            saveNow();
+        })()`);
+        const missionEntry = await client.evaluate(`(() => {
+            const count = CHANGE_HISTORY[0].changes.find(change => change.path.endsWith('.count'));
+            return {
+                category: CHANGE_HISTORY[0].category,
+                label: count.label,
+                before: count.before,
+                after: count.after
+            };
+        })()`);
+        equal(missionEntry.category, 'mission', 'mission change category');
+        equal(missionEntry.label, 'Enemy · Giant Rat · Count', 'mission counter label');
+        equal(missionEntry.before, '1', 'mission counter previous value');
+        equal(missionEntry.after, '3', 'mission counter latest value');
+
+        await client.evaluate(`openChangeHistory()`);
+        equal(await client.evaluate(`document.getElementById('history_dialog').open`), true, 'history dialog opens');
+        equal(await client.evaluate(`document.querySelectorAll('#history_list .history-entry').length`), 1, 'history timeline renders entry');
+        check(await client.evaluate(`document.getElementById('history_list').textContent.includes('Giant Rat')`), 'history timeline renders semantic label');
+        await client.evaluate(`document.getElementById('history_filter').value = 'character'; renderChangeHistory();`);
+        check(await client.evaluate(`document.getElementById('history_list').textContent.includes('No changes match')`), 'history filter empty state');
+        await client.evaluate(`document.getElementById('history_filter').value = 'mission'; renderChangeHistory(); closeChangeHistory();`);
+        equal(await client.evaluate(`document.getElementById('history_dialog').open`), false, 'history dialog closes');
+
+        equal(await client.evaluate(`collectDocument().changeHistory.length`), 1, 'history included in collected export document');
+        await client.evaluate(`location.reload()`);
+        await waitFor(client, `document.readyState === 'complete' && CHANGE_HISTORY.length === 1`);
+        equal(await client.evaluate(`CHANGE_HISTORY[0].changes.find(change => change.path.endsWith('.count')).after`), '3', 'history survives reload');
+        equal(await client.evaluate(`document.getElementById('history_count').textContent`), '1', 'history count survives reload');
+
+        const capped = await client.evaluate(`(() => {
+            let history = [];
+            const start = Date.parse('2026-01-01T00:00:00.000Z');
+            for (let i = 0; i < MAX_CHANGE_HISTORY + 5; i++) {
+                history = updatedChangeHistory(history, [{
+                    category: 'character',
+                    path: 'test.' + i,
+                    label: 'Test ' + i,
+                    before: '',
+                    after: String(i)
+                }], new Date(start + i * (HISTORY_COALESCE_MS + 1000)));
+            }
+            return {
+                length: history.length,
+                newest: history[0].changes[0].after,
+                oldest: history.at(-1).changes[0].after
+            };
+        })()`);
+        equal(capped.length, 200, 'history is capped');
+        equal(capped.newest, '204', 'history keeps newest entry');
+        equal(capped.oldest, '5', 'history discards oldest entry');
+
+        await client.evaluate(`window.confirm = () => false; clearChangeHistory();`);
+        equal(await client.evaluate(`CHANGE_HISTORY.length`), 1, 'declined clear keeps history');
+        await client.evaluate(`window.confirm = () => true; clearChangeHistory();`);
+        equal(await client.evaluate(`CHANGE_HISTORY.length`), 0, 'confirmed clear removes history');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).changeHistory.length`), 0, 'cleared history persisted');
     });
 
     await suite('dynamic slots and searchable controls', async () => {
@@ -1056,6 +1293,7 @@ try {
                 stepHeight: document.querySelector('.mission-step').getBoundingClientRect().height,
                 conditionAddHeight: document.getElementById('condition_add').getBoundingClientRect().height,
                 conditionStepHeight: document.querySelector('.condition-step').getBoundingClientRect().height,
+                historyHeight: document.getElementById('history_open').getBoundingClientRect().height,
                 nameWidth: document.querySelector('.mission-kill-row .mission-grow').getBoundingClientRect().width,
                 overflowElements: Array.from(document.querySelectorAll('body *'))
                     .filter(element => element.getBoundingClientRect().right > document.documentElement.clientWidth + 0.5)
@@ -1069,6 +1307,7 @@ try {
             check(layout.stepHeight >= 44, `${width}px mission step target is touch-sized`);
             check(layout.conditionAddHeight >= 44, `${width}px condition add target is touch-sized`);
             check(layout.conditionStepHeight >= 44, `${width}px condition step target is touch-sized`);
+            check(layout.historyHeight >= 44, `${width}px history target is touch-sized`);
             if (width <= 430) check(layout.nameWidth >= 180, `${width}px enemy name remains usable`);
         }
 
@@ -1081,6 +1320,22 @@ try {
         await client.evaluate(`openConditionDialog()`);
         check(await client.evaluate(`document.getElementById('condition_dialog').getBoundingClientRect().right <= document.documentElement.clientWidth`), 'condition dialog fits phone viewport');
         await client.evaluate(`closeConditionDialog()`);
+        await client.evaluate(`openChangeHistory()`);
+        const historyDialog = await client.evaluate(`(() => {
+            const rect = document.getElementById('history_dialog').getBoundingClientRect();
+            return {
+                left: rect.left,
+                right: rect.right,
+                bottom: rect.bottom,
+                viewportWidth: document.documentElement.clientWidth,
+                viewportHeight: window.innerHeight,
+                closeHeight: document.querySelector('.history-close').getBoundingClientRect().height
+            };
+        })()`);
+        check(historyDialog.left >= -0.5 && historyDialog.right <= historyDialog.viewportWidth + 0.5, 'history dialog fits phone width');
+        check(Math.abs(historyDialog.bottom - historyDialog.viewportHeight) <= 1, 'history dialog anchors to phone bottom');
+        check(historyDialog.closeHeight >= 44, 'history dialog close target is touch-sized');
+        await client.evaluate(`closeChangeHistory()`);
 
         await client.send('Emulation.clearDeviceMetricsOverride');
         await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });
