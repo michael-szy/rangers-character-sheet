@@ -89,6 +89,7 @@ if (!browserPath) {
 
 function contentType(file) {
     if (extname(file) === '.html') return 'text/html; charset=utf-8';
+    if (extname(file) === '.js') return 'text/javascript; charset=utf-8';
     if (extname(file) === '.json') return 'application/json; charset=utf-8';
     return 'text/plain; charset=utf-8';
 }
@@ -98,9 +99,11 @@ async function startStaticServer() {
         const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
         const file = pathname === '/' || pathname === '/index.html'
             ? join(projectRoot, 'index.html')
-            : pathname.startsWith('/tests/fixtures/')
-                ? join(projectRoot, pathname.slice(1))
-                : null;
+            : pathname === '/persistence.js'
+                ? join(projectRoot, 'persistence.js')
+                : pathname.startsWith('/tests/fixtures/')
+                    ? join(projectRoot, pathname.slice(1))
+                    : null;
 
         if (!file) {
             response.writeHead(404);
@@ -313,6 +316,8 @@ try {
     await suite('blank sheet and schema migrations', async () => {
         await freshBrowserState(client);
 
+        equal(await client.evaluate(`typeof RangersPersistence.create`), 'function', 'persistence module loaded');
+        equal(await client.evaluate(`Object.isFrozen(PERSISTENCE)`), true, 'configured persistence interface is immutable');
         equal(await client.evaluate('FORMAT_VERSION'), 5, 'current document format');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 5, 'default heroic slots');
         equal(await client.evaluate(`document.querySelectorAll('#innate-list .ability-group').length`), 4, 'default innate slots');

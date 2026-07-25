@@ -1832,6 +1832,7 @@
         </div>
     </div>
 
+<script src="persistence.js"></script>
 <script>
     // --- LIBRARIES ---
     const ABILITY_LIBRARY = {
@@ -2183,6 +2184,47 @@
         system: 'System',
         mixed: 'Mixed'
     };
+    const PERSISTENCE = RangersPersistence.create({
+        formatVersion: FORMAT_VERSION,
+        maxSlots: MAX_SLOTS,
+        maxMissionRows: MAX_MISSION_ROWS,
+        maxMissionHistory: MAX_MISSION_HISTORY,
+        maxChangeHistory: MAX_CHANGE_HISTORY,
+        maxChangesPerEntry: MAX_CHANGES_PER_ENTRY,
+        maxHistoryValueLength: MAX_HISTORY_VALUE_LENGTH,
+        defaultHeroicSlots: DEFAULT_HEROIC_SLOTS,
+        defaultInnateSlots: DEFAULT_INNATE_SLOTS,
+        modes: MODES,
+        objectiveTypes: OBJECTIVE_TYPES,
+        historyCategories: HISTORY_CATEGORIES,
+        fieldIds: Array.from(saveFields, field => field.id),
+        knownArchetypes: Object.keys(ARCHETYPE_LIBRARY),
+        newId: newMissionId,
+        historyEntryCategory
+    });
+    const {
+        isPlainObject,
+        blankSlots,
+        blankConditions,
+        normalizeConditions,
+        createBlankDocument,
+        normalizeFields,
+        normalizeSlotEntry,
+        normalizeSlots,
+        legacySlotCount,
+        migrateLegacyDocument,
+        normalizeText,
+        normalizeNullableText,
+        normalizeNumber,
+        normalizeCount,
+        normalizeRows,
+        normalizeMission,
+        normalizeMissionHistory,
+        normalizeHistoryString,
+        normalizeChangeHistory,
+        normalizeDocument,
+        parseDocument
+    } = PERSISTENCE;
     const SEARCHABLE_STATE = {};
     /*
        Missions are nested records rather than flat fields, so they live in a state object instead
@@ -3830,131 +3872,9 @@
         }
     }
 
-    function isPlainObject(value) {
-        return typeof value === 'object' && value !== null && !Array.isArray(value);
-    }
-
     function describeDataError(error) {
         if (error instanceof SyntaxError) return 'The data is not valid JSON.';
         return error instanceof Error ? error.message : String(error);
-    }
-
-    function blankSlots(count) {
-        return Array.from({ length: count }, () => ({ value: '', used: false }));
-    }
-
-    function blankConditions() {
-        return { poisoned: false, diseased: false, hungerThirst: 0 };
-    }
-
-    function normalizeConditions(rawConditions) {
-        if (rawConditions === undefined || rawConditions === null) return blankConditions();
-        if (!isPlainObject(rawConditions)) throw new Error('Character conditions are not stored as a record.');
-
-        for (const key of ['poisoned', 'diseased']) {
-            if (rawConditions[key] !== undefined && typeof rawConditions[key] !== 'boolean') {
-                throw new Error(`The "${key}" condition must be true or false.`);
-            }
-        }
-
-        const rawLevel = rawConditions.hungerThirst === undefined ? 0 : rawConditions.hungerThirst;
-        const hungerThirst = Number(rawLevel);
-        if (!Number.isInteger(hungerThirst) || hungerThirst < 0 || hungerThirst > 99) {
-            throw new Error('Hunger and Thirst levels must be a whole number from 0 to 99.');
-        }
-
-        return {
-            poisoned: rawConditions.poisoned === true,
-            diseased: rawConditions.diseased === true,
-            hungerThirst
-        };
-    }
-
-    function createBlankDocument() {
-        return {
-            formatVersion: FORMAT_VERSION,
-            character: {
-                fields: {},
-                heroicSlots: blankSlots(DEFAULT_HEROIC_SLOTS),
-                innateSlots: blankSlots(DEFAULT_INNATE_SLOTS),
-                conditions: blankConditions()
-            },
-            uiState: { showInnateSection: false, missionSectionExpanded: true, mode: 'edit' },
-            activeMission: null,
-            missionHistory: [],
-            changeHistory: []
-        };
-    }
-
-    function normalizeFields(rawFields) {
-        if (rawFields === undefined || rawFields === null) return {};
-        if (!isPlainObject(rawFields)) throw new Error('The character fields are not stored as an object.');
-
-        const fields = {};
-
-        saveFields.forEach(f => {
-            const value = rawFields[f.id];
-            if (value === undefined || value === null) return;
-            if (typeof value === 'string') fields[f.id] = value;
-            else if (typeof value === 'number' || typeof value === 'boolean') fields[f.id] = String(value);
-            else throw new Error(`The value stored for "${f.id}" is not a text value.`);
-        });
-
-        return fields;
-    }
-
-    function normalizeSlotEntry(entry, label) {
-        if (typeof entry === 'string') return { value: entry, used: false };
-        if (!isPlainObject(entry)) throw new Error(`${label} contain an entry that is not a slot.`);
-
-        const value = entry.value === undefined || entry.value === null ? '' : entry.value;
-        if (typeof value !== 'string') throw new Error(`${label} contain a slot value that is not text.`);
-
-        return { value: value, used: entry.used === true };
-    }
-
-    function normalizeSlots(rawSlots, defaultCount, label) {
-        if (rawSlots === undefined || rawSlots === null) return blankSlots(defaultCount);
-        if (!Array.isArray(rawSlots)) throw new Error(`${label} must be stored as a list.`);
-        if (rawSlots.length > MAX_SLOTS) throw new Error(`${label} exceed the supported maximum of ${MAX_SLOTS} slots.`);
-        return rawSlots.map(entry => normalizeSlotEntry(entry, label));
-    }
-
-    // Legacy documents stored the slot count separately; 0 or a missing value meant "use the default".
-    function legacySlotCount(rawCount, defaultCount, label) {
-        if (rawCount === undefined || rawCount === null || rawCount === '') return defaultCount;
-        const count = Number(rawCount);
-        if (!Number.isInteger(count) || count < 0 || count > MAX_SLOTS) {
-            throw new Error(`The stored ${label} count is outside the supported range.`);
-        }
-        return count || defaultCount;
-    }
-
-    // Format 0: one flat object of field ids, ab*/in* slot values, *_used flags, and slot counts.
-    function migrateLegacyDocument(legacy) {
-        const readSlots = (prefix, count) => {
-            const slots = [];
-            for (let i = 1; i <= count; i++) {
-                const value = legacy[prefix + i];
-                slots.push({
-                    value: typeof value === 'string' ? value : '',
-                    used: legacy[prefix + i + '_used'] === true
-                });
-            }
-            return slots;
-        };
-
-        return {
-            formatVersion: FORMAT_VERSION,
-            character: {
-                fields: legacy,
-                heroicSlots: readSlots('ab', legacySlotCount(legacy.heroicSlotsCount, DEFAULT_HEROIC_SLOTS, 'heroic slot')),
-                innateSlots: readSlots('in', legacySlotCount(legacy.innateSlotsCount, DEFAULT_INNATE_SLOTS, 'innate slot')),
-                conditions: blankConditions()
-            },
-            uiState: { showInnateSection: legacy.showInnateSection === true, missionSectionExpanded: true },
-            changeHistory: []
-        };
     }
 
     // --- Mission report ---
@@ -4444,216 +4364,6 @@
         const holder = document.querySelector('.mission-card .mission-total');
         if (!mission || !holder) return;
         holder.outerHTML = renderTotals(missionTotals(mission));
-    }
-
-    function normalizeText(value, label) {
-        if (value === undefined || value === null) return '';
-        if (typeof value === 'string') return value;
-        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-        throw new Error(`${label} is not a text value.`);
-    }
-
-    function normalizeNullableText(value, label) {
-        if (value === undefined || value === null || value === '') return null;
-        if (typeof value === 'string') return value;
-        throw new Error(`${label} is not a text value.`);
-    }
-
-    function normalizeNumber(value, label) {
-        if (value === undefined || value === null || value === '') return 0;
-        const number = Number(value);
-        if (!Number.isFinite(number)) throw new Error(`${label} is not a number.`);
-        return number;
-    }
-
-    function normalizeCount(value, label) {
-        const number = Math.trunc(normalizeNumber(value, label));
-        if (number < 0 || number > 9999) throw new Error(`${label} is outside the supported range.`);
-        return number;
-    }
-
-    function normalizeRows(raw, label, mapper) {
-        if (raw === undefined || raw === null) return [];
-        if (!Array.isArray(raw)) throw new Error(`${label} must be stored as a list.`);
-        if (raw.length > MAX_MISSION_ROWS) throw new Error(`${label} hold more than ${MAX_MISSION_ROWS} entries.`);
-        return raw.map((entry, index) => {
-            if (!isPlainObject(entry)) throw new Error(`${label} contain an entry that is not a record.`);
-            return mapper(entry, index);
-        });
-    }
-
-    function normalizeMission(raw, label) {
-        if (!isPlainObject(raw)) throw new Error(`${label} is not a record.`);
-
-        return {
-            id: typeof raw.id === 'string' && raw.id ? raw.id : newMissionId(),
-            title: normalizeText(raw.title, `${label} title`),
-            date: normalizeText(raw.date, `${label} date`),
-            scenario: normalizeText(raw.scenario, `${label} scenario`),
-            notes: normalizeText(raw.notes, `${label} notes`),
-            status: raw.status === 'complete' ? 'complete' : 'active',
-            appliedXp: normalizeNumber(raw.appliedXp, `${label} applied XP`),
-            kills: normalizeRows(raw.kills, `${label} kills`, entry => ({
-                id: typeof entry.id === 'string' && entry.id ? entry.id : newMissionId(),
-                enemyId: normalizeNullableText(entry.enemyId, 'A kill enemy id'),
-                catalogVersion: normalizeNullableText(entry.catalogVersion, 'A kill catalog version'),
-                name: normalizeText(entry.name, 'A kill name'),
-                count: normalizeCount(entry.count, 'A kill count'),
-                value: normalizeNumber(entry.value, 'A kill value')
-            })),
-            objectives: normalizeRows(raw.objectives, `${label} objectives`, entry => ({
-                id: typeof entry.id === 'string' && entry.id ? entry.id : newMissionId(),
-                title: normalizeText(entry.title, 'An objective title'),
-                type: OBJECTIVE_TYPES.includes(entry.type) ? entry.type : 'custom',
-                completed: entry.completed === true,
-                value: normalizeNumber(entry.value, 'An objective value')
-            })),
-            adjustments: normalizeRows(raw.adjustments, `${label} adjustments`, entry => ({
-                id: typeof entry.id === 'string' && entry.id ? entry.id : newMissionId(),
-                label: normalizeText(entry.label, 'An adjustment reason'),
-                value: normalizeNumber(entry.value, 'An adjustment value')
-            }))
-        };
-    }
-
-    function normalizeMissionHistory(raw) {
-        if (raw === undefined || raw === null) return [];
-        if (!Array.isArray(raw)) throw new Error('The mission history must be stored as a list.');
-        if (raw.length > MAX_MISSION_HISTORY) throw new Error(`The mission history holds more than ${MAX_MISSION_HISTORY} missions.`);
-        return raw.map((entry, index) => {
-            const mission = normalizeMission(entry, `Mission ${index + 1}`);
-            mission.status = 'complete';   // anything in the history is finished by definition
-            return mission;
-        });
-    }
-
-    function normalizeHistoryString(value, label, maxLength, allowEmpty = false) {
-        if (typeof value !== 'string') throw new Error(`${label} is not text.`);
-        if (!allowEmpty && !value) throw new Error(`${label} is empty.`);
-        if (value.length > maxLength) throw new Error(`${label} is too long.`);
-        return value;
-    }
-
-    function normalizeChangeHistory(raw) {
-        if (raw === undefined || raw === null) return [];
-        if (!Array.isArray(raw)) throw new Error('The change history must be stored as a list.');
-        if (raw.length > MAX_CHANGE_HISTORY) {
-            throw new Error(`The change history holds more than ${MAX_CHANGE_HISTORY} entries.`);
-        }
-
-        const ids = new Set();
-        return raw.map((entry, entryIndex) => {
-            if (!isPlainObject(entry)) throw new Error(`Change history entry ${entryIndex + 1} is not a record.`);
-
-            const id = normalizeHistoryString(entry.id, `Change history entry ${entryIndex + 1} id`, 100);
-            if (ids.has(id)) throw new Error(`The change history contains duplicate id "${id}".`);
-            ids.add(id);
-
-            const timestamp = normalizeHistoryString(entry.timestamp, `Change history entry ${entryIndex + 1} timestamp`, 40);
-            if (!Number.isFinite(new Date(timestamp).getTime())) {
-                throw new Error(`Change history entry ${entryIndex + 1} has an invalid timestamp.`);
-            }
-            if (!HISTORY_CATEGORIES.includes(entry.category)) {
-                throw new Error(`Change history entry ${entryIndex + 1} has an invalid category.`);
-            }
-            const summary = normalizeHistoryString(entry.summary, `Change history entry ${entryIndex + 1} summary`, 240);
-            if (!Array.isArray(entry.changes)) {
-                throw new Error(`Change history entry ${entryIndex + 1} changes must be a list.`);
-            }
-            if (entry.changes.length > MAX_CHANGES_PER_ENTRY) {
-                throw new Error(`Change history entry ${entryIndex + 1} has too many changes.`);
-            }
-
-            const changes = entry.changes.map((change, changeIndex) => {
-                if (!isPlainObject(change)) {
-                    throw new Error(`Change ${changeIndex + 1} in history entry ${entryIndex + 1} is not a record.`);
-                }
-                if (!HISTORY_CATEGORIES.includes(change.category) || change.category === 'mixed') {
-                    throw new Error(`Change ${changeIndex + 1} in history entry ${entryIndex + 1} has an invalid category.`);
-                }
-                return {
-                    category: change.category,
-                    path: normalizeHistoryString(change.path, 'A change history path', 240),
-                    label: normalizeHistoryString(change.label, 'A change history label', 240),
-                    before: normalizeHistoryString(change.before, 'A previous change history value', MAX_HISTORY_VALUE_LENGTH, true),
-                    after: normalizeHistoryString(change.after, 'A new change history value', MAX_HISTORY_VALUE_LENGTH, true)
-                };
-            });
-
-            if (entry.category !== 'system' && !changes.length) {
-                throw new Error(`Change history entry ${entryIndex + 1} has no changes.`);
-            }
-            const expectedCategory = changes.length ? historyEntryCategory(changes) : 'system';
-            if (entry.category !== expectedCategory) {
-                throw new Error(`Change history entry ${entryIndex + 1} category does not match its changes.`);
-            }
-
-            return { id, timestamp, category: entry.category, summary, changes };
-        });
-    }
-
-    // Returns a fully validated document plus non-blocking notes. Throws if the data cannot be trusted at all.
-    function normalizeDocument(parsed) {
-        if (!isPlainObject(parsed)) throw new Error('The character data is not a JSON object.');
-
-        let version;
-        if (parsed.formatVersion === undefined) version = 0;
-        else if (Number.isInteger(parsed.formatVersion) && parsed.formatVersion >= 0) version = parsed.formatVersion;
-        else throw new Error('The format version is not a whole number.');
-
-        if (version > FORMAT_VERSION) {
-            throw new Error(`This character uses format version ${version}, which is newer than this sheet (${FORMAT_VERSION}).`);
-        }
-
-        const upgraded = version === 0 ? migrateLegacyDocument(parsed) : parsed;
-
-        if (!isPlainObject(upgraded.character)) throw new Error('The character section is missing or invalid.');
-        if (upgraded.uiState !== undefined && upgraded.uiState !== null && !isPlainObject(upgraded.uiState)) {
-            throw new Error('The interface state is invalid.');
-        }
-
-        const warnings = [];
-        const fields = normalizeFields(upgraded.character.fields);
-
-        if (fields.char_arch && !ARCHETYPE_LIBRARY[fields.char_arch]) {
-            warnings.push(`The archetype "${fields.char_arch}" is unknown and was left empty.`);
-            fields.char_arch = '';
-        }
-
-        return {
-            document: {
-                formatVersion: FORMAT_VERSION,
-                character: {
-                    fields: fields,
-                    heroicSlots: normalizeSlots(upgraded.character.heroicSlots, DEFAULT_HEROIC_SLOTS, 'Heroic ability slots'),
-                    innateSlots: normalizeSlots(upgraded.character.innateSlots, DEFAULT_INNATE_SLOTS, 'Innate ability slots'),
-                    // Formats 0–3 predate character conditions and therefore normalize to none.
-                    conditions: normalizeConditions(upgraded.character.conditions)
-                },
-                uiState: {
-                    showInnateSection: !!(upgraded.uiState && upgraded.uiState.showInnateSection === true),
-                    // Existing documents predate this preference and therefore stay expanded.
-                    missionSectionExpanded: !(upgraded.uiState && upgraded.uiState.missionSectionExpanded === false),
-                    // An unknown or missing mode falls back to editing rather than rejecting the document.
-                    mode: MODES.includes(upgraded.uiState && upgraded.uiState.mode) ? upgraded.uiState.mode : 'edit'
-                },
-                // Formats 1 and older had no missions. Format 2 kill rows had no catalog linkage;
-                // normalizeMission() fills both optional snapshot fields with null.
-                activeMission: upgraded.activeMission === undefined || upgraded.activeMission === null
-                    ? null
-                    // A mission parked in this slot is by definition still running.
-                    : Object.assign(normalizeMission(upgraded.activeMission, 'The active mission'), { status: 'active' }),
-                missionHistory: normalizeMissionHistory(upgraded.missionHistory),
-                // Formats 0–4 predate the persistent change history.
-                changeHistory: normalizeChangeHistory(upgraded.changeHistory)
-            },
-            warnings: warnings,
-            migratedFrom: version === FORMAT_VERSION ? null : version
-        };
-    }
-
-    function parseDocument(raw) {
-        return normalizeDocument(JSON.parse(raw));
     }
 
     // Only ever called with a normalized document, so the sheet is never left half-written.
