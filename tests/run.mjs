@@ -318,6 +318,7 @@ try {
         equal(await client.evaluate('MISSION.active'), null, 'blank active mission');
         equal(await client.evaluate('MISSION.history.length'), 0, 'blank mission history');
         equal(await client.evaluate('ENEMY_CATALOG'), null, 'catalog is optional');
+        equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), false, 'blank Mission section is expanded');
 
         const legacy = await client.evaluate(`(() => {
             const result = normalizeDocument(${JSON.stringify(fixtures['format-0-legacy'])});
@@ -331,6 +332,7 @@ try {
                 lastValue: result.document.character.heroicSlots[5].value,
                 innateUsed: result.document.character.innateSlots[0].used,
                 shown: result.document.uiState.showInnateSection,
+                missionExpanded: result.document.uiState.missionSectionExpanded,
                 mode: result.document.uiState.mode,
                 active: result.document.activeMission,
                 history: result.document.missionHistory.length
@@ -345,6 +347,7 @@ try {
         equal(legacy.lastValue, 'Focus', 'legacy final slot value');
         equal(legacy.innateUsed, true, 'legacy innate used marker');
         equal(legacy.shown, true, 'legacy innate visibility');
+        equal(legacy.missionExpanded, true, 'legacy Mission section defaults expanded');
         equal(legacy.mode, 'edit', 'legacy safe mode default');
         equal(legacy.active, null, 'legacy active mission default');
         equal(legacy.history, 0, 'legacy history default');
@@ -355,6 +358,7 @@ try {
                 migratedFrom: result.migratedFrom,
                 version: result.document.formatVersion,
                 name: result.document.character.fields.char_name,
+                missionExpanded: result.document.uiState.missionSectionExpanded,
                 mode: result.document.uiState.mode,
                 active: result.document.activeMission,
                 history: result.document.missionHistory.length
@@ -363,6 +367,7 @@ try {
         equal(format1.migratedFrom, 1, 'format 1 migration source');
         equal(format1.version, 3, 'format 1 migration target');
         equal(format1.name, 'Format One', 'format 1 character');
+        equal(format1.missionExpanded, true, 'older version Mission section defaults expanded');
         equal(format1.mode, 'play', 'format 1 mode preserved');
         equal(format1.active, null, 'format 1 active mission default');
         equal(format1.history, 0, 'format 1 history default');
@@ -570,6 +575,43 @@ try {
 
         await client.evaluate(`setMode('edit'); openSearchMenu('it1'); setMode('play')`);
         equal(await client.evaluate(`document.getElementById('it1_box').classList.contains('open')`), false, 'mode switch closes combobox');
+    });
+
+    await suite('collapsible Mission section', async () => {
+        await freshBrowserState(client);
+
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle is visible in edit mode');
+        check(await client.evaluate(`document.getElementById('mission_section_toggle').getBoundingClientRect().height >= 44`), 'Mission toggle is touch-sized');
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').getAttribute('aria-expanded')`), 'true', 'expanded Mission section is announced');
+
+        await client.evaluate(`(() => {
+            startMission();
+            updateMissionField(MISSION.active.id, 'title', 'Collapsed patrol');
+            toggleMissionSection();
+        })()`);
+        equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), true, 'Mission section collapses');
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').getAttribute('aria-expanded')`), 'false', 'collapsed Mission section is announced');
+        equal(await client.evaluate(`document.getElementById('mission_section_chevron').textContent`), '▸', 'collapsed chevron updates');
+        equal(await client.evaluate(`MISSION.active.title`), 'Collapsed patrol', 'collapse preserves active mission state');
+        equal(await client.evaluate(`collectDocument().uiState.missionSectionExpanded`), false, 'collapsed preference enters document');
+
+        await client.evaluate(`setMode('play')`);
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible in play mode');
+        equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), true, 'mode switch preserves collapsed state');
+
+        await client.evaluate(`saveNow(); location.reload();`);
+        await waitFor(client, `document.readyState === 'complete' && document.getElementById('mission_section_content').hidden`);
+        equal(await client.evaluate(`currentMode()`), 'play', 'collapsed Mission section reload keeps mode');
+        equal(await client.evaluate(`MISSION.active.title`), 'Collapsed patrol', 'collapsed mission survives reload');
+
+        await client.evaluate(`toggleMissionSection()`);
+        equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), false, 'Mission section expands again');
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').getAttribute('aria-expanded')`), 'true', 're-expanded Mission section is announced');
+        equal(await client.evaluate(`document.getElementById('mission_section_chevron').textContent`), '▾', 'expanded chevron updates');
+        equal(await client.evaluate(`document.getElementById('mission_title').value`), 'Collapsed patrol', 'expanded view restores mission fields');
+
+        await client.evaluate(`setMode('edit')`);
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible after returning to edit');
     });
 
     await suite('temporary Ally stat modifiers', async () => {

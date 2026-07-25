@@ -443,6 +443,30 @@
         border-radius: 10px;
         background: rgba(0,0,0,0.22);
     }
+    .mission-section-toggle {
+        width: 100%;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-top: none;
+        border-right: none;
+        border-bottom: none;
+        border-radius: 0;
+        text-align: left;
+        cursor: pointer;
+    }
+    .mission-section-toggle:active {
+        background: linear-gradient(90deg, rgba(22, 224, 189, 0.22) 0%, transparent 100%);
+        color: var(--accent-teal);
+        transform: none;
+    }
+    .mission-section-chevron {
+        flex: 0 0 auto;
+        font-family: var(--body-font);
+        font-size: 1.1em;
+    }
     .mission-empty { margin-top: 14px; }
     .mission-empty p { color: #91a0b0; margin: 0 0 12px; font-size: 0.95em; }
     .mission-head { display: flex; flex-direction: column; gap: 10px; }
@@ -641,6 +665,10 @@
         .info-toggle:not(:disabled):hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
         .search-option:hover { background: rgba(22, 224, 189, 0.12); }
         button:hover { background: var(--accent-teal); color: #000; }
+        .mission-section-toggle:hover {
+            background: linear-gradient(90deg, rgba(22, 224, 189, 0.22) 0%, transparent 100%);
+            color: var(--accent-teal);
+        }
         .add-slot-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(22, 224, 189, 0.05); }
         .remove-slot-btn:hover { color: var(--danger-red); }
     }
@@ -1002,24 +1030,30 @@
             </div>
         </div>
 
-        <div class="section-header">Mission</div>
-        <div id="mission-enemy-tools" class="mission-enemy-tools">
-            <div class="mission-catalog-status">
-                <span id="enemy-catalog-status">No enemy catalog loaded. Custom entries remain available.</span>
-                <button type="button" class="setup-only" onclick="document.getElementById('enemy-catalog-file').click()">Load Enemy Catalog</button>
-                <input type="file" id="enemy-catalog-file" accept="application/json,.json" style="display:none" tabindex="-1" aria-hidden="true" onchange="importEnemyCatalog(event)">
+        <button type="button" id="mission_section_toggle" class="section-header mission-section-toggle"
+            aria-expanded="true" aria-controls="mission_section_content" onclick="toggleMissionSection()">
+            <span>Mission</span>
+            <span id="mission_section_chevron" class="mission-section-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div id="mission_section_content">
+            <div id="mission-enemy-tools" class="mission-enemy-tools">
+                <div class="mission-catalog-status">
+                    <span id="enemy-catalog-status">No enemy catalog loaded. Custom entries remain available.</span>
+                    <button type="button" class="setup-only" onclick="document.getElementById('enemy-catalog-file').click()">Load Enemy Catalog</button>
+                    <input type="file" id="enemy-catalog-file" accept="application/json,.json" style="display:none" tabindex="-1" aria-hidden="true" onchange="importEnemyCatalog(event)">
+                </div>
+                <div class="mission-enemy-picker">
+                    <select id="enemy_picker_select" aria-label="Enemy to add"
+                        onchange="updateEnemyPickerAction()">
+                        <option value="">Load an enemy catalog first…</option>
+                    </select>
+                    <button type="button" id="enemy_picker_add" class="mission-primary"
+                        disabled onclick="addSelectedMissionEnemy()">+ Add</button>
+                </div>
+                <p class="mission-note">Catalog XP is a suggestion. The scenario’s Outcome and Experience rules decide which rewards count.</p>
             </div>
-            <div class="mission-enemy-picker">
-                <select id="enemy_picker_select" aria-label="Enemy to add"
-                    onchange="updateEnemyPickerAction()">
-                    <option value="">Load an enemy catalog first…</option>
-                </select>
-                <button type="button" id="enemy_picker_add" class="mission-primary"
-                    disabled onclick="addSelectedMissionEnemy()">+ Add</button>
-            </div>
-            <p class="mission-note">Catalog XP is a suggestion. The scenario’s Outcome and Experience rules decide which rewards count.</p>
+            <div id="mission-block"></div>
         </div>
-        <div id="mission-block"></div>
         <div class="section-header">Quest Log</div>
         <textarea id="quest_notes" class="save-field notes-area" placeholder="Record the omens, the scars, and the trophies of each expedition."></textarea>
 
@@ -1678,6 +1712,7 @@
             },
             uiState: {
                 showInnateSection: document.getElementById('innate-section').style.display === 'block',
+                missionSectionExpanded: !document.getElementById('mission_section_content').hidden,
                 mode: currentMode()
             },
             activeMission: MISSION.active,
@@ -1874,6 +1909,23 @@
 
     function toggleInnateSection() {
         setInnateSectionExpanded(document.getElementById('innate-section').style.display === "none");
+        scheduleSave();
+    }
+
+    function setMissionSectionExpanded(expanded) {
+        const content = document.getElementById('mission_section_content');
+        const button = document.getElementById('mission_section_toggle');
+        const chevron = document.getElementById('mission_section_chevron');
+
+        content.hidden = !expanded;
+        button.setAttribute('aria-expanded', String(expanded));
+        button.setAttribute('aria-label', expanded ? 'Collapse Mission section' : 'Expand Mission section');
+        chevron.textContent = expanded ? '▾' : '▸';
+    }
+
+    function toggleMissionSection() {
+        const content = document.getElementById('mission_section_content');
+        setMissionSectionExpanded(content.hidden);
         scheduleSave();
     }
 
@@ -2315,7 +2367,7 @@
                 heroicSlots: blankSlots(DEFAULT_HEROIC_SLOTS),
                 innateSlots: blankSlots(DEFAULT_INNATE_SLOTS)
             },
-            uiState: { showInnateSection: false, mode: 'edit' },
+            uiState: { showInnateSection: false, missionSectionExpanded: true, mode: 'edit' },
             activeMission: null,
             missionHistory: []
         };
@@ -2386,7 +2438,7 @@
                 heroicSlots: readSlots('ab', legacySlotCount(legacy.heroicSlotsCount, DEFAULT_HEROIC_SLOTS, 'heroic slot')),
                 innateSlots: readSlots('in', legacySlotCount(legacy.innateSlotsCount, DEFAULT_INNATE_SLOTS, 'innate slot'))
             },
-            uiState: { showInnateSection: legacy.showInnateSection === true }
+            uiState: { showInnateSection: legacy.showInnateSection === true, missionSectionExpanded: true }
         };
     }
 
@@ -2989,6 +3041,8 @@
                 },
                 uiState: {
                     showInnateSection: !!(upgraded.uiState && upgraded.uiState.showInnateSection === true),
+                    // Existing documents predate this preference and therefore stay expanded.
+                    missionSectionExpanded: !(upgraded.uiState && upgraded.uiState.missionSectionExpanded === false),
                     // An unknown or missing mode falls back to editing rather than rejecting the document.
                     mode: MODES.includes(upgraded.uiState && upgraded.uiState.mode) ? upgraded.uiState.mode : 'edit'
                 },
@@ -3024,6 +3078,7 @@
         clearSlots('innate');
 
         setInnateSectionExpanded(doc.uiState.showInnateSection);
+        setMissionSectionExpanded(doc.uiState.missionSectionExpanded);
 
         applySlots('heroic', doc.character.heroicSlots);
         applySlots('innate', doc.character.innateSlots);

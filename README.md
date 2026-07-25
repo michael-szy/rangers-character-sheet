@@ -8,6 +8,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Heroic Abilities und Spells auswählen und ihre Nutzung markieren
 - Archetypen mit Traits und Einschränkungen anzeigen
 - Missionen mit Gegnern, Zielen, Anpassungen und bestätigter XP-Übertragung dokumentieren
+- Den Missionsbereich in Edit und Play einklappen, wenn er gerade nicht benötigt wird
 - Einen optionalen Gegnerkatalog laden und Gegner samt vorgeschlagenen XP per Dropdown hinzufügen
 - Frei wählbare temporäre Ally-Boni direkt an den effektiven Charakterwerten anzeigen
 - Änderungen automatisch im Browser speichern
@@ -31,6 +32,8 @@ Der aktuelle Charakter wird ausschließlich im lokalen Browserspeicher (`localSt
 Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen und ebenfalls nur in diesem Browser gespeichert. Danach lassen sich Gegner in einer Auswahlliste samt vorgeschlagenem XP-Wert zur aktiven Mission hinzufügen. **Add blank enemy** bleibt für eigene oder szenariospezifische Gegner verfügbar. Die vorgeschlagenen Gegner-XP ersetzen nicht die **Outcome and Experience**-Regeln des gespielten Szenarios; Name und Wert bleiben deshalb in jedem Missionsbericht manuell korrigierbar.
 
 In Edit und Play können temporäre Ally-Boni direkt an Movement, Fight, Shoot, Armor, Will, Health und Recruitment gesetzt werden. Ein Tippen auf **Ally +** öffnet die gemeinsame Zahlenauswahl; aktive Karten zeigen den effektiven Wert und die Rechnung aus Grundwert und Bonus. Grundwerte und Charakterdatei werden nicht verändert. Einzelne oder alle Boni lassen sich im selben Dialog entfernen. Die Boni überleben ein versehentliches Neuladen desselben Tabs, aber keine neue Browser-Sitzung.
+
+Die Überschrift **Mission** ist in beiden Modi ein Ein-/Ausklappschalter. Das Einklappen blendet lediglich die Oberfläche aus; eine aktive Mission und die Historie bleiben gespeichert. Der gewählte Zustand wird mit dem Charakter gesichert.
 
 ## Technik
 
