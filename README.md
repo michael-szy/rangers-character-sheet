@@ -8,7 +8,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Heroic Abilities und Spells auswählen und ihre Nutzung markieren
 - Archetypen mit Traits und Einschränkungen anzeigen
 - Missionen mit Gegnern, Zielen, Anpassungen und bestätigter XP-Übertragung dokumentieren
-- Einen optionalen, lokal bereitgestellten Gegnerkatalog mit vorgeschlagenen XP-Werten laden
+- Einen optionalen Gegnerkatalog laden und Gegner samt vorgeschlagenen XP per Dropdown hinzufügen
 - Änderungen automatisch im Browser speichern
 - Charaktere als JSON-Datei sichern und auf einem anderen Gerät laden
 - Ohne Konto, Backend oder Installation verwenden
@@ -27,7 +27,7 @@ Anschließend ist der Charakterbogen unter `http://localhost:5500` erreichbar.
 
 Der aktuelle Charakter wird ausschließlich im lokalen Browserspeicher (`localStorage`) abgelegt. Browserdaten zu löschen oder einen anderen Browser beziehungsweise ein anderes Gerät zu verwenden, übernimmt diese Daten nicht automatisch. Nutze deshalb regelmäßig **Save Character File** und stelle Sicherungen mit **Load Character File** wieder her.
 
-Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen und ebenfalls nur in diesem Browser gespeichert. Die vorgeschlagenen Gegner-XP ersetzen nicht die **Outcome and Experience**-Regeln des gespielten Szenarios; Name und Wert bleiben deshalb in jedem Missionsbericht manuell korrigierbar.
+Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen und ebenfalls nur in diesem Browser gespeichert. Danach lassen sich Gegner in einer Auswahlliste samt vorgeschlagenem XP-Wert zur aktiven Mission hinzufügen. **Add blank enemy** bleibt für eigene oder szenariospezifische Gegner verfügbar. Die vorgeschlagenen Gegner-XP ersetzen nicht die **Outcome and Experience**-Regeln des gespielten Szenarios; Name und Wert bleiben deshalb in jedem Missionsbericht manuell korrigierbar.
 
 ## Technik
 

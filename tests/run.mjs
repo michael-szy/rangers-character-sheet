@@ -600,17 +600,17 @@ try {
             refreshEnemyPickerOptions();
             startMission();
         })()`);
-        equal(await client.evaluate(`SEARCHABLE_STATE.enemy_picker.options.length`), 3, 'picker receives catalog options');
+        equal(await client.evaluate(`document.getElementById('enemy_picker_select').tagName`), 'SELECT', 'enemy picker is a native dropdown');
+        equal(await client.evaluate(`document.getElementById('enemy_picker_select').options.length - 1`), 3, 'picker receives catalog options');
+        equal(await client.evaluate(`document.getElementById('enemy_picker_add').disabled`), true, 'add waits for an enemy selection');
         equal(await client.evaluate(`getComputedStyle(document.getElementById('mission-enemy-tools')).display !== 'none'`), true, 'enemy tools visible');
         equal(await client.evaluate(`document.getElementById('enemy-catalog-status').textContent.includes('3 enemies')`), true, 'catalog status count');
 
         await client.evaluate(`(() => {
-            const input = document.getElementById('enemy_picker_search');
-            input.focus();
-            input.value = 'Fixture Ghoul';
-            input.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-            document.querySelector('.mission-enemy-picker > button').click();
+            const select = document.getElementById('enemy_picker_select');
+            select.value = 'fixture-ghoul';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            document.getElementById('enemy_picker_add').click();
         })()`);
         let kill = await client.evaluate(`MISSION.active.kills[0]`);
         equal(kill.name, 'Fixture Ghoul', 'catalog enemy name added');
@@ -631,10 +631,9 @@ try {
         equal(kill.catalogVersion, null, 'manual XP correction clears version link');
 
         await client.evaluate(`(() => {
-            const input = document.getElementById('enemy_picker_search');
-            input.value = 'Campaign Beast';
-            input.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            document.querySelector('.mission-enemy-picker > button').click();
+            addMissionRow('kills');
+            const row = MISSION.active.kills[1];
+            updateMissionRow(MISSION.active.id, 'kills', row.id, 'name', 'Campaign Beast');
         })()`);
         const customKill = await client.evaluate(`MISSION.active.kills[1]`);
         equal(customKill.name, 'Campaign Beast', 'custom enemy name');
@@ -642,12 +641,11 @@ try {
         equal(customKill.enemyId, null, 'custom enemy has no link');
 
         await client.evaluate(`(() => {
-            const input = document.getElementById('enemy_picker_search');
-            input.value = 'Fixture Ogre';
-            input.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-            document.querySelector('.mission-enemy-picker > button').click();
-            SEARCHABLE_STATE.enemy_picker.options.find(option => option.label === 'Fixture Ogre').enemy.xp = 99;
+            const select = document.getElementById('enemy_picker_select');
+            select.value = 'fixture-ogre';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            document.getElementById('enemy_picker_add').click();
+            ENEMY_CATALOG.enemies.find(enemy => enemy.id === 'fixture-ogre').xp = 99;
         })()`);
         equal(await client.evaluate(`MISSION.active.kills[2].value`), 5, 'catalog change does not rewrite snapshot');
 
@@ -716,11 +714,10 @@ try {
             ENEMY_CATALOG = normalizeEnemyCatalog(${JSON.stringify(fixtures['enemy-catalog'])});
             refreshEnemyPickerOptions();
             startMission();
-            const input = document.getElementById('enemy_picker_search');
-            input.value = 'Fixture Ghoul';
-            input.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-            document.querySelector('.mission-enemy-picker > button').click();
+            const select = document.getElementById('enemy_picker_select');
+            select.value = 'fixture-ghoul';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            document.getElementById('enemy_picker_add').click();
         })()`);
 
         const widths = [360, 430, 712, 768, 800, 899, 900, 912, 1080];

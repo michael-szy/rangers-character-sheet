@@ -376,9 +376,11 @@
     }
     .mission-catalog-status button { min-height: 0; padding: 7px 12px; font-size: 0.78em; }
     .mission-enemy-picker { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; }
-    .mission-enemy-picker .search-select { flex: 1 1 auto; min-width: 0; }
+    .mission-enemy-picker select { flex: 1 1 auto; min-width: 0; min-height: 48px; }
     .mission-enemy-picker > button { flex: 0 0 auto; }
-    .mission-enemy-picker .selection-meta, .mission-enemy-picker .ability-desc { display: none; }
+    .mission-enemy-picker button:disabled {
+        border-color: #46505a; color: #65717d; cursor: not-allowed; opacity: 0.75;
+    }
     .mission-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
     .mission-grow { flex: 1 1 120px; min-width: 0; }
     .mission-value { flex: 0 0 74px; text-align: center; }
@@ -823,19 +825,12 @@
                 <input type="file" id="enemy-catalog-file" accept="application/json,.json" style="display:none" tabindex="-1" aria-hidden="true" onchange="importEnemyCatalog(event)">
             </div>
             <div class="mission-enemy-picker">
-                <div class="search-select" id="enemy_picker_box">
-                    <input type="text" id="enemy_picker_search" class="search-select-input"
-                        placeholder="Search catalog or type a custom enemy..." autocomplete="off"
-                        role="combobox" aria-expanded="false" aria-controls="enemy_picker_menu"
-                        aria-autocomplete="list" aria-label="Enemy to add"
-                        oninput="handleSearchInput('enemy_picker')" onfocus="handleSearchFocus('enemy_picker')"
-                        onkeydown="handleSearchKeydown(event, 'enemy_picker')" onblur="handleSearchBlur('enemy_picker')">
-                    <div id="enemy_picker_menu" class="search-select-menu" role="listbox"></div>
-                </div>
-                <button type="button" class="mission-primary" onclick="addSelectedMissionEnemy()">+ Add</button>
-                <div id="meta_enemy_picker" class="selection-meta"></div>
-                <div id="desc_enemy_picker" class="ability-desc"></div>
-                <input type="hidden" id="enemy_picker">
+                <select id="enemy_picker_select" aria-label="Enemy to add"
+                    onchange="updateEnemyPickerAction()">
+                    <option value="">Load an enemy catalog first…</option>
+                </select>
+                <button type="button" id="enemy_picker_add" class="mission-primary"
+                    disabled onclick="addSelectedMissionEnemy()">+ Add</button>
             </div>
             <p class="mission-note">Catalog XP is a suggestion. The scenario’s Outcome and Experience rules decide which rewards count.</p>
         </div>
@@ -1220,18 +1215,6 @@
         };
     }
 
-    function enemyCatalogOptions() {
-        if (!ENEMY_CATALOG) return [];
-        return ENEMY_CATALOG.enemies.map(enemy => ({
-            value: enemy.id,
-            label: enemy.name,
-            desc: `${enemy.xp} XP each`,
-            badges: [`${enemy.xp} XP`],
-            group: [enemy.source, enemy.page ? `p. ${enemy.page}` : ''].filter(Boolean).join(' · '),
-            enemy
-        }));
-    }
-
     function updateEnemyCatalogStatus(message = '') {
         const status = document.getElementById('enemy-catalog-status');
         if (message) status.textContent = message;
@@ -1250,19 +1233,45 @@
         } catch (error) {
             console.error('The stored enemy catalog could not be loaded.', error);
             ENEMY_CATALOG = null;
+            refreshEnemyPickerOptions();
             updateEnemyCatalogStatus('The stored enemy catalog is invalid. Load it again to replace it.');
             return;
         }
-        updateEnemyCatalogStatus();
+        refreshEnemyPickerOptions();
     }
 
     function refreshEnemyPickerOptions() {
-        const state = SEARCHABLE_STATE.enemy_picker;
-        if (!state) return;
-        state.options = enemyCatalogOptions();
-        applySearchableValue('enemy_picker', '', true, false);
-        closeSearchMenu('enemy_picker');
+        const select = document.getElementById('enemy_picker_select');
+        if (!select) return;
+
+        select.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = ENEMY_CATALOG && ENEMY_CATALOG.enemies.length
+            ? 'Choose an enemy…'
+            : 'Load an enemy catalog first…';
+        select.appendChild(placeholder);
+
+        if (ENEMY_CATALOG) {
+            ENEMY_CATALOG.enemies.forEach(enemy => {
+                const option = document.createElement('option');
+                option.value = enemy.id;
+                option.textContent = `${enemy.name} · ${enemy.xp} XP`;
+                select.appendChild(option);
+            });
+        }
+
+        select.value = '';
+        select.disabled = !ENEMY_CATALOG || !ENEMY_CATALOG.enemies.length;
+        updateEnemyPickerAction();
         updateEnemyCatalogStatus();
+    }
+
+    function updateEnemyPickerAction() {
+        const select = document.getElementById('enemy_picker_select');
+        const button = document.getElementById('enemy_picker_add');
+        if (!select || !button) return;
+        button.disabled = !MISSION.active || !select.value;
     }
 
     function importEnemyCatalog(event) {
@@ -1308,20 +1317,6 @@
             };
         }
 
-        SEARCHABLE_STATE.enemy_picker = {
-            id: 'enemy_picker',
-            options: enemyCatalogOptions(),
-            allowCustom: true,
-            slotLabel: 'Mission enemy',
-            customBadges: ['Enemy', 'Custom'],
-            customGroup: 'Use as custom enemy',
-            showPreview: false,
-            persistSelection: false,
-            renderedOptions: [],
-            selectedOption: null,
-            selectedValue: '',
-            highlightIndex: -1
-        };
     }
 
     function slotGroups(type) {
@@ -2143,29 +2138,27 @@
             return;
         }
 
-        const input = getSearchInput('enemy_picker');
-        const typedName = input.value.trim();
-        const option = findOptionByLabel('enemy_picker', typedName);
-        const name = option ? option.label : typedName;
+        const select = document.getElementById('enemy_picker_select');
+        const enemy = ENEMY_CATALOG
+            ? ENEMY_CATALOG.enemies.find(entry => entry.id === select.value)
+            : null;
 
-        if (!name) {
-            input.focus();
+        if (!enemy) {
+            select.focus();
             return;
         }
 
-        const enemy = option && option.enemy ? option.enemy : null;
         mission.kills.push({
             id: newMissionId(),
-            enemyId: enemy ? enemy.id : null,
-            catalogVersion: enemy && ENEMY_CATALOG
-                ? `${ENEMY_CATALOG.catalogId}@${ENEMY_CATALOG.catalogVersion}`
-                : null,
-            name,
+            enemyId: enemy.id,
+            catalogVersion: `${ENEMY_CATALOG.catalogId}@${ENEMY_CATALOG.catalogVersion}`,
+            name: enemy.name,
             count: 1,
-            value: enemy ? enemy.xp : 0
+            value: enemy.xp
         });
 
-        applySearchableValue('enemy_picker', '', true, false);
+        select.value = '';
+        updateEnemyPickerAction();
         renderMissions();
         scheduleSave();
     }
@@ -2350,7 +2343,8 @@
         block.innerHTML = parts.join('');
         block.classList.toggle('is-empty', !active && !MISSION.history.length);
         document.getElementById('mission-enemy-tools').style.display = active ? 'block' : 'none';
-        if (!active) applySearchableValue('enemy_picker', '', true, false);
+        if (!active) document.getElementById('enemy_picker_select').value = '';
+        updateEnemyPickerAction();
         refreshEmptyMarkers();
     }
 
