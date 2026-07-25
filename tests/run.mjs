@@ -864,12 +864,22 @@ try {
         equal(kill.value, 3, 'catalog enemy XP added');
         equal(kill.enemyId, 'fixture-ghoul', 'catalog enemy id linked');
         equal(kill.catalogVersion, 'fixture-enemies@1', 'catalog version linked');
+        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('1 kill')`), true, 'live summary shows one defeated enemy');
+        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('Kill XP 3')`), true, 'live summary separates initial kill XP');
 
-        await client.evaluate(`updateMissionRow(MISSION.active.id, 'kills', MISSION.active.kills[0].id, 'count', 2)`);
+        await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] .mission-count .mission-step:last-child').click()`);
         kill = await client.evaluate(`MISSION.active.kills[0]`);
-        equal(kill.count, 2, 'kill count updates');
+        equal(kill.count, 2, 'kill count updates through plus button');
+        equal(await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] [data-field="count"]').value`), '2', 'visible kill counter updates through plus button');
+        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('2 kills')`), true, 'live summary updates defeated-enemy count');
+        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('Kill XP 6')`), true, 'live summary updates kill XP separately');
         equal(kill.enemyId, 'fixture-ghoul', 'count edit preserves enemy linkage');
         equal(kill.catalogVersion, 'fixture-enemies@1', 'count edit preserves version linkage');
+        await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] .mission-count .mission-step:first-child').click()`);
+        equal(await client.evaluate(`MISSION.active.kills[0].count`), 1, 'minus button decreases kill count');
+        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('1 kill')`), true, 'minus button updates defeated-enemy summary');
+        await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] .mission-count .mission-step:last-child').click()`);
+        equal(await client.evaluate(`MISSION.active.kills[0].count`), 2, 'plus button restores kill count');
 
         await client.evaluate(`updateMissionRow(MISSION.active.id, 'kills', MISSION.active.kills[0].id, 'value', 4)`);
         kill = await client.evaluate(`MISSION.active.kills[0]`);
@@ -908,7 +918,8 @@ try {
             updateMissionRow(MISSION.active.id, 'adjustments', adjustment.id, 'value', -2);
         })()`);
         const totals = await client.evaluate(`missionTotals(MISSION.active)`);
-        equal(totals.kills, 13, 'kill total derived');
+        equal(totals.killCount, 4, 'defeated-enemy count derived');
+        equal(totals.killXp, 13, 'kill XP total derived');
         equal(totals.objectives, 7, 'completed objective total derived');
         equal(totals.adjustments, -2, 'negative adjustment total derived');
         equal(totals.total, 18, 'mission total derived');
@@ -936,6 +947,7 @@ try {
         equal(await client.evaluate(`MISSION.active`), null, 'completion clears active mission');
         equal(await client.evaluate(`MISSION.history.length`), 1, 'completion adds history');
         equal(await client.evaluate(`MISSION.history[0].kills[2].value`), 5, 'history keeps XP snapshot');
+        equal(await client.evaluate(`document.querySelector('.mission-past-summary').textContent.includes('4 kills')`), true, 'history keeps defeated-enemy count');
         equal(await client.evaluate(`getComputedStyle(document.getElementById('mission-enemy-tools')).display`), 'none', 'tools hide after completion');
         equal(await client.evaluate(`document.getElementById('char_xp').value`), '', 'completion does not apply XP');
 

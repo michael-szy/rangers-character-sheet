@@ -2872,11 +2872,12 @@
 
     // Totals are always derived, never stored, so a corrected row cannot leave a stale number behind.
     function missionTotals(mission) {
-        const kills = mission.kills.reduce((sum, row) => sum + row.count * row.value, 0);
+        const killCount = mission.kills.reduce((sum, row) => sum + row.count, 0);
+        const killXp = mission.kills.reduce((sum, row) => sum + row.count * row.value, 0);
         const objectives = mission.objectives.reduce((sum, row) => sum + (row.completed ? row.value : 0), 0);
         const adjustments = mission.adjustments.reduce((sum, row) => sum + row.value, 0);
 
-        return { kills, objectives, adjustments, total: kills + objectives + adjustments };
+        return { killCount, killXp, objectives, adjustments, total: killXp + objectives + adjustments };
     }
 
     function missionRowLists(mission) {
@@ -3268,11 +3269,13 @@
        it, and announcing each intermediate value would talk over the user.
     */
     function renderTotals(totals) {
+        const killLabel = totals.killCount === 1 ? 'kill' : 'kills';
         return `
             <div class="mission-total">
-                <span>Kills ${totals.kills}</span>
-                <span>Objectives ${totals.objectives}</span>
-                <span>Adjustments ${totals.adjustments}</span>
+                <span>${totals.killCount} ${killLabel}</span>
+                <span>Kill XP ${totals.killXp}</span>
+                <span>Objective XP ${totals.objectives}</span>
+                <span>Adjustments ${totals.adjustments} XP</span>
                 <strong>Proposed total ${totals.total} XP</strong>
             </div>
         `;
@@ -3300,7 +3303,7 @@
                         <span>${escapeHtml(mission.date)}${mission.scenario ? ' · ' + escapeHtml(mission.scenario) : ''}</span>
                     </div>
                     <div class="mission-past-summary">
-                        <span>${mission.kills.reduce((sum, row) => sum + row.count, 0)} kills</span>
+                        <span>${totals.killCount} ${totals.killCount === 1 ? 'kill' : 'kills'}</span>
                         <span>${mission.objectives.filter(row => row.completed).length} of ${mission.objectives.length} objectives</span>
                         <strong>${totals.total} XP</strong>
                         ${mission.appliedXp ? `<span class="mission-applied">${mission.appliedXp} applied</span>` : ''}
