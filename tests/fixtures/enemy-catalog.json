@@ -1,0 +1,29 @@
+{
+  "formatVersion": 1,
+  "catalogId": "fixture-enemies",
+  "catalogVersion": "1",
+  "title": "Synthetic Test Catalog",
+  "enemies": [
+    {
+      "id": "fixture-ghoul",
+      "name": "Fixture Ghoul",
+      "xp": 3,
+      "source": "Synthetic Fixture",
+      "page": 1
+    },
+    {
+      "id": "fixture-ogre",
+      "name": "Fixture Ogre",
+      "xp": 5,
+      "source": "Synthetic Fixture",
+      "page": 2
+    },
+    {
+      "id": "fixture-vine",
+      "name": "Fixture Vine",
+      "xp": 0,
+      "source": "Synthetic Fixture",
+      "page": 3
+    }
+  ]
+}

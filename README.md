@@ -33,6 +33,14 @@ Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen u
 
 Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
 
+Für die Browser-Regressionsprüfungen werden Node.js 22 oder neuer und ein Chromium-basierter Browser benötigt:
+
+```bash
+node tests/run.mjs
+```
+
+Der Testläufer verwendet keine npm-Abhängigkeiten und startet Webserver, Browser und ein isoliertes Browserprofil selbstständig.
+
 ## Hinweis zum Spiel
 
 Dies ist ein nicht kommerzielles Fan-Projekt und steht in keiner Verbindung zu Joseph A. McCullough, Modiphius Entertainment oder anderen Rechteinhabern. *Rangers of Shadow Deep* sowie zugehörige Namen und Spielinhalte gehören ihren jeweiligen Rechteinhabern. Zum Spielen wird das offizielle Regelwerk benötigt.

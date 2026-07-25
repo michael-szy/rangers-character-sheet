@@ -1,0 +1,41 @@
+{
+  "formatVersion": 2,
+  "character": {
+    "fields": {
+      "char_name": "Format Two",
+      "char_xp": "20"
+    },
+    "heroicSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "innateSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ]
+  },
+  "uiState": {
+    "showInnateSection": false,
+    "mode": "edit"
+  },
+  "activeMission": {
+    "id": "mission-v2-active",
+    "title": "Old Mission",
+    "date": "2026-07-24",
+    "scenario": "Fixture",
+    "notes": "A version two mission.",
+    "status": "active",
+    "appliedXp": 0,
+    "kills": [
+      { "id": "kill-v2", "name": "Old Beast", "count": 2, "value": 3 }
+    ],
+    "objectives": [],
+    "adjustments": []
+  },
+  "missionHistory": []
+}

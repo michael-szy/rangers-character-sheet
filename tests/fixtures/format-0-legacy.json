@@ -1,0 +1,16 @@
+{
+  "char_name": "Legacy Ranger",
+  "char_lvl": "2",
+  "char_xp": "37",
+  "s_hpm": "18",
+  "s_hpc": "12",
+  "it1": "Bow",
+  "heroicSlotsCount": 6,
+  "innateSlotsCount": 5,
+  "ab1": "Dash",
+  "ab1_used": true,
+  "ab6": "Focus",
+  "in1": "Campaign Gift",
+  "in1_used": true,
+  "showInnateSection": true
+}

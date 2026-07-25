@@ -1,0 +1,51 @@
+{
+  "formatVersion": 3,
+  "character": {
+    "fields": {
+      "char_name": "Format Three",
+      "char_xp": "44"
+    },
+    "heroicSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "innateSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ]
+  },
+  "uiState": {
+    "showInnateSection": false,
+    "mode": "edit"
+  },
+  "activeMission": null,
+  "missionHistory": [
+    {
+      "id": "mission-v3-history",
+      "title": "Catalog Mission",
+      "date": "2026-07-25",
+      "scenario": "Fixture",
+      "notes": "A catalog snapshot.",
+      "status": "complete",
+      "appliedXp": 0,
+      "kills": [
+        {
+          "id": "kill-v3",
+          "enemyId": "fixture-ogre",
+          "catalogVersion": "fixture@1",
+          "name": "Fixture Ogre",
+          "count": 1,
+          "value": 5
+        }
+      ],
+      "objectives": [],
+      "adjustments": []
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "formatVersion": 1,
+  "character": {
+    "fields": {
+      "char_name": "Format One",
+      "char_lvl": "4",
+      "char_xp": "91",
+      "s_hpc": "9"
+    },
+    "heroicSlots": [
+      { "value": "Dash", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "innateSlots": [
+      { "value": "Old Innate", "used": true },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ]
+  },
+  "uiState": {
+    "showInnateSection": true,
+    "mode": "play"
+  }
+}
