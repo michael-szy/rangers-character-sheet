@@ -14,6 +14,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Poisoned, Diseased sowie gestapeltes Hunger & Thirst als aktive Zustände mit Regelerinnerung festhalten
 - Änderungen automatisch im Browser speichern
 - Fachliche Änderungen in einer filterbaren, exportierbaren Historie nachvollziehen
+- Atmosphärische Rückmeldungen beim Einsetzen von Abilities, Ändern der aktuellen Health und Abschließen einer Mission erhalten
 - Charaktere als JSON-Datei sichern und auf einem anderen Gerät laden
 - Ohne Konto, Backend oder Installation verwenden
 
@@ -40,6 +41,8 @@ In Edit und Play können temporäre Ally-Boni und Debuffs direkt an Movement, Fi
 Unter **Conditions** lassen sich die allgemeinen Regelzustände **Poisoned**, **Diseased** und **Hunger & Thirst** über **+ Add Condition** aktivieren. Aktive Karten zeigen die wichtigsten Auswirkungen, Dauer beziehungsweise Heilungsmöglichkeit und die Regelbuchseite; Hunger & Thirst besitzt einen eigenen Stufenzähler. Zustände werden mit dem Charakter gespeichert und exportiert, verändern Werte oder Würfe aber bewusst nicht automatisch.
 
 Die Überschrift **Mission** ist in beiden Modi ein Ein-/Ausklappschalter. Das Einklappen blendet lediglich die Oberfläche aus; eine aktive Mission und die Historie bleiben gespeichert. Der gewählte Zustand wird mit dem Charakter gesichert.
+
+Kurze visuelle Effekte bestätigen drei wichtige Spielaktionen: Eine Ability wird verbraucht oder wieder verfügbar, Current Health sinkt oder steigt, und ein abgeschlossener Missionsbericht erhält ein Siegel. Die Effekte ändern keine Spieldaten und blockieren keine Eingabe. Wenn das Betriebssystem reduzierte Bewegung anfordert, bleiben sie vollständig aus.
 
 ## Technik
 

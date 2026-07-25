@@ -901,6 +901,130 @@ try {
         equal(await client.evaluate(`document.getElementById('it1_box').classList.contains('open')`), false, 'mode switch closes combobox');
     });
 
+    await suite('semantic visual effects', async () => {
+        await freshBrowserState(client);
+
+        const passiveSlotUpdate = await client.evaluate(`(() => {
+            const slotId = slotGroups('heroic')[0].dataset.slotId;
+            applySearchableValue(slotId, 'Dash', true);
+            setSlotUsed(slotId, true);
+            return {
+                used: document.getElementById('row_' + slotId).classList.contains('used'),
+                effectClass: Array.from(document.getElementById('group_' + slotId).classList)
+                    .some(className => className.startsWith('fx-'))
+            };
+        })()`);
+        equal(passiveSlotUpdate.used, true, 'passive slot update still applies state');
+        equal(passiveSlotUpdate.effectClass, false, 'passive slot update does not play an effect');
+
+        const restoredAbility = await client.evaluate(`(() => {
+            const slotId = slotGroups('heroic')[0].dataset.slotId;
+            document.querySelector('#group_' + slotId + ' .ability-toggle').click();
+            return {
+                used: document.getElementById('row_' + slotId).classList.contains('used'),
+                pressed: document.querySelector('#group_' + slotId + ' .ability-toggle').getAttribute('aria-pressed'),
+                restored: document.getElementById('group_' + slotId).classList.contains('fx-ability-restored')
+            };
+        })()`);
+        equal(restoredAbility.used, false, 'ability click restores availability');
+        equal(restoredAbility.pressed, 'false', 'restored ability exposes ARIA state');
+        equal(restoredAbility.restored, true, 'restoring ability plays semantic effect');
+
+        const spentAbility = await client.evaluate(`(() => {
+            const slotId = slotGroups('heroic')[0].dataset.slotId;
+            document.querySelector('#group_' + slotId + ' .ability-toggle').click();
+            const toggle = document.querySelector('#group_' + slotId + ' .ability-toggle');
+            return {
+                used: document.getElementById('row_' + slotId).classList.contains('used'),
+                pressed: toggle.getAttribute('aria-pressed'),
+                spent: document.getElementById('group_' + slotId).classList.contains('fx-ability-spent'),
+                animation: getComputedStyle(toggle).animationName
+            };
+        })()`);
+        equal(spentAbility.used, true, 'ability click marks use');
+        equal(spentAbility.pressed, 'true', 'used ability exposes ARIA state');
+        equal(spentAbility.spent, true, 'using ability plays semantic effect');
+        equal(spentAbility.animation, 'fx-ability-spent', 'ability effect uses intended animation');
+
+        await client.evaluate(`new Promise(resolve => setTimeout(resolve, 750))`);
+        equal(await client.evaluate(`(() => {
+            const slotId = slotGroups('heroic')[0].dataset.slotId;
+            return Array.from(document.getElementById('group_' + slotId).classList)
+                .some(className => className.startsWith('fx-'));
+        })()`), false, 'ability effect classes clean themselves up');
+
+        const damageEffect = await client.evaluate(`(() => {
+            const input = document.getElementById('s_hpc');
+            input.value = '10';
+            input.closest('.num-stepper').querySelector('.stepper-minus').click();
+            return {
+                value: input.value,
+                damage: input.closest('.current-hp').classList.contains('fx-health-damage')
+            };
+        })()`);
+        equal(damageEffect.value, '9', 'health decrement still changes value');
+        equal(damageEffect.damage, true, 'health decrement plays damage effect');
+
+        await client.evaluate(`new Promise(resolve => setTimeout(resolve, 700))`);
+        const healEffect = await client.evaluate(`(() => {
+            const input = document.getElementById('s_hpc');
+            input.closest('.num-stepper').querySelector('.stepper-plus').click();
+            return {
+                value: input.value,
+                heal: input.closest('.current-hp').classList.contains('fx-health-heal')
+            };
+        })()`);
+        equal(healEffect.value, '10', 'health increment still changes value');
+        equal(healEffect.heal, true, 'health increment plays healing effect');
+
+        await client.evaluate(`new Promise(resolve => setTimeout(resolve, 750))`);
+        equal(await client.evaluate(`document.querySelector('.current-hp').className.includes('fx-health-')`), false, 'health effect classes clean themselves up');
+
+        const missionEffect = await client.evaluate(`(() => {
+            window.confirm = () => true;
+            startMission();
+            MISSION.active.title = 'The Silent Crypt';
+            const missionId = MISSION.active.id;
+            completeMission();
+            const card = document.querySelector('.mission-card.past[data-mission="' + missionId + '"]');
+            return {
+                complete: MISSION.active === null && MISSION.history[0].id === missionId,
+                sealed: card.classList.contains('fx-mission-sealed'),
+                cardAnimation: getComputedStyle(card).animationName,
+                persistedEffect: JSON.stringify(collectDocument()).includes('fx-')
+            };
+        })()`);
+        equal(missionEffect.complete, true, 'mission completion still moves report to history');
+        equal(missionEffect.sealed, true, 'mission completion plays seal effect');
+        equal(missionEffect.cardAnimation, 'fx-mission-card', 'mission card uses intended animation');
+        equal(missionEffect.persistedEffect, false, 'effect classes never enter persisted document');
+
+        await client.evaluate(`new Promise(resolve => setTimeout(resolve, 1000))`);
+        equal(await client.evaluate(`document.querySelector('.mission-card.past').classList.contains('fx-mission-sealed')`), false, 'mission effect class cleans itself up');
+
+        await client.send('Emulation.setEmulatedMedia', {
+            features: [{ name: 'prefers-reduced-motion', value: 'reduce' }]
+        });
+        try {
+            const reducedMotion = await client.evaluate(`(() => {
+                const slotId = slotGroups('heroic')[0].dataset.slotId;
+                document.querySelector('#group_' + slotId + ' .ability-toggle').click();
+                const hp = document.querySelector('.current-hp');
+                document.getElementById('s_hpc').closest('.num-stepper').querySelector('.stepper-minus').click();
+                return {
+                    preference: matchMedia('(prefers-reduced-motion: reduce)').matches,
+                    abilityAnimation: getComputedStyle(document.querySelector('#group_' + slotId + ' .ability-toggle')).animationName,
+                    healthEffectDisplay: getComputedStyle(hp, '::after').display
+                };
+            })()`);
+            equal(reducedMotion.preference, true, 'reduced-motion preference is detected');
+            equal(reducedMotion.abilityAnimation, 'none', 'ability animation is suppressed for reduced motion');
+            equal(reducedMotion.healthEffectDisplay, 'none', 'health flash is suppressed for reduced motion');
+        } finally {
+            await client.send('Emulation.setEmulatedMedia', { features: [] });
+        }
+    });
+
     await suite('character conditions', async () => {
         await freshBrowserState(client);
 

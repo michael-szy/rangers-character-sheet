@@ -11,6 +11,8 @@
         --card-bg: #14181f;
         --accent-teal: #16e0bd;
         --accent-teal-glow: rgba(22, 224, 189, 0.3);
+        --accent-gold: #e2b765;
+        --accent-gold-glow: rgba(226, 183, 101, 0.3);
         --text-main: #e0d8c3;
         --input-bg: #1c2229;
         --border-col: #3a414d;
@@ -19,40 +21,91 @@
         --body-font: 'Lora', serif;
     }
 
-    body { 
-        font-family: var(--body-font); 
-        background: var(--bg-dark); 
-        background-image: radial-gradient(circle at center, #1a1f26 0%, #0a0c10 100%);
-        color: var(--text-main); 
+    body {
+        position: relative;
+        min-height: 100vh;
+        font-family: var(--body-font);
+        background:
+            radial-gradient(circle at 50% 12%, rgba(36, 54, 59, 0.72) 0%, rgba(14, 18, 23, 0.35) 38%, transparent 68%),
+            radial-gradient(circle at center, #161c22 0%, #080a0d 76%);
+        color: var(--text-main);
         padding: 20px 10px; margin: 0;
     }
+    body::before,
+    body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+    }
+    body::before {
+        background-image:
+            radial-gradient(circle, rgba(224, 216, 195, 0.38) 0 0.55px, transparent 0.8px),
+            radial-gradient(circle, rgba(22, 224, 189, 0.22) 0 0.45px, transparent 0.75px);
+        background-position: 0 0, 7px 11px;
+        background-size: 17px 19px, 23px 29px;
+        opacity: 0.07;
+        mix-blend-mode: screen;
+    }
+    body::after {
+        background:
+            radial-gradient(ellipse at 15% 35%, rgba(22, 224, 189, 0.035), transparent 35%),
+            radial-gradient(ellipse at 90% 70%, rgba(226, 183, 101, 0.025), transparent 38%),
+            linear-gradient(90deg, rgba(0,0,0,0.24), transparent 18%, transparent 82%, rgba(0,0,0,0.24));
+    }
+    body > h1,
+    body > .sheet-container { position: relative; z-index: 1; }
 
-    h1 { 
-        text-align: center; font-family: var(--fantasy-font); color: var(--accent-teal); 
+    h1 {
+        text-align: center; font-family: var(--fantasy-font); color: var(--accent-teal);
         letter-spacing: 5px; text-transform: uppercase; margin: 0 0 20px 0;
-        text-shadow: 0 0 15px var(--accent-teal-glow); font-size: 2.2em;
+        text-shadow: 0 0 15px var(--accent-teal-glow), 0 2px 0 #000; font-size: 2.2em;
     }
 
     .sheet-container {
-        max-width: 900px; margin: auto; background: var(--card-bg);
+        max-width: 900px; margin: auto;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.018), transparent 26%),
+            radial-gradient(circle at 100% 0, rgba(22,224,189,0.045), transparent 28%),
+            linear-gradient(180deg, #171c23, var(--card-bg));
         border: 1px solid var(--border-col); padding: 25px; border-radius: 12px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+        box-shadow:
+            0 24px 65px rgba(0,0,0,0.86),
+            inset 0 0 0 1px rgba(255,255,255,0.018),
+            inset 0 18px 38px rgba(255,255,255,0.012);
     }
 
     .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
         font-family: var(--fantasy-font);
-        background: linear-gradient(90deg, rgba(22, 224, 189, 0.15) 0%, transparent 100%);
+        background: linear-gradient(90deg, rgba(22, 224, 189, 0.13) 0%, rgba(22,224,189,0.025) 58%, transparent 100%);
         color: var(--accent-teal); padding: 10px; border-left: 3px solid var(--accent-teal);
         margin-top: 25px; text-transform: uppercase; font-size: 1em;
+        letter-spacing: 0.045em;
+        text-shadow: 0 0 12px rgba(22,224,189,0.2);
+    }
+    .section-header:not(.mission-section-toggle)::after {
+        content: "";
+        flex: 1 1 auto;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(22,224,189,0.42), transparent);
     }
 
     .grid-top { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
     .grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 15px; }
 
     .stat-box {
+        position: relative;
         min-width: 0;
-        background: rgba(0,0,0,0.3); border: 1px solid var(--border-col);
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.025), transparent 45%),
+            rgba(0,0,0,0.3);
+        border: 1px solid var(--border-col);
         text-align: center; border-radius: 6px; padding: 5px 0;
+        box-shadow: inset 0 1px rgba(255,255,255,0.025), 0 5px 14px rgba(0,0,0,0.12);
     }
     
     .stat-label { 
@@ -326,10 +379,16 @@
     }
     .condition-dialog-actions button { min-height: 44px; padding: 8px 14px; }
 
-    .current-hp { border: 2px solid var(--danger-red); background: rgba(192, 57, 43, 0.1); }
+    .current-hp {
+        border: 2px solid var(--danger-red);
+        background:
+            radial-gradient(circle at 50% 110%, rgba(192,57,43,0.18), transparent 68%),
+            rgba(192, 57, 43, 0.08);
+    }
 
     input, textarea, select {
-        background: var(--input-bg); border: 1px solid var(--border-col); color: #fff;
+        background: linear-gradient(180deg, rgba(255,255,255,0.018), transparent), var(--input-bg);
+        border: 1px solid var(--border-col); color: #fff;
         padding: 10px; width: 100%; box-sizing: border-box; border-radius: 6px;
         font-family: var(--body-font); transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
@@ -352,6 +411,7 @@
     .type-label { font-weight: bold; font-family: var(--fantasy-font); color: var(--accent-teal); font-size: 0.8em; }
 
     /* Abilities & Skills */
+    .ability-group { position: relative; }
     .numbered-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
     /* Both toggles are real buttons, so they have to opt out of the generic button sizing. */
     .ability-toggle {
@@ -575,12 +635,116 @@
 
     .footer-btns { margin-top: 40px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
     button { 
-        background: transparent; color: var(--accent-teal); border: 1px solid var(--accent-teal);
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.035), rgba(0,0,0,0.08)),
+            rgba(22,224,189,0.025);
+        color: var(--accent-teal); border: 1px solid var(--accent-teal);
         padding: 12px 24px; border-radius: 6px; cursor: pointer; font-family: var(--fantasy-font);
         font-weight: bold; transition: background 0.3s, color 0.3s, border-color 0.3s, transform 0.3s;
         min-height: 48px;
+        box-shadow: inset 0 1px rgba(255,255,255,0.035), 0 3px 10px rgba(0,0,0,0.12);
     }
-    button:active { background: var(--accent-teal); color: #000; transform: scale(0.98); }
+    button:active {
+        background: var(--accent-teal);
+        color: #000;
+        transform: scale(0.98);
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.28);
+    }
+
+    /*
+       Semantic effects are short-lived response cues, never state. JavaScript adds one class,
+       a bounded timer removes it, and the persisted document remains untouched.
+    */
+    .fx-ability-spent .ability-toggle {
+        animation: fx-ability-spent 520ms cubic-bezier(0.2, 0.85, 0.25, 1);
+    }
+    .fx-ability-spent .search-select-input {
+        animation: fx-ability-ink 520ms ease-out;
+    }
+    .fx-ability-restored .ability-toggle {
+        animation: fx-ability-restored 440ms ease-out;
+    }
+    .fx-health-damage::after,
+    .fx-health-heal::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        pointer-events: none;
+        z-index: 3;
+    }
+    .fx-health-damage::after {
+        animation: fx-health-damage 360ms ease-out;
+    }
+    .fx-health-heal::after {
+        animation: fx-health-heal 420ms ease-out;
+    }
+    .mission-card.past { position: relative; overflow: hidden; }
+    .mission-card.past.fx-mission-sealed {
+        animation: fx-mission-card 760ms ease-out;
+    }
+    .mission-card.past.fx-mission-sealed::after {
+        content: "Mission Complete";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 4;
+        padding: 9px 16px;
+        border: 2px double rgba(226,183,101,0.9);
+        border-radius: 4px;
+        background: rgba(19,15,10,0.9);
+        color: var(--accent-gold);
+        box-shadow: 0 0 0 4px rgba(19,15,10,0.5), 0 0 24px var(--accent-gold-glow);
+        font-family: var(--fantasy-font);
+        font-size: 0.72em;
+        font-weight: bold;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        pointer-events: none;
+        animation: fx-mission-seal 760ms cubic-bezier(0.18, 0.78, 0.28, 1);
+    }
+
+    @keyframes fx-ability-spent {
+        0% { transform: scale(0.8); box-shadow: 0 0 0 rgba(226,183,101,0); }
+        34% {
+            transform: scale(1.38);
+            background: var(--accent-gold);
+            border-color: #ffe2a0;
+            box-shadow: 0 0 0 7px rgba(226,183,101,0.16), 0 0 24px var(--accent-gold-glow);
+        }
+        100% { transform: scale(0.8); box-shadow: none; }
+    }
+    @keyframes fx-ability-ink {
+        0% { border-color: var(--accent-gold); box-shadow: 0 0 18px var(--accent-gold-glow); }
+        100% { border-color: var(--border-col); box-shadow: none; }
+    }
+    @keyframes fx-ability-restored {
+        0% { transform: scale(0.8); box-shadow: none; }
+        45% { transform: scale(1.22); box-shadow: 0 0 0 7px rgba(22,224,189,0.12), 0 0 22px var(--accent-teal-glow); }
+        100% { transform: scale(1); box-shadow: 0 0 10px var(--accent-teal-glow); }
+    }
+    @keyframes fx-health-damage {
+        0% { opacity: 0; box-shadow: inset 0 0 0 rgba(227,58,58,0); }
+        30% { opacity: 1; box-shadow: inset 0 0 36px rgba(227,58,58,0.72), 0 0 20px rgba(192,57,43,0.42); }
+        100% { opacity: 0; box-shadow: inset 0 0 8px rgba(227,58,58,0); }
+    }
+    @keyframes fx-health-heal {
+        0% { opacity: 0; box-shadow: inset 0 0 0 rgba(111,223,159,0); }
+        38% { opacity: 1; box-shadow: inset 0 0 34px rgba(111,223,159,0.46), 0 0 21px rgba(226,183,101,0.32); }
+        100% { opacity: 0; box-shadow: inset 0 0 8px rgba(111,223,159,0); }
+    }
+    @keyframes fx-mission-card {
+        0% { border-color: var(--border-col); box-shadow: none; }
+        38% { border-color: var(--accent-gold); box-shadow: 0 0 26px rgba(226,183,101,0.24), inset 0 0 22px rgba(226,183,101,0.08); }
+        100% { border-color: var(--border-col); box-shadow: none; }
+    }
+    @keyframes fx-mission-seal {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(1.55) rotate(-5deg); filter: blur(2px); }
+        32% { opacity: 0.96; transform: translate(-50%, -50%) scale(0.96) rotate(-2deg); filter: blur(0); }
+        58% { opacity: 0.9; transform: translate(-50%, -50%) scale(1) rotate(-2deg); }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(1.03) rotate(-2deg); }
+    }
 
     /* --- Change history --- */
     .history-dialog {
@@ -1058,13 +1222,38 @@
     @media (hover: hover) {
         .info-toggle:not(:disabled):hover { background: rgba(22, 224, 189, 0.2); transform: scale(1.1); }
         .search-option:hover { background: rgba(22, 224, 189, 0.12); }
-        button:hover { background: var(--accent-teal); color: #000; }
+        button:hover {
+            background: rgba(22,224,189,0.13);
+            color: var(--accent-teal);
+            box-shadow: inset 0 1px rgba(255,255,255,0.05), 0 0 14px rgba(22,224,189,0.12);
+        }
+        .mission-primary:hover {
+            background: var(--accent-teal);
+            color: #000;
+            box-shadow: 0 0 18px rgba(22,224,189,0.2);
+        }
         .mission-section-toggle:hover {
             background: linear-gradient(90deg, rgba(22, 224, 189, 0.22) 0%, transparent 100%);
             color: var(--accent-teal);
         }
         .add-slot-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(22, 224, 189, 0.05); }
         .remove-slot-btn:hover { color: var(--danger-red); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .fx-ability-spent .ability-toggle,
+        .fx-ability-spent .search-select-input,
+        .fx-ability-restored .ability-toggle,
+        .fx-health-damage::after,
+        .fx-health-heal::after,
+        .mission-card.past.fx-mission-sealed {
+            animation: none !important;
+        }
+        .fx-health-damage::after,
+        .fx-health-heal::after,
+        .mission-card.past.fx-mission-sealed::after {
+            display: none;
+        }
     }
 
     /* --- Number stepper --- */
@@ -1911,6 +2100,40 @@
     let activePreviewId = null;
     let saveTimer = null;
     let slotSequence = 0;
+    const EFFECT_TIMERS = new WeakMap();
+
+    function stopEffect(target, effectName) {
+        if (!target) return;
+
+        const className = `fx-${effectName}`;
+        const targetTimers = EFFECT_TIMERS.get(target);
+        if (targetTimers) {
+            clearTimeout(targetTimers.get(className));
+            targetTimers.delete(className);
+        }
+        target.classList.remove(className);
+    }
+
+    function playEffect(target, effectName, duration = 900) {
+        if (!target) return;
+
+        const className = `fx-${effectName}`;
+        let targetTimers = EFFECT_TIMERS.get(target);
+        if (!targetTimers) {
+            targetTimers = new Map();
+            EFFECT_TIMERS.set(target, targetTimers);
+        }
+
+        stopEffect(target, effectName);
+        void target.offsetWidth;
+        target.classList.add(className);
+
+        const timer = setTimeout(() => {
+            target.classList.remove(className);
+            targetTimers.delete(className);
+        }, duration);
+        targetTimers.set(className, timer);
+    }
 
     function toRoman(num) {
         const lookup = {M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};
@@ -3469,7 +3692,12 @@
     }
 
     function toggleUse(id) {
-        setSlotUsed(id, !document.getElementById('row_' + id).classList.contains('used'));
+        const row = document.getElementById('row_' + id);
+        const used = !row.classList.contains('used');
+        setSlotUsed(id, used);
+        const group = document.getElementById('group_' + id);
+        stopEffect(group, used ? 'ability-restored' : 'ability-spent');
+        playEffect(group, used ? 'ability-spent' : 'ability-restored', 700);
         scheduleSave();
     }
 
@@ -3843,6 +4071,9 @@
         if (confirm('Mark every used Heroic Ability and Innate Spell as available again for the next scenario?')) {
             restoreAllAbilities();
         }
+
+        const completedCard = document.querySelector(`.mission-card.past[data-mission="${mission.id}"]`);
+        playEffect(completedCard, 'mission-sealed', 950);
     }
 
     function restoreAllAbilities() {
@@ -4466,6 +4697,11 @@
                 input.value = val - step;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                if (input.id === 's_hpc') {
+                    const healthBox = input.closest('.current-hp');
+                    stopEffect(healthBox, 'health-heal');
+                    playEffect(healthBox, 'health-damage', 650);
+                }
                 btnMinus.blur();
             });
 
@@ -4481,6 +4717,11 @@
                 input.value = val + step;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                if (input.id === 's_hpc') {
+                    const healthBox = input.closest('.current-hp');
+                    stopEffect(healthBox, 'health-damage');
+                    playEffect(healthBox, 'health-heal', 700);
+                }
                 btnPlus.blur();
             });
 
