@@ -99,7 +99,7 @@ async function startStaticServer() {
         const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
         const file = pathname === '/' || pathname === '/index.html'
             ? join(projectRoot, 'index.html')
-            : pathname === '/persistence.js' || pathname === '/storage.js'
+            : pathname === '/rules-data.js' || pathname === '/persistence.js' || pathname === '/storage.js'
                 ? join(projectRoot, pathname.slice(1))
                 : pathname.startsWith('/tests/fixtures/')
                     ? join(projectRoot, pathname.slice(1))
@@ -245,8 +245,10 @@ async function waitFor(client, expression, timeoutMs = 5000) {
             readyState: document.readyState,
             url: location.href,
             formatType: typeof FORMAT_VERSION,
+            rulesType: typeof RangersRules,
             persistenceType: typeof RangersPersistence,
-            storageType: typeof RangersStorage
+            storageType: typeof RangersStorage,
+            appReady: typeof normalizeEnemyCatalog
         })`);
         diagnostic = ` (${JSON.stringify(state)})`;
     } catch {
@@ -261,7 +263,7 @@ async function waitFor(client, expression, timeoutMs = 5000) {
 
 async function freshBrowserState(client) {
     await client.evaluate('localStorage.clear(); sessionStorage.clear(); location.reload();');
-    await waitFor(client, `document.readyState !== 'loading' && typeof FORMAT_VERSION !== 'undefined'`);
+    await waitFor(client, `document.readyState !== 'loading' && typeof normalizeEnemyCatalog === 'function'`);
 }
 
 const fixtures = {};
@@ -328,7 +330,7 @@ let client;
 try {
     await waitForEndpoint(`${endpoint}/json/version`);
     client = await openCdp(endpoint, appUrl);
-    await waitFor(client, `document.readyState !== 'loading' && typeof FORMAT_VERSION !== 'undefined'`);
+    await waitFor(client, `document.readyState !== 'loading' && typeof normalizeEnemyCatalog === 'function'`);
 
     await suite('blank sheet and schema migrations', async () => {
         await freshBrowserState(client);
@@ -337,6 +339,24 @@ try {
         equal(await client.evaluate(`Object.isFrozen(PERSISTENCE)`), true, 'configured persistence interface is immutable');
         equal(await client.evaluate(`typeof RangersStorage.create`), 'function', 'storage module loaded');
         equal(await client.evaluate(`Object.isFrozen(STORAGE)`), true, 'configured storage interface is immutable');
+        equal(await client.evaluate(`typeof RangersRules`), 'object', 'rule data module loaded');
+        equal(await client.evaluate(`Object.isFrozen(RangersRules)`), true, 'rule data interface is immutable');
+        equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.heroic)`), true, 'heroic ability data is immutable');
+        equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.archetypeHeroic['Flashing Blade'].archetypes)`), true, 'nested archetype ability data is immutable');
+        equal(await client.evaluate(`Object.isFrozen(ARCHETYPE_LIBRARY['Red Hawk Knight'].traits)`), true, 'nested archetype data is immutable');
+        equal(await client.evaluate(`Object.isFrozen(EQUIPMENT_LIBRARY['Basic Weapons'])`), true, 'nested equipment data is immutable');
+        equal(await client.evaluate(`ABILITY_LIBRARY === RangersRules.abilities && ARCHETYPE_LIBRARY === RangersRules.archetypes && EQUIPMENT_LIBRARY === RangersRules.equipment`), true, 'legacy consumers use module aliases');
+        equal(await client.evaluate(`Object.keys(ABILITY_LIBRARY.heroic).length`), 22, 'heroic ability catalog is complete');
+        equal(await client.evaluate(`Object.keys(ABILITY_LIBRARY.archetypeHeroic).length`), 8, 'archetype ability catalog is complete');
+        equal(await client.evaluate(`Object.keys(ABILITY_LIBRARY.spells).length`), 31, 'spell catalog is complete');
+        equal(await client.evaluate(`Object.keys(ARCHETYPE_LIBRARY).length`), 10, 'archetype catalog is complete');
+        equal(await client.evaluate(`Object.keys(EQUIPMENT_LIBRARY).length`), 4, 'equipment groups are complete');
+        equal(await client.evaluate(`Object.values(EQUIPMENT_LIBRARY).reduce((count, group) => count + Object.keys(group).length, 0)`), 18, 'equipment catalog is complete');
+        equal(await client.evaluate(`(() => {
+            const original = ABILITY_LIBRARY.heroic.Dash;
+            try { ABILITY_LIBRARY.heroic.Dash = 'changed'; } catch {}
+            return ABILITY_LIBRARY.heroic.Dash === original;
+        })()`), true, 'rule data resists runtime mutation');
         equal(await client.evaluate('FORMAT_VERSION'), 5, 'current document format');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 5, 'default heroic slots');
         equal(await client.evaluate(`document.querySelectorAll('#innate-list .ability-group').length`), 4, 'default innate slots');
