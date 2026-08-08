@@ -1,0 +1,64 @@
+{
+  "formatVersion": 7,
+  "character": {
+    "fields": {
+      "char_name": "Turn Tracker Ranger"
+    },
+    "heroicSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "innateSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "conditions": {
+      "poisoned": false,
+      "diseased": false,
+      "hungerThirst": 0
+    }
+  },
+  "uiState": {
+    "showInnateSection": false,
+    "missionSectionExpanded": true,
+    "mode": "play"
+  },
+  "activeMission": {
+    "id": "mission-v7-active",
+    "title": "The Last Stand",
+    "date": "2026-08-08",
+    "scenario": "Mission 3: Descent into Darkness · Scenario 3",
+    "scenarioId": "starter-m3-s3",
+    "scenarioCatalogVersion": "rosd-deluxe-starter@2",
+    "currentTurn": 11,
+    "notes": "The final assault approaches.",
+    "status": "active",
+    "appliedXp": 0,
+    "kills": [],
+    "objectives": [],
+    "adjustments": []
+  },
+  "missionHistory": [
+    {
+      "id": "mission-v7-complete",
+      "title": "The Broken Stairs",
+      "date": "2026-08-01",
+      "scenario": "Mission 3: Descent into Darkness · Scenario 1",
+      "scenarioId": "starter-m3-s1",
+      "scenarioCatalogVersion": "rosd-deluxe-starter@2",
+      "currentTurn": 10,
+      "notes": "",
+      "status": "complete",
+      "appliedXp": 0,
+      "kills": [],
+      "objectives": [],
+      "adjustments": []
+    }
+  ],
+  "changeHistory": []
+}

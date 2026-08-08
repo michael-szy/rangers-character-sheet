@@ -284,6 +284,7 @@ for (const name of [
     'format-4-conditions',
     'format-5-change-history',
     'format-6-scenario-link',
+    'format-7-turn-tracker',
     'enemy-catalog'
 ]) {
     fixtures[name] = JSON.parse(await readFile(join(fixtureDir, `${name}.json`), 'utf8'));
@@ -358,6 +359,7 @@ try {
         equal(await client.evaluate(`typeof RangersScenarios`), 'object', 'scenario data module loaded');
         equal(await client.evaluate(`Object.isFrozen(RangersScenarios)`), true, 'scenario data interface is immutable');
         equal(await client.evaluate(`Object.isFrozen(RangersScenarios.missions[2].scenarios[2].reminders)`), true, 'nested scenario data is immutable');
+        equal(await client.evaluate(`Object.isFrozen(RangersScenarios.missions[2].scenarios[2].eventSchedule.except)`), true, 'nested scenario event schedule is immutable');
         equal(await client.evaluate(`typeof RangersScenarioEnemies`), 'object', 'scenario enemy data module loaded');
         equal(await client.evaluate(`Object.isFrozen(RangersScenarioEnemies)`), true, 'scenario enemy data interface is immutable');
         equal(await client.evaluate(`Object.isFrozen(RangersScenarioEnemies.profiles.troll.stats)`), true, 'nested scenario enemy stats are immutable');
@@ -385,7 +387,7 @@ try {
             try { ABILITY_LIBRARY.heroic.Dash = 'changed'; } catch {}
             return ABILITY_LIBRARY.heroic.Dash === original;
         })()`), true, 'rule data resists runtime mutation');
-        equal(await client.evaluate('FORMAT_VERSION'), 6, 'current document format');
+        equal(await client.evaluate('FORMAT_VERSION'), 7, 'current document format');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 5, 'default heroic slots');
         equal(await client.evaluate(`document.querySelectorAll('#innate-list .ability-group').length`), 4, 'default innate slots');
         equal(await client.evaluate('currentMode()'), 'edit', 'blank sheet mode');
@@ -415,7 +417,7 @@ try {
             };
         })()`);
         equal(legacy.migratedFrom, 0, 'legacy migration source');
-        equal(legacy.version, 6, 'legacy migration target');
+        equal(legacy.version, 7, 'legacy migration target');
         equal(legacy.name, 'Legacy Ranger', 'legacy character field');
         equal(legacy.heroicCount, 6, 'legacy heroic count');
         equal(legacy.innateCount, 5, 'legacy innate count');
@@ -442,7 +444,7 @@ try {
             };
         })()`);
         equal(format1.migratedFrom, 1, 'format 1 migration source');
-        equal(format1.version, 6, 'format 1 migration target');
+        equal(format1.version, 7, 'format 1 migration target');
         equal(format1.name, 'Format One', 'format 1 character');
         equal(format1.missionExpanded, true, 'older version Mission section defaults expanded');
         equal(format1.mode, 'play', 'format 1 mode preserved');
@@ -465,7 +467,7 @@ try {
             };
         })()`);
         equal(format2.migratedFrom, 2, 'format 2 migration source');
-        equal(format2.version, 6, 'format 2 migration target');
+        equal(format2.version, 7, 'format 2 migration target');
         equal(format2.enemyId, null, 'format 2 enemy id default');
         equal(format2.catalogVersion, null, 'format 2 catalog version default');
         equal(format2.scenarioId, null, 'format 2 scenario id default');
@@ -504,7 +506,7 @@ try {
             };
         })()`);
         equal(format4.migratedFrom, 4, 'format 4 migration source');
-        equal(format4.version, 6, 'format 4 migration target');
+        equal(format4.version, 7, 'format 4 migration target');
         equal(format4.mode, 'play', 'format 4 mode preserved');
         equal(JSON.stringify(format4.conditions), '{"poisoned":true,"diseased":false,"hungerThirst":2}', 'format 4 conditions preserved');
         equal(format4.historyLength, 0, 'format 4 starts with empty change history');
@@ -521,7 +523,7 @@ try {
             };
         })()`);
         equal(format5.migratedFrom, 5, 'format 5 migration source');
-        equal(format5.version, 6, 'format 5 migration target');
+        equal(format5.version, 7, 'format 5 migration target');
         equal(format5.historyLength, 1, 'format 5 history preserved');
         equal(format5.summary, 'Current Health: 11', 'format 5 history summary preserved');
         equal(format5.before, '14', 'format 5 previous value preserved');
@@ -534,19 +536,43 @@ try {
                 version: result.document.formatVersion,
                 activeScenarioId: result.document.activeMission.scenarioId,
                 activeCatalogVersion: result.document.activeMission.scenarioCatalogVersion,
+                activeTurn: result.document.activeMission.currentTurn,
                 historyScenarioId: result.document.missionHistory[0].scenarioId,
+                historyTurn: result.document.missionHistory[0].currentTurn,
                 mode: result.document.uiState.mode
             };
         })()`);
-        equal(format6.migratedFrom, null, 'format 6 needs no migration');
-        equal(format6.version, 6, 'format 6 remains current');
+        equal(format6.migratedFrom, 6, 'format 6 migration source');
+        equal(format6.version, 7, 'format 6 migrates to current');
         equal(format6.activeScenarioId, 'starter-m3-s3', 'format 6 active scenario link preserved');
         equal(format6.activeCatalogVersion, 'rosd-deluxe-starter@1', 'format 6 catalog version preserved');
+        equal(format6.activeTurn, 1, 'format 6 active mission defaults to turn 1');
         equal(format6.historyScenarioId, 'starter-m3-s2', 'format 6 history scenario link preserved');
+        equal(format6.historyTurn, 1, 'format 6 history mission defaults to turn 1');
         equal(format6.mode, 'play', 'format 6 mode preserved');
 
+        const format7 = await client.evaluate(`(() => {
+            const result = normalizeDocument(${JSON.stringify(fixtures['format-7-turn-tracker'])});
+            return {
+                migratedFrom: result.migratedFrom,
+                version: result.document.formatVersion,
+                activeScenarioId: result.document.activeMission.scenarioId,
+                activeCatalogVersion: result.document.activeMission.scenarioCatalogVersion,
+                activeTurn: result.document.activeMission.currentTurn,
+                historyTurn: result.document.missionHistory[0].currentTurn,
+                mode: result.document.uiState.mode
+            };
+        })()`);
+        equal(format7.migratedFrom, null, 'format 7 needs no migration');
+        equal(format7.version, 7, 'format 7 remains current');
+        equal(format7.activeScenarioId, 'starter-m3-s3', 'format 7 active scenario link preserved');
+        equal(format7.activeCatalogVersion, 'rosd-deluxe-starter@2', 'format 7 scenario catalog version preserved');
+        equal(format7.activeTurn, 11, 'format 7 active turn preserved');
+        equal(format7.historyTurn, 10, 'format 7 completed turn preserved');
+        equal(format7.mode, 'play', 'format 7 mode preserved');
+
         equal(await client.evaluate(`(() => {
-            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 7 }); return false; }
+            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 8 }); return false; }
             catch { return true; }
         })()`), true, 'newer character format refused');
         equal(await client.evaluate(`(() => {
@@ -577,6 +603,24 @@ try {
             try { normalizeDocument(doc); return false; }
             catch { return true; }
         })()`), true, 'incomplete scenario linkage refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-7-turn-tracker'])};
+            doc.activeMission.currentTurn = 0;
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'turn zero refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-7-turn-tracker'])};
+            doc.activeMission.currentTurn = 100;
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'turn above supported range refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-7-turn-tracker'])};
+            doc.activeMission.currentTurn = 2.5;
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'fractional turn refused');
         equal(await client.evaluate(`(() => {
             const doc = ${JSON.stringify(fixtures['format-4-conditions'])};
             doc.character.conditions.hungerThirst = 100;
@@ -690,7 +734,7 @@ try {
 
         await reloadAndWait(client, `localStorage.setItem(STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['format-0-legacy']))});`);
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('char_name').value === 'Legacy Ranger'`);
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 6, 'stored legacy data upgraded');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 7, 'stored legacy data upgraded');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_RECOVERY_KEY)).raw.length > 0`), true, 'pre-migration recovery stored');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 6, 'migrated slot count applied');
         equal(await client.evaluate(`document.querySelector('#abilities-list .numbered-row').classList.contains('used')`), true, 'migrated used state applied');
@@ -709,7 +753,7 @@ try {
         })()`);
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
         equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 6, 'file import persists current format');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 7, 'file import persists current format');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'file import clears temporary stat effects');
         equal(await client.evaluate(`CHANGE_HISTORY.length`), 1, 'file import records one system event');
         equal(await client.evaluate(`CHANGE_HISTORY[0].category`), 'system', 'file import event category');
@@ -1444,6 +1488,7 @@ try {
         equal(await client.evaluate(`document.getElementById('mission_scenario_select').querySelectorAll('optgroup').length`), 3, 'starter scenarios are grouped into three missions');
         equal(await client.evaluate(`document.activeElement.id`), 'mission_scenario_select', 'new mission focuses scenario picker');
         equal(await client.evaluate(`document.querySelector('.scenario-brief')`), null, 'blank custom mission has no published briefing');
+        equal(await client.evaluate(`document.querySelector('.scenario-turn-tracker')`), null, 'blank custom mission has no turn tracker');
         equal(await client.evaluate(`document.querySelector('.scenario-enemies')`), null, 'blank custom mission has no enemy reference');
         equal(await client.evaluate(`document.querySelector('.scenario-progress')`), null, 'blank custom mission has no starter progress');
 
@@ -1464,6 +1509,12 @@ try {
             page: document.querySelector('.scenario-page').textContent,
             facts: document.querySelector('.scenario-brief-facts').textContent,
             reminders: document.querySelectorAll('.scenario-brief li').length,
+            currentTurn: MISSION.active.currentTurn,
+            turnValue: document.getElementById('scenario_turn_value').textContent,
+            turnLabel: document.getElementById('scenario_turn_label').textContent,
+            eventText: document.getElementById('scenario_turn_event').textContent,
+            limitText: document.getElementById('scenario_turn_limit').textContent,
+            previousDisabled: document.getElementById('scenario_turn_previous').disabled,
             enemyProfiles: document.querySelectorAll('.scenario-enemy-card').length,
             enemyNames: Array.from(document.querySelectorAll('.scenario-enemy-head strong'), node => node.textContent),
             trollStats: Array.from(document.querySelector('[data-enemy-id="troll"] .scenario-enemy-stats').querySelectorAll('dd'), node => node.textContent),
@@ -1474,7 +1525,7 @@ try {
             progressText: document.querySelector('.scenario-progress').textContent
         }))()`);
         equal(selected.scenarioId, 'starter-m3-s3', 'published scenario id linked');
-        equal(selected.scenarioCatalogVersion, 'rosd-deluxe-starter@1', 'published scenario catalog version linked');
+        equal(selected.scenarioCatalogVersion, 'rosd-deluxe-starter@2', 'published scenario catalog version linked');
         equal(selected.scenario, 'Mission 3: Descent into Darkness · Scenario 3', 'published scenario reference snapshotted');
         equal(selected.title, 'The Last Stand', 'published scenario title snapshotted');
         equal(selected.titleField, 'The Last Stand', 'published title shown in mission field');
@@ -1484,6 +1535,12 @@ try {
         check(selected.facts.includes('12 turns'), 'published briefing shows turn limit');
         check(selected.facts.includes('except turn 12'), 'published briefing shows event cadence');
         equal(selected.reminders, 2, 'published briefing shows bounded reminders');
+        equal(selected.currentTurn, 1, 'linked scenario starts on turn 1');
+        equal(selected.turnValue, '1', 'turn tracker shows current turn');
+        equal(selected.turnLabel, 'Turn 1 of 12', 'turn tracker shows printed limit context');
+        check(selected.eventText.includes('Event due'), 'turn tracker marks the turn 1 event due');
+        check(selected.limitText.includes('11 turns remain'), 'turn tracker shows remaining printed turns');
+        equal(selected.previousDisabled, true, 'previous turn is disabled on turn 1');
         equal(selected.enemyProfiles, 8, 'selected scenario shows every possible enemy profile');
         check(selected.enemyNames.includes('Burrow Worm') && selected.enemyNames.includes('Troll'), 'event enemies are named without an import');
         equal(selected.trollStats.join(','), '4,+4,+0,14,+2,16', 'enemy stat line is shown in play order');
@@ -1495,13 +1552,73 @@ try {
 
         const linkedRoundTrip = await client.evaluate(`parseDocument(JSON.stringify(collectDocument())).document.activeMission`);
         equal(linkedRoundTrip.scenarioId, 'starter-m3-s3', 'scenario id survives document round-trip');
-        equal(linkedRoundTrip.scenarioCatalogVersion, 'rosd-deluxe-starter@1', 'scenario catalog version survives document round-trip');
+        equal(linkedRoundTrip.scenarioCatalogVersion, 'rosd-deluxe-starter@2', 'scenario catalog version survives document round-trip');
         equal(linkedRoundTrip.scenario, 'Mission 3: Descent into Darkness · Scenario 3', 'scenario reference snapshot survives document round-trip');
+        equal(linkedRoundTrip.currentTurn, 1, 'scenario turn survives document round-trip');
+
+        await client.evaluate(`saveNow(); clearChangeHistory(false); document.getElementById('scenario_turn_next').click()`);
+        equal(await client.evaluate(`MISSION.active.currentTurn`), 2, 'next control advances one turn');
+        equal(await client.evaluate(`document.getElementById('scenario_turn_value').textContent`), '2', 'advanced turn patches in place');
+        equal(await client.evaluate(`document.getElementById('scenario_turn_previous').disabled`), false, 'previous control enables after turn 1');
+        const turnHistory = await client.evaluate(`CHANGE_HISTORY[0].changes.find(change => change.path.endsWith('.currentTurn'))`);
+        equal(turnHistory.label, 'Mission · The Last Stand · Turn', 'turn change receives a semantic history label');
+        equal(turnHistory.before, '1', 'turn history keeps previous turn');
+        equal(turnHistory.after, '2', 'turn history keeps current turn');
+
+        await client.evaluate(`clearChangeHistory(false); (() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'starter-m2-s1';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('Event due')`), 'odd-turn scenario marks turn 1 event due');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No Event Card')`), 'odd-turn scenario skips turn 2 event');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'starter-m2-s3';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            document.getElementById('scenario_turn_next').click();
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('turn 2')`), 'fixed schedule announces turn 2 event');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No fixed')`), 'fixed schedule stays quiet on turn 3');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('turn 4')`), 'fixed schedule announces turn 4 event');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'starter-m2-s2';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('Room-triggered')`), 'room-driven scenario keeps its opening cue visible');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'starter-m3-s3';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            for (let turn = 1; turn < 11; turn++) changeScenarioTurn(MISSION.active.id, 1);
+        })()`);
+        equal(await client.evaluate(`MISSION.active.currentTurn`), 11, 'turn control reaches later scenario turns');
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('Event due')`), 'Last Stand marks turn 11 event due');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click()`);
+        equal(await client.evaluate(`MISSION.active.currentTurn`), 12, 'turn control reaches printed final turn');
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No Event Card')`), 'Last Stand excludes turn 12 event');
+        equal(await client.evaluate(`document.getElementById('scenario_turn_tracker').classList.contains('final-turn')`), true, 'printed final turn receives clear state');
+        check(await client.evaluate(`document.getElementById('scenario_turn_limit').textContent.includes('Final printed turn')`), 'printed final turn is named');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click()`);
+        equal(await client.evaluate(`document.getElementById('scenario_turn_tracker').classList.contains('past-limit')`), true, 'tracker permits and warns about a turn past the limit');
+        check(await client.evaluate(`document.getElementById('scenario_turn_limit').textContent.includes('Past the printed')`), 'past-limit warning is explicit');
+        await client.evaluate(`document.getElementById('scenario_turn_previous').click()`);
+        equal(await client.evaluate(`MISSION.active.currentTurn`), 12, 'previous control corrects the current turn');
 
         await reloadAndWait(client, `setMode('play'); saveNow();`);
         await waitFor(client, `document.readyState !== 'loading' && MISSION.active?.scenarioId === 'starter-m3-s3'`);
         equal(await client.evaluate(`currentMode()`), 'play', 'linked scenario reload keeps Play mode');
         equal(await client.evaluate(`document.querySelector('.scenario-brief')?.offsetParent !== null`), true, 'scenario briefing remains visible in Play mode');
+        equal(await client.evaluate(`document.querySelector('.scenario-turn-tracker')?.offsetParent !== null`), true, 'turn tracker remains visible in Play mode');
+        equal(await client.evaluate(`MISSION.active.currentTurn`), 12, 'turn tracker survives reload');
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No Event Card')`), 'reloaded final turn restores event state');
         equal(await client.evaluate(`document.querySelector('.scenario-enemies')?.offsetParent !== null`), true, 'scenario enemy profiles remain visible in Play mode');
         equal(await client.evaluate(`document.getElementById('mission_scenario_select').value`), 'starter-m3-s3', 'scenario picker restores linked selection');
 
@@ -1516,6 +1633,9 @@ try {
             overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
             selectHeight: document.getElementById('mission_scenario_select').getBoundingClientRect().height,
             briefRight: document.querySelector('.scenario-brief').getBoundingClientRect().right,
+            trackerRight: document.querySelector('.scenario-turn-tracker').getBoundingClientRect().right,
+            previousHeight: document.getElementById('scenario_turn_previous').getBoundingClientRect().height,
+            nextHeight: document.getElementById('scenario_turn_next').getBoundingClientRect().height,
             enemiesRight: document.querySelector('.scenario-enemies').getBoundingClientRect().right,
             enemyCardRight: document.querySelector('.scenario-enemy-card').getBoundingClientRect().right,
             progressRight: document.querySelector('.scenario-progress').getBoundingClientRect().right,
@@ -1524,6 +1644,8 @@ try {
         check(phoneLayout.overflow <= 0, 'scenario briefing causes no phone overflow');
         check(phoneLayout.selectHeight >= 44, 'scenario picker is touch-sized');
         check(phoneLayout.briefRight <= phoneLayout.viewportWidth, 'scenario briefing fits phone viewport');
+        check(phoneLayout.trackerRight <= phoneLayout.viewportWidth, 'turn tracker fits phone viewport');
+        check(phoneLayout.previousHeight >= 44 && phoneLayout.nextHeight >= 44, 'turn controls are touch-sized');
         check(phoneLayout.enemiesRight <= phoneLayout.viewportWidth, 'scenario enemy reference fits phone viewport');
         check(phoneLayout.enemyCardRight <= phoneLayout.viewportWidth, 'scenario enemy card fits phone viewport');
         check(phoneLayout.progressRight <= phoneLayout.viewportWidth, 'campaign progress fits phone viewport');
@@ -1541,6 +1663,7 @@ try {
         equal(await client.evaluate(`MISSION.active.title`), '', 'custom selection clears untouched published title');
         equal(await client.evaluate(`MISSION.active.scenario`), '', 'custom selection clears untouched published reference');
         equal(await client.evaluate(`document.querySelector('.scenario-brief')`), null, 'custom selection removes published briefing');
+        equal(await client.evaluate(`document.querySelector('.scenario-turn-tracker')`), null, 'custom selection removes scenario turn tracker');
         equal(await client.evaluate(`document.querySelector('.scenario-enemies')`), null, 'custom selection removes built-in enemy reference');
         equal(await client.evaluate(`document.querySelector('input[aria-label="Scenario reference"]').readOnly`), false, 'custom reference remains editable');
 

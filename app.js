@@ -29,7 +29,7 @@
     const LEGACY_ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
     const MAX_TEMP_EFFECT = 99;
     const ENEMY_CATALOG_FORMAT_VERSION = 1;
-    const FORMAT_VERSION = 6;
+    const FORMAT_VERSION = 7;
     const MAX_SLOTS = 50;
     const MAX_MISSION_ROWS = 200;
     const MAX_MISSION_HISTORY = 100;
@@ -164,6 +164,7 @@
         normalizeNullableText,
         normalizeNumber,
         normalizeCount,
+        normalizeTurn,
         normalizeRows,
         normalizeMission,
         normalizeMissionHistory,
@@ -723,6 +724,7 @@
                 ['title', 'Title'],
                 ['date', 'Date'],
                 ['scenario', 'Scenario'],
+                ['currentTurn', 'Turn'],
                 ['notes', 'Notes'],
                 ['appliedXp', 'Applied XP']
             ].forEach(([key, fieldLabel]) => {
@@ -1848,6 +1850,7 @@
             scenario: '',
             scenarioId: null,
             scenarioCatalogVersion: null,
+            currentTurn: 1,
             notes: '',
             status: 'active',
             appliedXp: 0,
@@ -1908,6 +1911,7 @@
         const mission = findMission(missionId);
         if (!mission || mission.status !== 'active') return;
 
+        const previousScenarioId = mission.scenarioId;
         const previousScenario = starterScenarioForMission(mission);
         const scenario = STARTER_SCENARIOS_BY_ID.get(scenarioId) || null;
         if (scenario) {
@@ -1921,6 +1925,7 @@
             mission.scenarioId = null;
             mission.scenarioCatalogVersion = null;
         }
+        if (mission.scenarioId !== previousScenarioId) mission.currentTurn = 1;
 
         renderMissions();
         scheduleSave();
@@ -1955,6 +1960,126 @@
                 <small>Quick reference only — use the scenario pages for set-up, events, special rules, and rewards.</small>
             </aside>
         `;
+    }
+
+    function scenarioTurnPresentation(scenario, turn) {
+        const schedule = scenario.eventSchedule;
+        let tone = 'quiet';
+        let eventText = 'Check the scenario pages for event timing.';
+
+        if (schedule.kind === 'every-turn') {
+            const due = !(schedule.except || []).includes(turn);
+            tone = due ? 'due' : 'quiet';
+            eventText = due
+                ? 'Event due — draw one Event Card this turn.'
+                : 'No Event Card is drawn this turn.';
+        } else if (schedule.kind === 'odd-turns') {
+            const due = turn % 2 === 1;
+            tone = due ? 'due' : 'quiet';
+            eventText = due
+                ? 'Event due — draw one Event Card this turn.'
+                : 'No Event Card is scheduled this turn.';
+        } else if (schedule.kind === 'fixed-turns') {
+            const due = schedule.turns.includes(turn);
+            tone = due ? 'due' : 'quiet';
+            eventText = due
+                ? `Fixed event due — resolve the turn ${turn} scenario event.`
+                : 'No fixed scenario event is scheduled this turn.';
+        } else if (schedule.kind === 'room-triggered') {
+            tone = 'triggered';
+            eventText = 'Room-triggered — draw a Room Card whenever a new room is opened.';
+        }
+
+        let limitState = 'within-limit';
+        let limitText = 'No fixed turn limit.';
+        if (scenario.turnLimit) {
+            if (turn < scenario.turnLimit) {
+                const remaining = scenario.turnLimit - turn;
+                limitText = `${remaining} ${remaining === 1 ? 'turn remains' : 'turns remain'} after this one.`;
+            } else if (turn === scenario.turnLimit) {
+                limitState = 'final-turn';
+                limitText = 'Final printed turn.';
+            } else {
+                limitState = 'past-limit';
+                limitText = `Past the printed ${scenario.turnLimit}-turn limit.`;
+            }
+        }
+
+        return {
+            tone,
+            eventText,
+            limitState,
+            limitText,
+            turnLabel: scenario.turnLimit ? `Turn ${turn} of ${scenario.turnLimit}` : `Turn ${turn}`
+        };
+    }
+
+    function renderScenarioTurnTracker(mission) {
+        const scenario = starterScenarioForMission(mission);
+        if (!scenario) return '';
+        const state = scenarioTurnPresentation(scenario, mission.currentTurn);
+
+        return `
+            <section id="scenario_turn_tracker" class="scenario-turn-tracker ${state.limitState}"
+                aria-labelledby="scenario_turn_title">
+                <div class="scenario-turn-head">
+                    <div>
+                        <span class="scenario-kicker">Scenario clock</span>
+                        <strong id="scenario_turn_title">Turn Tracker</strong>
+                    </div>
+                    <span id="scenario_turn_label">${escapeHtml(state.turnLabel)}</span>
+                </div>
+                <div class="scenario-turn-body">
+                    <div class="scenario-turn-control" role="group" aria-label="Current scenario turn">
+                        <button type="button" id="scenario_turn_previous" class="scenario-turn-step"
+                            aria-label="Previous turn"${mission.currentTurn <= 1 ? ' disabled' : ''}
+                            onclick="changeScenarioTurn('${mission.id}', -1)">−</button>
+                        <div class="scenario-turn-current">
+                            <span>Turn</span>
+                            <output id="scenario_turn_value">${mission.currentTurn}</output>
+                        </div>
+                        <button type="button" id="scenario_turn_next" class="scenario-turn-step"
+                            aria-label="Next turn" onclick="changeScenarioTurn('${mission.id}', 1)">+</button>
+                    </div>
+                    <div id="scenario_turn_event" class="scenario-turn-event ${state.tone}" role="status" aria-live="polite">
+                        <span>Event timing</span>
+                        <strong>${escapeHtml(state.eventText)}</strong>
+                    </div>
+                </div>
+                <small id="scenario_turn_limit">${escapeHtml(state.limitText)}</small>
+            </section>
+        `;
+    }
+
+    function updateScenarioTurnTracker(mission, scenario) {
+        const tracker = document.getElementById('scenario_turn_tracker');
+        if (!tracker) return;
+        const state = scenarioTurnPresentation(scenario, mission.currentTurn);
+
+        tracker.classList.remove('within-limit', 'final-turn', 'past-limit');
+        tracker.classList.add(state.limitState);
+        document.getElementById('scenario_turn_label').textContent = state.turnLabel;
+        document.getElementById('scenario_turn_value').textContent = mission.currentTurn;
+        document.getElementById('scenario_turn_previous').disabled = mission.currentTurn <= 1;
+
+        const event = document.getElementById('scenario_turn_event');
+        event.classList.remove('due', 'quiet', 'triggered');
+        event.classList.add(state.tone);
+        event.querySelector('strong').textContent = state.eventText;
+        document.getElementById('scenario_turn_limit').textContent = state.limitText;
+    }
+
+    function changeScenarioTurn(missionId, delta) {
+        const mission = MISSION.active;
+        if (!mission || mission.id !== missionId) return;
+        const scenario = starterScenarioForMission(mission);
+        if (!scenario) return;
+
+        const next = Math.max(1, Math.min(99, mission.currentTurn + Math.trunc(delta)));
+        if (next === mission.currentTurn) return;
+        mission.currentTurn = next;
+        updateScenarioTurnTracker(mission, scenario);
+        saveNow();
     }
 
     function signedStat(value) {
@@ -2330,6 +2455,7 @@
                 </div>
 
                 ${renderScenarioBriefing(mission)}
+                ${renderScenarioTurnTracker(mission)}
                 ${renderScenarioEnemies(mission)}
 
                 ${renderKills(mission)}

@@ -1172,6 +1172,63 @@ button:active {
 .scenario-brief-facts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; color: var(--accent-teal); font-size: 0.8em; }
 .scenario-brief ul { margin: 9px 0 0; padding-left: 20px; color: #aeb9c4; font-size: 0.82em; line-height: 1.5; }
 .scenario-brief small { display: block; margin-top: 10px; color: #6f7d8c; line-height: 1.45; }
+.scenario-turn-tracker {
+    margin-top: 12px; padding: 14px 16px;
+    border: 1px solid #3b4a53; border-radius: 8px;
+    background: linear-gradient(135deg, rgba(31, 48, 57, 0.38), rgba(0,0,0,0.2));
+}
+.scenario-turn-tracker.final-turn { border-color: rgba(201, 168, 76, 0.58); }
+.scenario-turn-tracker.past-limit { border-color: rgba(139, 30, 45, 0.72); }
+.scenario-turn-head {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+}
+.scenario-turn-head > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.scenario-turn-head strong { color: #d7e5e7; font-family: var(--fantasy-font); font-size: 0.95em; }
+.scenario-turn-head > span {
+    flex: 0 0 auto; color: var(--accent-gold); font-family: var(--fantasy-font); font-size: 0.72em;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.scenario-turn-body { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; margin-top: 12px; }
+.scenario-turn-control {
+    display: flex; align-items: stretch; gap: 6px; flex: 0 0 auto;
+}
+.scenario-turn-step {
+    width: 48px; min-height: 48px; padding: 0;
+    border: 1px solid rgba(22, 224, 189, 0.36); border-radius: 7px;
+    background: rgba(22, 224, 189, 0.08); color: var(--accent-teal);
+    font-size: 1.35em; line-height: 1;
+}
+.scenario-turn-step:disabled {
+    border-color: #3a454d; background: rgba(255,255,255,0.02); color: #56626c;
+    cursor: not-allowed; opacity: 0.72;
+}
+.scenario-turn-current {
+    min-width: 64px; padding: 5px 10px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border: 1px solid #46545d; border-radius: 7px; background: rgba(0,0,0,0.28);
+}
+.scenario-turn-current span {
+    color: #71808d; font-family: var(--fantasy-font); font-size: 0.56em;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.scenario-turn-current output { margin-top: 1px; color: #f0f3f4; font-size: 1.3em; line-height: 1; }
+.scenario-turn-event {
+    flex: 1 1 210px; min-width: 0; padding: 8px 11px;
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
+    border: 1px solid #3d4951; border-radius: 7px; background: rgba(0,0,0,0.22);
+}
+.scenario-turn-event span {
+    color: #71808d; font-family: var(--fantasy-font); font-size: 0.56em;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.scenario-turn-event strong { color: #aeb9c4; font-size: 0.76em; line-height: 1.4; }
+.scenario-turn-event.due { border-color: rgba(201, 168, 76, 0.5); background: rgba(201, 168, 76, 0.09); }
+.scenario-turn-event.due strong { color: #eadba8; }
+.scenario-turn-event.triggered { border-color: rgba(22, 224, 189, 0.38); background: rgba(22, 224, 189, 0.06); }
+.scenario-turn-event.triggered strong { color: #a8d8d1; }
+.scenario-turn-tracker > small { display: block; margin-top: 9px; color: #6f7d8c; font-size: 0.7em; line-height: 1.45; }
+.scenario-turn-tracker.final-turn > small { color: #c8ad64; }
+.scenario-turn-tracker.past-limit > small { color: #c77883; }
 .scenario-enemies {
     margin-top: 12px; padding: 14px 16px;
     border: 1px solid rgba(22, 224, 189, 0.28); border-radius: 8px;

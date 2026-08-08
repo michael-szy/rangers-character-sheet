@@ -21,6 +21,7 @@
                     turnLimit: 8,
                     brief: 'Search the abandoned village for Aventine and useful clues before time runs out.',
                     eventCue: 'Draw one Event Card in every Event Phase.',
+                    eventSchedule: { kind: 'every-turn', except: [] },
                     reminders: [
                         'Choose one hero for the opening Perception test.',
                         'Clue results cannot repeat during this scenario.'
@@ -34,6 +35,7 @@
                     turnLimit: 10,
                     brief: 'Burn the nest trees and search the web cocoons for survivors.',
                     eventCue: 'Draw one Event Card in every Event Phase.',
+                    eventSchedule: { kind: 'every-turn', except: [] },
                     reminders: [
                         'Searching a cocoon and burning a nest tree each cost an action.',
                         'The spiders always sense the heroes when determining movement.'
@@ -54,6 +56,7 @@
                     turnLimit: 10,
                     brief: 'Cross the Enthel River and break through the bridge guard while preserving surprise.',
                     eventCue: 'Draw one Event Card on odd-numbered turns.',
+                    eventSchedule: { kind: 'odd-turns' },
                     reminders: [
                         'Choose one hero for the opening Navigation test.',
                         'Track whether the alarm has been raised.'
@@ -67,6 +70,7 @@
                     turnLimit: null,
                     brief: 'Clear the tower’s three lower rooms, open every door, and rescue what you can.',
                     eventCue: 'Draw a Room Card whenever a new room is opened.',
+                    eventSchedule: { kind: 'room-triggered' },
                     reminders: [
                         'Resolve the opening Stealth and Pick Lock tests.',
                         'The rest of the company enters at the start of turn 2.'
@@ -80,6 +84,7 @@
                     turnLimit: null,
                     brief: 'Retake the upper level, protect the captive, and stop the enemy beacon.',
                     eventCue: 'Resolve the fixed scenario events on turns 2 and 4.',
+                    eventSchedule: { kind: 'fixed-turns', turns: [2, 4] },
                     reminders: [
                         'After turn 5, the captive and woodpile are in immediate danger.',
                         'There is no Target Point in this scenario.'
@@ -100,6 +105,7 @@
                     turnLimit: 10,
                     brief: 'Descend the broken stairs, seal the fly holes, and leave by the lower edge.',
                     eventCue: 'Draw one Event Card in every Event Phase.',
+                    eventSchedule: { kind: 'every-turn', except: [] },
                     reminders: [
                         'Extra movement and lost combats can trigger dangerous falls.',
                         'The Target Point is where the stairs meet the lower edge.'
@@ -113,6 +119,7 @@
                     turnLimit: 10,
                     brief: 'Cross the swampland, investigate the clues, and exit opposite the stairs.',
                     eventCue: 'Draw one Event Card in every Event Phase.',
+                    eventSchedule: { kind: 'every-turn', except: [] },
                     reminders: [
                         'Each figure begins with a Will or Survival test against the fumes.',
                         'There is no Target Point in this scenario.'
@@ -126,6 +133,7 @@
                     turnLimit: 12,
                     brief: 'Hold the ruined farmhouse and keep as many Lorenthian survivors alive as possible.',
                     eventCue: 'Draw one Event Card every turn except turn 12.',
+                    eventSchedule: { kind: 'every-turn', except: [12] },
                     reminders: [
                         'Draw three Event Cards immediately after set-up.',
                         'Lorenthian survivors reduced to 0 Health are killed outright.'
@@ -137,7 +145,7 @@
 
     global.RangersScenarios = deepFreeze({
         catalogId: 'rosd-deluxe-starter',
-        catalogVersion: '1',
+        catalogVersion: '2',
         title: 'Standard Missions',
         source: 'Rangers of Shadow Deep Deluxe Edition',
         missions

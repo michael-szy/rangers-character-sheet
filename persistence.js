@@ -179,6 +179,15 @@
             return number;
         }
 
+        function normalizeTurn(value, label) {
+            if (value === undefined || value === null || value === '') return 1;
+            const number = Number(value);
+            if (!Number.isInteger(number) || number < 1 || number > 99) {
+                throw new Error(`${label} must be a whole number from 1 to 99.`);
+            }
+            return number;
+        }
+
         function normalizeRows(raw, label, mapper) {
             if (raw === undefined || raw === null) return [];
             if (!Array.isArray(raw)) throw new Error(`${label} must be stored as a list.`);
@@ -210,6 +219,7 @@
                 scenario: normalizeText(raw.scenario, `${label} scenario`),
                 scenarioId,
                 scenarioCatalogVersion,
+                currentTurn: normalizeTurn(raw.currentTurn, `${label} current turn`),
                 notes: normalizeText(raw.notes, `${label} notes`),
                 status: raw.status === 'complete' ? 'complete' : 'active',
                 appliedXp: normalizeNumber(raw.appliedXp, `${label} applied XP`),
@@ -431,6 +441,7 @@
             normalizeNullableText,
             normalizeNumber,
             normalizeCount,
+            normalizeTurn,
             normalizeRows,
             normalizeMission,
             normalizeMissionHistory,
