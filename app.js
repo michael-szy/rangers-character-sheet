@@ -17,6 +17,7 @@
         events: 'Events',
         searches: 'Search results',
         rooms: 'Room cards',
+        notes: 'Scenario notes',
         challenge: 'Challenge'
     });
 
@@ -1949,7 +1950,7 @@
                         <span class="scenario-kicker">Mission ${scenario.mission.number} · Scenario ${scenario.number}</span>
                         <strong id="scenario_brief_title">${escapeHtml(scenario.title)}</strong>
                     </div>
-                    <span class="scenario-page">Rulebook p. ${scenario.page}</span>
+                    <span class="scenario-page">${escapeHtml(scenario.mission.sourceLabel || 'Rulebook')} p. ${scenario.page}</span>
                 </div>
                 <p>${escapeHtml(scenario.brief)}</p>
                 <div class="scenario-brief-facts">
@@ -1967,27 +1968,40 @@
         let tone = 'quiet';
         let eventText = 'Check the scenario pages for event timing.';
 
+        const scheduleText = (template, fallback) => String(template || fallback).replaceAll('{turn}', String(turn));
+
         if (schedule.kind === 'every-turn') {
-            const due = !(schedule.except || []).includes(turn);
+            const due = turn >= (schedule.from || 1)
+                && turn <= (schedule.through || 99)
+                && !(schedule.except || []).includes(turn);
             tone = due ? 'due' : 'quiet';
             eventText = due
-                ? 'Event due — draw one Event Card this turn.'
-                : 'No Event Card is drawn this turn.';
+                ? scheduleText(schedule.dueText, 'Event due — draw one Event Card this turn.')
+                : scheduleText(schedule.quietText, 'No Event Card is drawn this turn.');
         } else if (schedule.kind === 'odd-turns') {
             const due = turn % 2 === 1;
             tone = due ? 'due' : 'quiet';
             eventText = due
-                ? 'Event due — draw one Event Card this turn.'
-                : 'No Event Card is scheduled this turn.';
+                ? scheduleText(schedule.dueText, 'Event due — draw one Event Card this turn.')
+                : scheduleText(schedule.quietText, 'No Event Card is scheduled this turn.');
         } else if (schedule.kind === 'fixed-turns') {
             const due = schedule.turns.includes(turn);
             tone = due ? 'due' : 'quiet';
             eventText = due
-                ? `Fixed event due — resolve the turn ${turn} scenario event.`
-                : 'No fixed scenario event is scheduled this turn.';
+                ? scheduleText(schedule.dueText, `Fixed event due — resolve the turn ${turn} scenario event.`)
+                : scheduleText(schedule.quietText, 'No fixed scenario event is scheduled this turn.');
         } else if (schedule.kind === 'room-triggered') {
             tone = 'triggered';
-            eventText = 'Room-triggered — draw a Room Card whenever a new room is opened.';
+            eventText = scheduleText(schedule.text, 'Room-triggered — draw a Room Card whenever a new room is opened.');
+        } else if (schedule.kind === 'conditional-from') {
+            const due = turn >= schedule.from;
+            tone = due ? 'due' : 'triggered';
+            eventText = due
+                ? scheduleText(schedule.dueText, 'Event due — draw one Event Card this turn.')
+                : scheduleText(schedule.beforeText, 'Check whether the scenario condition requires an Event Card this turn.');
+        } else if (schedule.kind === 'manual') {
+            tone = 'triggered';
+            eventText = scheduleText(schedule.text, 'Check the scenario pages for event timing.');
         }
 
         let limitState = 'within-limit';
@@ -2120,13 +2134,13 @@
                 <article class="scenario-enemy-card" data-enemy-id="${escapeHtml(encounter.enemyId)}">
                     <div class="scenario-enemy-head">
                         <strong>${escapeHtml(profile.name)}</strong>
-                        <span>${profile.xp} XP</span>
+                        <span>${Number.isFinite(profile.xp) ? `${profile.xp} XP` : 'Scenario XP'}</span>
                     </div>
                     <div class="scenario-enemy-contexts">${contexts}</div>
                     <dl class="scenario-enemy-stats">${stats}</dl>
                     <div class="scenario-enemy-notes">${notes}</div>
                     ${rules}
-                    <small>Bestiary p. ${profile.page}</small>
+                    <small>${escapeHtml(profile.reference || 'Bestiary')} p. ${profile.page}</small>
                 </article>
             `;
         }).join('');
@@ -2158,18 +2172,40 @@
 
         if (!completed.size && !activeId) return '';
 
-        const nodes = STARTER_SCENARIOS.map(scenario => {
-            const state = scenario.id === activeId ? ' current' : completed.has(scenario.id) ? ' complete' : '';
-            const status = scenario.id === activeId ? 'current' : completed.has(scenario.id) ? 'completed' : 'not completed';
-            return `<span class="scenario-progress-node${state}" aria-label="Mission ${scenario.mission.number}, Scenario ${scenario.number}, ${escapeHtml(scenario.title)}: ${status}">${scenario.mission.number}.${scenario.number}</span>`;
-        }).join('');
+        const groups = [];
+        const groupsById = new Map();
+        STARTER_SCENARIOS.forEach(scenario => {
+            const id = scenario.mission.progressGroup || scenario.mission.id;
+            let group = groupsById.get(id);
+            if (!group) {
+                group = {
+                    id,
+                    title: scenario.mission.progressTitle || scenario.mission.title,
+                    scenarios: []
+                };
+                groupsById.set(id, group);
+                groups.push(group);
+            }
+            group.scenarios.push(scenario);
+        });
 
-        return `
-            <section class="scenario-progress" aria-label="Standard mission progress">
-                <div><span>Standard Missions</span><strong>${completed.size} / ${STARTER_SCENARIOS.length} complete</strong></div>
-                <div class="scenario-progress-track">${nodes}</div>
-            </section>
-        `;
+        return groups
+            .filter(group => group.scenarios.some(scenario => scenario.id === activeId || completed.has(scenario.id)))
+            .map(group => {
+                const groupComplete = group.scenarios.filter(scenario => completed.has(scenario.id)).length;
+                const nodes = group.scenarios.map(scenario => {
+                    const state = scenario.id === activeId ? ' current' : completed.has(scenario.id) ? ' complete' : '';
+                    const status = scenario.id === activeId ? 'current' : completed.has(scenario.id) ? 'completed' : 'not completed';
+                    return `<span class="scenario-progress-node${state}" aria-label="Mission ${scenario.mission.number}, Scenario ${scenario.number}, ${escapeHtml(scenario.title)}: ${status}">${scenario.mission.number}.${scenario.number}</span>`;
+                }).join('');
+
+                return `
+                    <section class="scenario-progress" data-progress-group="${escapeHtml(group.id)}" aria-label="${escapeHtml(group.title)} progress">
+                        <div><span>${escapeHtml(group.title)}</span><strong>${groupComplete} / ${group.scenarios.length} complete</strong></div>
+                        <div class="scenario-progress-track">${nodes}</div>
+                    </section>
+                `;
+            }).join('');
     }
 
     function startMission() {

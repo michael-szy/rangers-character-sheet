@@ -365,11 +365,13 @@ try {
         equal(await client.evaluate(`Object.isFrozen(RangersScenarioEnemies.profiles.troll.stats)`), true, 'nested scenario enemy stats are immutable');
         equal(await client.evaluate(`Object.isFrozen(RangersScenarioEnemies.scenarios['starter-m3-s3'][0].contexts)`), true, 'nested scenario encounter contexts are immutable');
         equal(await client.evaluate(`Object.isFrozen(STARTER_SCENARIOS) && Object.isFrozen(STARTER_SCENARIOS[0])`), true, 'application scenario index is immutable');
-        equal(await client.evaluate(`RangersScenarios.missions.flatMap(mission => mission.scenarios).length`), 8, 'starter scenario catalog is complete');
+        equal(await client.evaluate(`RangersScenarios.missions.flatMap(mission => mission.scenarios).length`), 21, 'built-in scenario catalog is complete');
         equal(await client.evaluate(`RangersScenarios.missions[2].scenarios[2].title`), 'The Last Stand', 'current campaign scenario title');
-        equal(await client.evaluate(`Object.keys(RangersScenarioEnemies.profiles).length`), 15, 'starter scenario enemy profile catalog is complete');
-        equal(await client.evaluate(`Object.keys(RangersScenarioEnemies.scenarios).length`), 8, 'every starter scenario has enemy references');
-        equal(await client.evaluate(`Object.values(RangersScenarioEnemies.scenarios).reduce((count, encounters) => count + encounters.length, 0)`), 30, 'starter scenario encounter mappings are complete');
+        equal(await client.evaluate(`RangersScenarios.missions.slice(3).flatMap(mission => mission.scenarios).length`), 13, 'Gathering of Heroes scenario catalog is complete');
+        equal(await client.evaluate(`Object.keys(RangersScenarioEnemies.profiles).length`), 42, 'built-in scenario enemy profile catalog is complete');
+        equal(await client.evaluate(`Object.keys(RangersScenarioEnemies.scenarios).length`), 21, 'every built-in scenario has enemy references');
+        equal(await client.evaluate(`Object.values(RangersScenarioEnemies.scenarios).reduce((count, encounters) => count + encounters.length, 0)`), 126, 'built-in scenario encounter mappings are complete');
+        equal(await client.evaluate(`Object.entries(RangersScenarioEnemies.scenarios).every(([scenarioId, encounters]) => STARTER_SCENARIOS_BY_ID.has(scenarioId) && encounters.length === new Set(encounters.map(encounter => encounter.enemyId)).size)`), true, 'scenario enemy mappings are known and duplicate-free');
         equal(await client.evaluate(`Object.values(RangersScenarioEnemies.scenarios).flat().every(encounter => RangersScenarioEnemies.profiles[encounter.enemyId] && encounter.contexts.every(context => SCENARIO_ENEMY_CONTEXT_LABELS[context]))`), true, 'every encounter resolves to a profile and visible context');
         equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.heroic)`), true, 'heroic ability data is immutable');
         equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.archetypeHeroic['Flashing Blade'].archetypes)`), true, 'nested archetype ability data is immutable');
@@ -1484,8 +1486,8 @@ try {
 
         await client.evaluate(`startMission()`);
         equal(await client.evaluate(`document.getElementById('mission_scenario_select').tagName`), 'SELECT', 'scenario picker is a native dropdown');
-        equal(await client.evaluate(`document.getElementById('mission_scenario_select').options.length`), 9, 'scenario picker includes custom plus eight starter scenarios');
-        equal(await client.evaluate(`document.getElementById('mission_scenario_select').querySelectorAll('optgroup').length`), 3, 'starter scenarios are grouped into three missions');
+        equal(await client.evaluate(`document.getElementById('mission_scenario_select').options.length`), 22, 'scenario picker includes custom plus all built-in scenarios');
+        equal(await client.evaluate(`document.getElementById('mission_scenario_select').querySelectorAll('optgroup').length`), 8, 'built-in scenarios are grouped into eight missions');
         equal(await client.evaluate(`document.activeElement.id`), 'mission_scenario_select', 'new mission focuses scenario picker');
         equal(await client.evaluate(`document.querySelector('.scenario-brief')`), null, 'blank custom mission has no published briefing');
         equal(await client.evaluate(`document.querySelector('.scenario-turn-tracker')`), null, 'blank custom mission has no turn tracker');
@@ -1525,13 +1527,13 @@ try {
             progressText: document.querySelector('.scenario-progress').textContent
         }))()`);
         equal(selected.scenarioId, 'starter-m3-s3', 'published scenario id linked');
-        equal(selected.scenarioCatalogVersion, 'rosd-deluxe-starter@2', 'published scenario catalog version linked');
+        equal(selected.scenarioCatalogVersion, 'rosd-built-in-scenarios@1', 'published scenario catalog version linked');
         equal(selected.scenario, 'Mission 3: Descent into Darkness · Scenario 3', 'published scenario reference snapshotted');
         equal(selected.title, 'The Last Stand', 'published scenario title snapshotted');
         equal(selected.titleField, 'The Last Stand', 'published title shown in mission field');
         equal(selected.referenceReadonly, true, 'linked reference is read-only');
         check(selected.brief.includes('Lorenthian survivors'), 'published briefing shows concise objective');
-        equal(selected.page, 'Rulebook p. 76', 'published briefing shows printed page');
+        equal(selected.page, 'Standard Edition p. 76', 'published briefing shows source and printed page');
         check(selected.facts.includes('12 turns'), 'published briefing shows turn limit');
         check(selected.facts.includes('except turn 12'), 'published briefing shows event cadence');
         equal(selected.reminders, 2, 'published briefing shows bounded reminders');
@@ -1552,7 +1554,7 @@ try {
 
         const linkedRoundTrip = await client.evaluate(`parseDocument(JSON.stringify(collectDocument())).document.activeMission`);
         equal(linkedRoundTrip.scenarioId, 'starter-m3-s3', 'scenario id survives document round-trip');
-        equal(linkedRoundTrip.scenarioCatalogVersion, 'rosd-deluxe-starter@2', 'scenario catalog version survives document round-trip');
+        equal(linkedRoundTrip.scenarioCatalogVersion, 'rosd-built-in-scenarios@1', 'scenario catalog version survives document round-trip');
         equal(linkedRoundTrip.scenario, 'Mission 3: Descent into Darkness · Scenario 3', 'scenario reference snapshot survives document round-trip');
         equal(linkedRoundTrip.currentTurn, 1, 'scenario turn survives document round-trip');
 
@@ -1595,6 +1597,89 @@ try {
 
         await client.evaluate(`(() => {
             const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-blood-moon-s1';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        const bloodMoon = await client.evaluate(`(() => ({
+            page: document.querySelector('.scenario-page').textContent,
+            profiles: document.querySelectorAll('.scenario-enemy-card').length,
+            werewolfStats: Array.from(document.querySelector('[data-enemy-id="werewolf"] .scenario-enemy-stats').querySelectorAll('dd'), node => node.textContent),
+            werewolfRules: document.querySelector('[data-enemy-id="werewolf"]').textContent,
+            progressTitle: document.querySelector('.scenario-progress').textContent,
+            progressNodes: document.querySelectorAll('.scenario-progress-node').length
+        }))()`);
+        equal(bloodMoon.page, 'A Gathering of Heroes p. 72', 'Gathering scenario identifies its source page');
+        equal(bloodMoon.profiles, 7, 'Blood Moon shows every possible opponent profile');
+        equal(bloodMoon.werewolfStats.join(','), '6,+4,+0,12,+5,18', 'Gathering enemy stats render in play order');
+        check(bloodMoon.werewolfRules.includes('Silver weapons') && bloodMoon.werewolfRules.includes('Regains 2'), 'Werewolf card keeps both high-value reminders');
+        check(bloodMoon.progressTitle.includes('Blood Moon') && bloodMoon.progressTitle.includes('0 / 1 complete'), 'standalone Gathering mission gets its own progress group');
+        equal(bloodMoon.progressNodes, 1, 'standalone mission progress does not imply a larger linear path');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-menagerie-s1';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            for (let turn = 1; turn < 8; turn++) changeScenarioTurn(MISSION.active.id, 1);
+        })()`);
+        equal(await client.evaluate(`MISSION.active.currentTurn`), 8, 'bounded event schedule reaches its final event turn');
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('Event due')`), 'Menagerie draws an event on turn 8');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No more Event Cards')`), 'Menagerie stops event draws after turn 8 without ending the scenario');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-temple-s1';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('place one Temple Guardian')`), 'Temple reinforcement schedule uses its scenario-specific action');
+        equal(await client.evaluate(`document.querySelectorAll('.scenario-progress-node').length`), 4, 'Temple progress groups its four reports');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-temple-s4';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('note for turn 1')`), 'Temple finale interpolates the current fixed-note turn');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-ghost-stone-s2';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('first two turns')`), 'Ghost Stone encampment suppresses early events');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click(); document.getElementById('scenario_turn_next').click()`);
+        equal(await client.evaluate(`MISSION.active.currentTurn`), 3, 'delayed event schedule reaches its start turn');
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('Event due')`), 'Ghost Stone encampment starts events on turn 3');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-ghost-stone-s3';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('only if the alarm')`), 'conditional early event schedule names the alarm dependency');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click(); document.getElementById('scenario_turn_next').click()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('Event due')`), 'conditional schedule becomes unconditional on turn 3');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-ghost-stone-s4';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('supply total')`), 'campaign-dependent event schedule stays explicit and manual');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-incinerator-s2';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No Event Card on turn 1')`), 'Incinerator skips its first event phase');
+        equal(await client.evaluate(`document.querySelector('[data-enemy-id="gorbin"] .scenario-enemy-head span').textContent`), 'Scenario XP', 'scenario-specific Gorbin reward is not presented as catalog XP');
+        check(await client.evaluate(`document.querySelector('[data-enemy-id="gorbin"] small').textContent.includes('Incinerator p. 146')`), 'non-bestiary opponent card points to its actual source');
+        await client.evaluate(`document.getElementById('scenario_turn_next').click()`);
+        check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('Event due')`), 'Incinerator begins normal event draws on turn 2');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
             select.value = 'starter-m3-s3';
             select.dispatchEvent(new Event('change', { bubbles: true }));
             for (let turn = 1; turn < 11; turn++) changeScenarioTurn(MISSION.active.id, 1);
@@ -1621,6 +1706,13 @@ try {
         check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No Event Card')`), 'reloaded final turn restores event state');
         equal(await client.evaluate(`document.querySelector('.scenario-enemies')?.offsetParent !== null`), true, 'scenario enemy profiles remain visible in Play mode');
         equal(await client.evaluate(`document.getElementById('mission_scenario_select').value`), 'starter-m3-s3', 'scenario picker restores linked selection');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'agoh-ghost-stone-s4';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        equal(await client.evaluate(`document.querySelectorAll('.scenario-enemy-card').length`), 13, 'largest Gathering encounter reference renders every profile in Play mode');
 
         await client.send('Emulation.setDeviceMetricsOverride', {
             width: 360,
