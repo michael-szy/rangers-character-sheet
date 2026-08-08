@@ -1172,6 +1172,57 @@ button:active {
 .scenario-brief-facts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; color: var(--accent-teal); font-size: 0.8em; }
 .scenario-brief ul { margin: 9px 0 0; padding-left: 20px; color: #aeb9c4; font-size: 0.82em; line-height: 1.5; }
 .scenario-brief small { display: block; margin-top: 10px; color: #6f7d8c; line-height: 1.45; }
+.scenario-enemies {
+    margin-top: 12px; padding: 14px 16px;
+    border: 1px solid rgba(22, 224, 189, 0.28); border-radius: 8px;
+    background: linear-gradient(135deg, rgba(22, 224, 189, 0.06), rgba(0,0,0,0.2));
+}
+.scenario-enemies-head {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+}
+.scenario-enemies-head > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.scenario-enemies-head strong { color: #d7e5e7; font-family: var(--fantasy-font); font-size: 0.95em; }
+.scenario-enemies-head > span {
+    flex: 0 0 auto; color: #788792; font-family: var(--fantasy-font); font-size: 0.65em;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.scenario-enemy-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 10px; margin-top: 12px;
+}
+.scenario-enemy-card {
+    min-width: 0; padding: 11px 12px;
+    border: 1px solid #3c4851; border-radius: 7px;
+    background: rgba(4, 10, 13, 0.54);
+}
+.scenario-enemy-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.scenario-enemy-head strong { color: #d6e0e4; font-family: var(--fantasy-font); font-size: 0.82em; }
+.scenario-enemy-head > span { color: var(--accent-gold); font-size: 0.7em; white-space: nowrap; }
+.scenario-enemy-contexts, .scenario-enemy-notes { display: flex; flex-wrap: wrap; gap: 5px; }
+.scenario-enemy-contexts { margin-top: 7px; }
+.scenario-enemy-contexts span {
+    padding: 2px 6px; border: 1px solid rgba(22, 224, 189, 0.28); border-radius: 999px;
+    color: #87b9b2; font-size: 0.6em; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.scenario-enemy-stats {
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px; margin: 10px 0 0;
+}
+.scenario-enemy-stats div {
+    min-width: 0; padding: 5px 2px; text-align: center;
+    border: 1px solid rgba(145, 160, 176, 0.18); border-radius: 4px;
+    background: rgba(255,255,255,0.025);
+}
+.scenario-enemy-stats dt {
+    color: #71808d; font-family: var(--fantasy-font); font-size: 0.52em;
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.scenario-enemy-stats dd { margin: 2px 0 0; color: #eef3f4; font-size: 0.82em; }
+.scenario-enemy-notes { margin-top: 9px; color: #9eabb5; font-size: 0.68em; line-height: 1.35; }
+.scenario-enemy-notes span:not(:last-child)::after { content: '·'; margin-left: 5px; color: #53606a; }
+.scenario-enemy-card ul { margin: 8px 0 0; padding-left: 17px; color: #bdc7cf; font-size: 0.7em; line-height: 1.4; }
+.scenario-enemy-card small { display: block; margin-top: 8px; color: #65737f; font-size: 0.62em; }
+.scenario-enemies > small { display: block; margin-top: 10px; color: #6f7d8c; font-size: 0.7em; line-height: 1.45; }
 .mission-group { margin-top: 18px; }
 .mission-group-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .mission-group h3 {

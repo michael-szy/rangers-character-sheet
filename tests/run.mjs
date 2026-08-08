@@ -100,7 +100,7 @@ async function startStaticServer() {
         const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
         const file = pathname === '/' || pathname === '/index.html'
             ? join(projectRoot, 'index.html')
-            : pathname === '/styles.css' || pathname === '/rules-data.js' || pathname === '/scenario-data.js' || pathname === '/persistence.js' || pathname === '/storage.js' || pathname === '/app.js'
+            : pathname === '/styles.css' || pathname === '/rules-data.js' || pathname === '/scenario-data.js' || pathname === '/scenario-enemy-data.js' || pathname === '/persistence.js' || pathname === '/storage.js' || pathname === '/app.js'
                 ? join(projectRoot, pathname.slice(1))
                 : pathname.startsWith('/tests/fixtures/')
                     ? join(projectRoot, pathname.slice(1))
@@ -358,9 +358,17 @@ try {
         equal(await client.evaluate(`typeof RangersScenarios`), 'object', 'scenario data module loaded');
         equal(await client.evaluate(`Object.isFrozen(RangersScenarios)`), true, 'scenario data interface is immutable');
         equal(await client.evaluate(`Object.isFrozen(RangersScenarios.missions[2].scenarios[2].reminders)`), true, 'nested scenario data is immutable');
+        equal(await client.evaluate(`typeof RangersScenarioEnemies`), 'object', 'scenario enemy data module loaded');
+        equal(await client.evaluate(`Object.isFrozen(RangersScenarioEnemies)`), true, 'scenario enemy data interface is immutable');
+        equal(await client.evaluate(`Object.isFrozen(RangersScenarioEnemies.profiles.troll.stats)`), true, 'nested scenario enemy stats are immutable');
+        equal(await client.evaluate(`Object.isFrozen(RangersScenarioEnemies.scenarios['starter-m3-s3'][0].contexts)`), true, 'nested scenario encounter contexts are immutable');
         equal(await client.evaluate(`Object.isFrozen(STARTER_SCENARIOS) && Object.isFrozen(STARTER_SCENARIOS[0])`), true, 'application scenario index is immutable');
         equal(await client.evaluate(`RangersScenarios.missions.flatMap(mission => mission.scenarios).length`), 8, 'starter scenario catalog is complete');
         equal(await client.evaluate(`RangersScenarios.missions[2].scenarios[2].title`), 'The Last Stand', 'current campaign scenario title');
+        equal(await client.evaluate(`Object.keys(RangersScenarioEnemies.profiles).length`), 15, 'starter scenario enemy profile catalog is complete');
+        equal(await client.evaluate(`Object.keys(RangersScenarioEnemies.scenarios).length`), 8, 'every starter scenario has enemy references');
+        equal(await client.evaluate(`Object.values(RangersScenarioEnemies.scenarios).reduce((count, encounters) => count + encounters.length, 0)`), 30, 'starter scenario encounter mappings are complete');
+        equal(await client.evaluate(`Object.values(RangersScenarioEnemies.scenarios).flat().every(encounter => RangersScenarioEnemies.profiles[encounter.enemyId] && encounter.contexts.every(context => SCENARIO_ENEMY_CONTEXT_LABELS[context]))`), true, 'every encounter resolves to a profile and visible context');
         equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.heroic)`), true, 'heroic ability data is immutable');
         equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.archetypeHeroic['Flashing Blade'].archetypes)`), true, 'nested archetype ability data is immutable');
         equal(await client.evaluate(`Object.isFrozen(ARCHETYPE_LIBRARY['Red Hawk Knight'].traits)`), true, 'nested archetype data is immutable');
@@ -1436,6 +1444,7 @@ try {
         equal(await client.evaluate(`document.getElementById('mission_scenario_select').querySelectorAll('optgroup').length`), 3, 'starter scenarios are grouped into three missions');
         equal(await client.evaluate(`document.activeElement.id`), 'mission_scenario_select', 'new mission focuses scenario picker');
         equal(await client.evaluate(`document.querySelector('.scenario-brief')`), null, 'blank custom mission has no published briefing');
+        equal(await client.evaluate(`document.querySelector('.scenario-enemies')`), null, 'blank custom mission has no enemy reference');
         equal(await client.evaluate(`document.querySelector('.scenario-progress')`), null, 'blank custom mission has no starter progress');
 
         await client.evaluate(`(() => {
@@ -1455,6 +1464,11 @@ try {
             page: document.querySelector('.scenario-page').textContent,
             facts: document.querySelector('.scenario-brief-facts').textContent,
             reminders: document.querySelectorAll('.scenario-brief li').length,
+            enemyProfiles: document.querySelectorAll('.scenario-enemy-card').length,
+            enemyNames: Array.from(document.querySelectorAll('.scenario-enemy-head strong'), node => node.textContent),
+            trollStats: Array.from(document.querySelector('[data-enemy-id="troll"] .scenario-enemy-stats').querySelectorAll('dd'), node => node.textContent),
+            archerContexts: document.querySelector('[data-enemy-id="gnoll-archer"] .scenario-enemy-contexts').textContent,
+            catalogLoaded: ENEMY_CATALOG !== null,
             progressNodes: document.querySelectorAll('.scenario-progress-node').length,
             currentNodes: document.querySelectorAll('.scenario-progress-node.current').length,
             progressText: document.querySelector('.scenario-progress').textContent
@@ -1470,6 +1484,11 @@ try {
         check(selected.facts.includes('12 turns'), 'published briefing shows turn limit');
         check(selected.facts.includes('except turn 12'), 'published briefing shows event cadence');
         equal(selected.reminders, 2, 'published briefing shows bounded reminders');
+        equal(selected.enemyProfiles, 8, 'selected scenario shows every possible enemy profile');
+        check(selected.enemyNames.includes('Burrow Worm') && selected.enemyNames.includes('Troll'), 'event enemies are named without an import');
+        equal(selected.trollStats.join(','), '4,+4,+0,14,+2,16', 'enemy stat line is shown in play order');
+        check(selected.archerContexts.includes('Events') && selected.archerContexts.includes('Challenge'), 'enemy appearance sources remain distinct');
+        equal(selected.catalogLoaded, false, 'built-in enemy profiles need no imported catalog');
         equal(selected.progressNodes, 8, 'campaign progress shows every starter scenario');
         equal(selected.currentNodes, 1, 'campaign progress marks one current scenario');
         check(selected.progressText.includes('0 / 8 complete'), 'campaign progress starts without synthetic completions');
@@ -1483,6 +1502,7 @@ try {
         await waitFor(client, `document.readyState !== 'loading' && MISSION.active?.scenarioId === 'starter-m3-s3'`);
         equal(await client.evaluate(`currentMode()`), 'play', 'linked scenario reload keeps Play mode');
         equal(await client.evaluate(`document.querySelector('.scenario-brief')?.offsetParent !== null`), true, 'scenario briefing remains visible in Play mode');
+        equal(await client.evaluate(`document.querySelector('.scenario-enemies')?.offsetParent !== null`), true, 'scenario enemy profiles remain visible in Play mode');
         equal(await client.evaluate(`document.getElementById('mission_scenario_select').value`), 'starter-m3-s3', 'scenario picker restores linked selection');
 
         await client.send('Emulation.setDeviceMetricsOverride', {
@@ -1496,12 +1516,16 @@ try {
             overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
             selectHeight: document.getElementById('mission_scenario_select').getBoundingClientRect().height,
             briefRight: document.querySelector('.scenario-brief').getBoundingClientRect().right,
+            enemiesRight: document.querySelector('.scenario-enemies').getBoundingClientRect().right,
+            enemyCardRight: document.querySelector('.scenario-enemy-card').getBoundingClientRect().right,
             progressRight: document.querySelector('.scenario-progress').getBoundingClientRect().right,
             viewportWidth: document.documentElement.clientWidth
         }))()`);
         check(phoneLayout.overflow <= 0, 'scenario briefing causes no phone overflow');
         check(phoneLayout.selectHeight >= 44, 'scenario picker is touch-sized');
         check(phoneLayout.briefRight <= phoneLayout.viewportWidth, 'scenario briefing fits phone viewport');
+        check(phoneLayout.enemiesRight <= phoneLayout.viewportWidth, 'scenario enemy reference fits phone viewport');
+        check(phoneLayout.enemyCardRight <= phoneLayout.viewportWidth, 'scenario enemy card fits phone viewport');
         check(phoneLayout.progressRight <= phoneLayout.viewportWidth, 'campaign progress fits phone viewport');
         await client.send('Emulation.clearDeviceMetricsOverride');
         await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });
@@ -1517,6 +1541,7 @@ try {
         equal(await client.evaluate(`MISSION.active.title`), '', 'custom selection clears untouched published title');
         equal(await client.evaluate(`MISSION.active.scenario`), '', 'custom selection clears untouched published reference');
         equal(await client.evaluate(`document.querySelector('.scenario-brief')`), null, 'custom selection removes published briefing');
+        equal(await client.evaluate(`document.querySelector('.scenario-enemies')`), null, 'custom selection removes built-in enemy reference');
         equal(await client.evaluate(`document.querySelector('input[aria-label="Scenario reference"]').readOnly`), false, 'custom reference remains editable');
 
         await client.evaluate(`(() => {

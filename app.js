@@ -6,11 +6,19 @@
         equipmentCustomValue: EQUIPMENT_CUSTOM_VALUE
     } = RangersRules;
     const SCENARIO_LIBRARY = RangersScenarios;
+    const SCENARIO_ENEMY_LIBRARY = RangersScenarioEnemies;
     const SCENARIO_CATALOG_VERSION = `${SCENARIO_LIBRARY.catalogId}@${SCENARIO_LIBRARY.catalogVersion}`;
     const STARTER_SCENARIOS = Object.freeze(SCENARIO_LIBRARY.missions.flatMap(mission =>
         mission.scenarios.map(scenario => Object.freeze({ ...scenario, mission }))
     ));
     const STARTER_SCENARIOS_BY_ID = new Map(STARTER_SCENARIOS.map(scenario => [scenario.id, scenario]));
+    const SCENARIO_ENEMY_CONTEXT_LABELS = Object.freeze({
+        setup: 'Set-up',
+        events: 'Events',
+        searches: 'Search results',
+        rooms: 'Room cards',
+        challenge: 'Challenge'
+    });
 
     const saveFields = document.querySelectorAll('.save-field');
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
@@ -1949,6 +1957,70 @@
         `;
     }
 
+    function signedStat(value) {
+        return value >= 0 ? `+${value}` : String(value);
+    }
+
+    function renderScenarioEnemies(mission) {
+        const scenario = starterScenarioForMission(mission);
+        const encounters = scenario ? SCENARIO_ENEMY_LIBRARY.scenarios[scenario.id] : null;
+        if (!encounters || !encounters.length) return '';
+
+        const statLabels = [
+            ['Mov', 'move', false],
+            ['Fig', 'fight', true],
+            ['Sho', 'shoot', true],
+            ['Arm', 'armour', false],
+            ['Wil', 'will', true],
+            ['HP', 'health', false]
+        ];
+
+        const cards = encounters.map(encounter => {
+            const profile = SCENARIO_ENEMY_LIBRARY.profiles[encounter.enemyId];
+            if (!profile) return '';
+            const contexts = encounter.contexts
+                .map(context => SCENARIO_ENEMY_CONTEXT_LABELS[context])
+                .filter(Boolean)
+                .map(label => `<span>${escapeHtml(label)}</span>`)
+                .join('');
+            const stats = statLabels.map(([label, key, signed]) => `
+                <div><dt>${label}</dt><dd>${signed ? signedStat(profile.stats[key]) : profile.stats[key]}</dd></div>
+            `).join('');
+            const notes = profile.notes.map(note => `<span>${escapeHtml(note)}</span>`).join('');
+            const rules = profile.rules.length
+                ? `<ul>${profile.rules.map(rule => `<li>${escapeHtml(rule)}</li>`).join('')}</ul>`
+                : '';
+
+            return `
+                <article class="scenario-enemy-card" data-enemy-id="${escapeHtml(encounter.enemyId)}">
+                    <div class="scenario-enemy-head">
+                        <strong>${escapeHtml(profile.name)}</strong>
+                        <span>${profile.xp} XP</span>
+                    </div>
+                    <div class="scenario-enemy-contexts">${contexts}</div>
+                    <dl class="scenario-enemy-stats">${stats}</dl>
+                    <div class="scenario-enemy-notes">${notes}</div>
+                    ${rules}
+                    <small>Bestiary p. ${profile.page}</small>
+                </article>
+            `;
+        }).join('');
+
+        return `
+            <section class="scenario-enemies" aria-labelledby="scenario_enemy_title">
+                <div class="scenario-enemies-head">
+                    <div>
+                        <span class="scenario-kicker">Encounter reference</span>
+                        <strong id="scenario_enemy_title">Enemies in this scenario</strong>
+                    </div>
+                    <span>${encounters.length} ${encounters.length === 1 ? 'profile' : 'profiles'}</span>
+                </div>
+                <div class="scenario-enemy-grid">${cards}</div>
+                <small>Profiles are always available. Placement, quantities, events, and scenario-specific behavior remain on the scenario pages.</small>
+            </section>
+        `;
+    }
+
     function renderScenarioProgress() {
         const completed = new Set(
             MISSION.history
@@ -2258,6 +2330,7 @@
                 </div>
 
                 ${renderScenarioBriefing(mission)}
+                ${renderScenarioEnemies(mission)}
 
                 ${renderKills(mission)}
                 ${renderObjectives(mission)}
