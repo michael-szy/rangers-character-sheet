@@ -8,6 +8,7 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Heroic Abilities – einschließlich archetypspezifischer Varianten – und Spells auswählen und ihre Nutzung markieren
 - Archetypen mit Traits und Einschränkungen anzeigen
 - Missionen mit Gegnern, Zielen, Anpassungen und bestätigter XP-Übertragung dokumentieren
+- Die acht Standard-Missionsszenarien direkt auswählen und mit Seitenverweis, Kurzbriefing und Kampagnenfortschritt verfolgen
 - Den Missionsbereich in Edit und Play einklappen, wenn er gerade nicht benötigt wird
 - Einen optionalen Gegnerkatalog laden und Gegner samt vorgeschlagenen XP per Dropdown hinzufügen
 - Frei wählbare temporäre Ally-Boni und Debuffs direkt an den effektiven Charakterwerten anzeigen
@@ -36,6 +37,8 @@ Der aktuelle Charakter wird ausschließlich im lokalen Browserspeicher (`localSt
 
 Ein optionaler Gegnerkatalog wird über **Load Enemy Catalog** separat geladen und ebenfalls nur in diesem Browser gespeichert. Danach lassen sich Gegner in einer Auswahlliste samt vorgeschlagenem XP-Wert zur aktiven Mission hinzufügen. **Add blank enemy** bleibt für eigene oder szenariospezifische Gegner verfügbar. Die vorgeschlagenen Gegner-XP ersetzen nicht die **Outcome and Experience**-Regeln des gespielten Szenarios; Name und Wert bleiben deshalb in jedem Missionsbericht manuell korrigierbar.
 
+Beim Start einer Mission stehen die acht linearen Szenarien aus **The Missing**, **The Beacon Tower** und **Descent into Darkness** ohne zusätzlichen Import bereit. Eine Auswahl übernimmt den offiziellen Titel und die Referenz, zeigt die gedruckte Regelbuchseite sowie ein knappes Ziel-, Zeit- und Erinnerungsbriefing und markiert aktuelle beziehungsweise abgeschlossene Szenarien im Kampagnenpfad. Das Briefing ersetzt weder Aufbau noch Ereignisse, Sonderregeln oder Belohnungen im Regelbuch. **Custom / unlisted scenario** bleibt für eigene Missionen und weitere Kampagnen verfügbar.
+
 In Edit und Play können temporäre Ally-Boni und Debuffs direkt an Movement, Fight, Shoot, Armor, Will, Health und Recruitment gesetzt werden. Ein Tippen auf **Effects ±** öffnet den gemeinsamen Dialog; Bonus und Malus haben getrennte Zahlenfelder mit touchfreundlichen `−/+`-Schritten und können gleichzeitig gelten. Aktive Karten zeigen den effektiven Wert sowie die vollständige Rechnung aus Grundwert, Ally-Bonus und Debuff. Grundwerte und Charakterdatei werden nicht verändert. Einzelne oder alle Effekte lassen sich im selben Dialog entfernen. Die Effekte überleben ein versehentliches Neuladen desselben Tabs, aber keine neue Browser-Sitzung.
 
 Unter **Conditions** lassen sich die allgemeinen Regelzustände **Poisoned**, **Diseased** und **Hunger & Thirst** über **+ Add Condition** aktivieren. Aktive Karten zeigen die wichtigsten Auswirkungen, Dauer beziehungsweise Heilungsmöglichkeit und die Regelbuchseite; Hunger & Thirst besitzt einen eigenen Stufenzähler. Zustände werden mit dem Charakter gespeichert und exportiert, verändern Werte oder Würfe aber bewusst nicht automatisch.
@@ -46,7 +49,7 @@ Kurze visuelle Effekte bestätigen wichtige Spielaktionen: Eine Ability wird ver
 
 ## Technik
 
-Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. `index.html` enthält das Markup, `styles.css` bündelt die Darstellung einschließlich Responsive- und Effektregeln, und `app.js` enthält Zustand, Rendering und Interaktionen. `rules-data.js` stellt die unveränderlichen Auswahlkataloge für Fähigkeiten, Archetypen und Ausrüstung bereit. `persistence.js` kapselt die reine Validierung, Migration und Normalisierung gespeicherter Charakterdaten, während `storage.js` ausschließlich das lokale Character-JSON und dessen Recovery-Kopie verwaltet. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
+Die Anwendung besteht aus statischem HTML, CSS und Vanilla JavaScript. `index.html` enthält das Markup, `styles.css` bündelt die Darstellung einschließlich Responsive- und Effektregeln, und `app.js` enthält Zustand, Rendering und Interaktionen. `rules-data.js` stellt die unveränderlichen Auswahlkataloge für Fähigkeiten, Archetypen und Ausrüstung bereit; `scenario-data.js` enthält den ebenfalls unveränderlichen Index und die knappen Spielhilfen für die Standard-Missionsszenarien. `persistence.js` kapselt die reine Validierung, Migration und Normalisierung gespeicherter Charakterdaten, während `storage.js` ausschließlich das lokale Character-JSON und dessen Recovery-Kopie verwaltet. Es gibt keine Serverkomponente und keine externen Benutzerkonten.
 
 Für die Browser-Regressionsprüfungen werden Node.js 22 oder neuer und ein Chromium-basierter Browser benötigt:
 

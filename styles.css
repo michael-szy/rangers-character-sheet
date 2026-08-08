@@ -1109,14 +1109,69 @@ button:active {
 }
 .mission-empty { margin-top: 14px; }
 .mission-empty p { color: #91a0b0; margin: 0 0 12px; font-size: 0.95em; }
+.scenario-progress {
+    margin-top: 14px; padding: 12px 14px;
+    border: 1px solid rgba(201, 168, 76, 0.28); border-radius: 9px;
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.07), rgba(0,0,0,0.18));
+}
+.scenario-progress > div:first-child {
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    font-family: var(--fantasy-font); font-size: 0.72em; color: var(--accent-gold);
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+.scenario-progress > div:first-child strong { color: #b8c3cf; font-size: 0.9em; }
+.scenario-progress-track {
+    display: grid; grid-template-columns: repeat(8, minmax(24px, 1fr)); gap: 6px;
+    margin-top: 10px;
+}
+.scenario-progress-node {
+    min-width: 0; height: 30px; display: grid; place-items: center;
+    border: 1px solid #46505a; border-radius: 999px;
+    background: rgba(0,0,0,0.25); color: #788592;
+    font-family: var(--fantasy-font); font-size: 0.62em;
+}
+.scenario-progress-node.complete {
+    border-color: rgba(22, 224, 189, 0.62); background: rgba(22, 224, 189, 0.12); color: var(--accent-teal);
+}
+.scenario-progress-node.current {
+    border-color: var(--accent-gold); background: rgba(201, 168, 76, 0.16); color: #f0d989;
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.16);
+}
 .mission-head { display: flex; flex-direction: column; gap: 10px; }
 .mission-title-input { font-family: var(--fantasy-font); font-size: 1.1em; }
+.mission-scenario-picker { display: flex; flex-direction: column; gap: 6px; }
+.mission-scenario-picker > span {
+    font-family: var(--fantasy-font); font-size: 0.7em; color: var(--accent-teal);
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.mission-scenario-picker select { width: 100%; min-height: 48px; }
 .mission-head-meta { display: flex; flex-wrap: wrap; gap: 10px; }
 .mission-inline { display: flex; align-items: center; gap: 8px; flex: 1 1 180px; }
 .mission-inline span {
     font-family: var(--fantasy-font); font-size: 0.7em; color: var(--accent-teal);
     text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
 }
+.mission-inline input[readonly] { color: #91a0b0; background: rgba(0,0,0,0.28); }
+.scenario-brief {
+    margin-top: 14px; padding: 14px 16px;
+    border: 1px solid rgba(201, 168, 76, 0.34); border-left: 3px solid var(--accent-gold); border-radius: 8px;
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(0,0,0,0.2));
+}
+.scenario-brief-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.scenario-brief-head > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.scenario-kicker {
+    color: #9d8b59; font-family: var(--fantasy-font); font-size: 0.62em;
+    text-transform: uppercase; letter-spacing: 0.08em;
+}
+.scenario-brief-head strong { color: #eadba8; font-family: var(--fantasy-font); font-size: 1em; }
+.scenario-page {
+    flex: 0 0 auto; padding: 4px 8px; border: 1px solid rgba(201, 168, 76, 0.3); border-radius: 999px;
+    color: #b9a66e; font-size: 0.72em; white-space: nowrap;
+}
+.scenario-brief p { margin: 10px 0 0; color: #c6ced7; line-height: 1.5; }
+.scenario-brief-facts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; color: var(--accent-teal); font-size: 0.8em; }
+.scenario-brief ul { margin: 9px 0 0; padding-left: 20px; color: #aeb9c4; font-size: 0.82em; line-height: 1.5; }
+.scenario-brief small { display: block; margin-top: 10px; color: #6f7d8c; line-height: 1.45; }
 .mission-group { margin-top: 18px; }
 .mission-group-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .mission-group h3 {

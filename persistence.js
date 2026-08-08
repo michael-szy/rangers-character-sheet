@@ -194,11 +194,22 @@
         function normalizeMission(raw, label) {
             if (!isPlainObject(raw)) throw new Error(`${label} is not a record.`);
 
+            const scenarioId = normalizeNullableText(raw.scenarioId, `${label} scenario id`);
+            const scenarioCatalogVersion = normalizeNullableText(
+                raw.scenarioCatalogVersion,
+                `${label} scenario catalog version`
+            );
+            if ((scenarioId === null) !== (scenarioCatalogVersion === null)) {
+                throw new Error(`${label} has incomplete scenario linkage.`);
+            }
+
             return {
                 id: typeof raw.id === 'string' && raw.id ? raw.id : newId(),
                 title: normalizeText(raw.title, `${label} title`),
                 date: normalizeText(raw.date, `${label} date`),
                 scenario: normalizeText(raw.scenario, `${label} scenario`),
+                scenarioId,
+                scenarioCatalogVersion,
                 notes: normalizeText(raw.notes, `${label} notes`),
                 status: raw.status === 'complete' ? 'complete' : 'active',
                 appliedXp: normalizeNumber(raw.appliedXp, `${label} applied XP`),

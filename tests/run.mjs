@@ -100,7 +100,7 @@ async function startStaticServer() {
         const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
         const file = pathname === '/' || pathname === '/index.html'
             ? join(projectRoot, 'index.html')
-            : pathname === '/styles.css' || pathname === '/rules-data.js' || pathname === '/persistence.js' || pathname === '/storage.js' || pathname === '/app.js'
+            : pathname === '/styles.css' || pathname === '/rules-data.js' || pathname === '/scenario-data.js' || pathname === '/persistence.js' || pathname === '/storage.js' || pathname === '/app.js'
                 ? join(projectRoot, pathname.slice(1))
                 : pathname.startsWith('/tests/fixtures/')
                     ? join(projectRoot, pathname.slice(1))
@@ -249,7 +249,7 @@ async function waitFor(client, expression, timeoutMs = 5000) {
             rulesType: typeof RangersRules,
             persistenceType: typeof RangersPersistence,
             storageType: typeof RangersStorage,
-            appReady: typeof normalizeEnemyCatalog
+            appReady: typeof startMission
         })`);
         diagnostic = ` (${JSON.stringify(state)})`;
     } catch {
@@ -263,8 +263,16 @@ async function waitFor(client, expression, timeoutMs = 5000) {
 }
 
 async function freshBrowserState(client) {
-    await client.evaluate('localStorage.clear(); sessionStorage.clear(); location.reload();');
-    await waitFor(client, `document.readyState !== 'loading' && typeof normalizeEnemyCatalog === 'function'`);
+    await reloadAndWait(client, 'localStorage.clear(); sessionStorage.clear();');
+}
+
+async function reloadAndWait(client, setup = '') {
+    const previousTimeOrigin = await client.evaluate('performance.timeOrigin');
+    await client.evaluate(`(() => { ${setup} setTimeout(() => location.reload(), 0); })()`);
+    await waitFor(
+        client,
+        `performance.timeOrigin !== ${JSON.stringify(previousTimeOrigin)} && document.readyState !== 'loading' && typeof startMission === 'function'`
+    );
 }
 
 const fixtures = {};
@@ -275,6 +283,7 @@ for (const name of [
     'format-3-catalog-snapshot',
     'format-4-conditions',
     'format-5-change-history',
+    'format-6-scenario-link',
     'enemy-catalog'
 ]) {
     fixtures[name] = JSON.parse(await readFile(join(fixtureDir, `${name}.json`), 'utf8'));
@@ -331,7 +340,7 @@ let client;
 try {
     await waitForEndpoint(`${endpoint}/json/version`);
     client = await openCdp(endpoint, appUrl);
-    await waitFor(client, `document.readyState !== 'loading' && typeof normalizeEnemyCatalog === 'function'`);
+    await waitFor(client, `document.readyState !== 'loading' && typeof startMission === 'function'`);
 
     await suite('blank sheet and schema migrations', async () => {
         await freshBrowserState(client);
@@ -346,6 +355,12 @@ try {
         equal(await client.evaluate(`typeof initializeApp`), 'function', 'external application script is loaded');
         equal(await client.evaluate(`typeof RangersRules`), 'object', 'rule data module loaded');
         equal(await client.evaluate(`Object.isFrozen(RangersRules)`), true, 'rule data interface is immutable');
+        equal(await client.evaluate(`typeof RangersScenarios`), 'object', 'scenario data module loaded');
+        equal(await client.evaluate(`Object.isFrozen(RangersScenarios)`), true, 'scenario data interface is immutable');
+        equal(await client.evaluate(`Object.isFrozen(RangersScenarios.missions[2].scenarios[2].reminders)`), true, 'nested scenario data is immutable');
+        equal(await client.evaluate(`Object.isFrozen(STARTER_SCENARIOS) && Object.isFrozen(STARTER_SCENARIOS[0])`), true, 'application scenario index is immutable');
+        equal(await client.evaluate(`RangersScenarios.missions.flatMap(mission => mission.scenarios).length`), 8, 'starter scenario catalog is complete');
+        equal(await client.evaluate(`RangersScenarios.missions[2].scenarios[2].title`), 'The Last Stand', 'current campaign scenario title');
         equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.heroic)`), true, 'heroic ability data is immutable');
         equal(await client.evaluate(`Object.isFrozen(ABILITY_LIBRARY.archetypeHeroic['Flashing Blade'].archetypes)`), true, 'nested archetype ability data is immutable');
         equal(await client.evaluate(`Object.isFrozen(ARCHETYPE_LIBRARY['Red Hawk Knight'].traits)`), true, 'nested archetype data is immutable');
@@ -362,7 +377,7 @@ try {
             try { ABILITY_LIBRARY.heroic.Dash = 'changed'; } catch {}
             return ABILITY_LIBRARY.heroic.Dash === original;
         })()`), true, 'rule data resists runtime mutation');
-        equal(await client.evaluate('FORMAT_VERSION'), 5, 'current document format');
+        equal(await client.evaluate('FORMAT_VERSION'), 6, 'current document format');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 5, 'default heroic slots');
         equal(await client.evaluate(`document.querySelectorAll('#innate-list .ability-group').length`), 4, 'default innate slots');
         equal(await client.evaluate('currentMode()'), 'edit', 'blank sheet mode');
@@ -392,7 +407,7 @@ try {
             };
         })()`);
         equal(legacy.migratedFrom, 0, 'legacy migration source');
-        equal(legacy.version, 5, 'legacy migration target');
+        equal(legacy.version, 6, 'legacy migration target');
         equal(legacy.name, 'Legacy Ranger', 'legacy character field');
         equal(legacy.heroicCount, 6, 'legacy heroic count');
         equal(legacy.innateCount, 5, 'legacy innate count');
@@ -419,7 +434,7 @@ try {
             };
         })()`);
         equal(format1.migratedFrom, 1, 'format 1 migration source');
-        equal(format1.version, 5, 'format 1 migration target');
+        equal(format1.version, 6, 'format 1 migration target');
         equal(format1.name, 'Format One', 'format 1 character');
         equal(format1.missionExpanded, true, 'older version Mission section defaults expanded');
         equal(format1.mode, 'play', 'format 1 mode preserved');
@@ -434,15 +449,19 @@ try {
                 version: result.document.formatVersion,
                 enemyId: kill.enemyId,
                 catalogVersion: kill.catalogVersion,
+                scenarioId: result.document.activeMission.scenarioId,
+                scenarioCatalogVersion: result.document.activeMission.scenarioCatalogVersion,
                 name: kill.name,
                 count: kill.count,
                 value: kill.value
             };
         })()`);
         equal(format2.migratedFrom, 2, 'format 2 migration source');
-        equal(format2.version, 5, 'format 2 migration target');
+        equal(format2.version, 6, 'format 2 migration target');
         equal(format2.enemyId, null, 'format 2 enemy id default');
         equal(format2.catalogVersion, null, 'format 2 catalog version default');
+        equal(format2.scenarioId, null, 'format 2 scenario id default');
+        equal(format2.scenarioCatalogVersion, null, 'format 2 scenario catalog version default');
         equal(format2.name, 'Old Beast', 'format 2 name snapshot');
         equal(format2.count, 2, 'format 2 count snapshot');
         equal(format2.value, 3, 'format 2 XP snapshot');
@@ -477,7 +496,7 @@ try {
             };
         })()`);
         equal(format4.migratedFrom, 4, 'format 4 migration source');
-        equal(format4.version, 5, 'format 4 migration target');
+        equal(format4.version, 6, 'format 4 migration target');
         equal(format4.mode, 'play', 'format 4 mode preserved');
         equal(JSON.stringify(format4.conditions), '{"poisoned":true,"diseased":false,"hungerThirst":2}', 'format 4 conditions preserved');
         equal(format4.historyLength, 0, 'format 4 starts with empty change history');
@@ -493,15 +512,33 @@ try {
                 after: result.document.changeHistory[0].changes[0].after
             };
         })()`);
-        equal(format5.migratedFrom, null, 'format 5 needs no migration');
-        equal(format5.version, 5, 'format 5 remains current');
+        equal(format5.migratedFrom, 5, 'format 5 migration source');
+        equal(format5.version, 6, 'format 5 migration target');
         equal(format5.historyLength, 1, 'format 5 history preserved');
         equal(format5.summary, 'Current Health: 11', 'format 5 history summary preserved');
         equal(format5.before, '14', 'format 5 previous value preserved');
         equal(format5.after, '11', 'format 5 new value preserved');
 
+        const format6 = await client.evaluate(`(() => {
+            const result = normalizeDocument(${JSON.stringify(fixtures['format-6-scenario-link'])});
+            return {
+                migratedFrom: result.migratedFrom,
+                version: result.document.formatVersion,
+                activeScenarioId: result.document.activeMission.scenarioId,
+                activeCatalogVersion: result.document.activeMission.scenarioCatalogVersion,
+                historyScenarioId: result.document.missionHistory[0].scenarioId,
+                mode: result.document.uiState.mode
+            };
+        })()`);
+        equal(format6.migratedFrom, null, 'format 6 needs no migration');
+        equal(format6.version, 6, 'format 6 remains current');
+        equal(format6.activeScenarioId, 'starter-m3-s3', 'format 6 active scenario link preserved');
+        equal(format6.activeCatalogVersion, 'rosd-deluxe-starter@1', 'format 6 catalog version preserved');
+        equal(format6.historyScenarioId, 'starter-m3-s2', 'format 6 history scenario link preserved');
+        equal(format6.mode, 'play', 'format 6 mode preserved');
+
         equal(await client.evaluate(`(() => {
-            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 6 }); return false; }
+            try { normalizeDocument({ ...createBlankDocument(), formatVersion: 7 }); return false; }
             catch { return true; }
         })()`), true, 'newer character format refused');
         equal(await client.evaluate(`(() => {
@@ -520,6 +557,18 @@ try {
             try { normalizeDocument(doc); return false; }
             catch { return true; }
         })()`), true, 'non-text catalog linkage refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-6-scenario-link'])};
+            doc.activeMission.scenarioId = 3;
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'non-text scenario linkage refused');
+        equal(await client.evaluate(`(() => {
+            const doc = ${JSON.stringify(fixtures['format-6-scenario-link'])};
+            doc.activeMission.scenarioCatalogVersion = null;
+            try { normalizeDocument(doc); return false; }
+            catch { return true; }
+        })()`), true, 'incomplete scenario linkage refused');
         equal(await client.evaluate(`(() => {
             const doc = ${JSON.stringify(fixtures['format-4-conditions'])};
             doc.character.conditions.hungerThirst = 100;
@@ -631,14 +680,14 @@ try {
         equal(unavailableStorage.clear, false, 'blocked storage clear returns failure outcome');
         equal(unavailableStorage.load, 'unavailable', 'blocked storage load is classified');
 
-        await client.evaluate(`localStorage.setItem(STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['format-0-legacy']))}); location.reload();`);
+        await reloadAndWait(client, `localStorage.setItem(STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['format-0-legacy']))});`);
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('char_name').value === 'Legacy Ranger'`);
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 5, 'stored legacy data upgraded');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 6, 'stored legacy data upgraded');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_RECOVERY_KEY)).raw.length > 0`), true, 'pre-migration recovery stored');
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 6, 'migrated slot count applied');
         equal(await client.evaluate(`document.querySelector('#abilities-list .numbered-row').classList.contains('used')`), true, 'migrated used state applied');
 
-        await client.evaluate(`localStorage.setItem(STORAGE_KEY, '{broken'); location.reload();`);
+        await reloadAndWait(client, `localStorage.setItem(STORAGE_KEY, '{broken');`);
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`document.getElementById('save_status').textContent`), 'Recovery needed', 'corrupt storage status');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_RECOVERY_KEY)).raw`), '{broken', 'corrupt raw data preserved');
@@ -652,7 +701,7 @@ try {
         })()`);
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
         equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
-        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 5, 'file import persists current format');
+        equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 6, 'file import persists current format');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'file import clears temporary stat effects');
         equal(await client.evaluate(`CHANGE_HISTORY.length`), 1, 'file import records one system event');
         equal(await client.evaluate(`CHANGE_HISTORY[0].category`), 'system', 'file import event category');
@@ -825,7 +874,7 @@ try {
         equal(await client.evaluate(`document.getElementById('history_dialog').open`), false, 'history dialog closes');
 
         equal(await client.evaluate(`collectDocument().changeHistory.length`), 1, 'history included in collected export document');
-        await client.evaluate(`location.reload()`);
+        await reloadAndWait(client);
         await waitFor(client, `document.readyState !== 'loading' && CHANGE_HISTORY.length === 1`);
         equal(await client.evaluate(`CHANGE_HISTORY[0].changes.find(change => change.path.endsWith('.count')).after`), '3', 'history survives reload');
         equal(await client.evaluate(`document.getElementById('history_count').textContent`), '1', 'history count survives reload');
@@ -974,7 +1023,7 @@ try {
         equal(await client.evaluate(`document.getElementById('it1_search').value`), 'Bow', 'Escape restores selection');
         equal(await client.evaluate(`document.getElementById('it1').value`), 'Bow', 'Escape keeps hidden value');
 
-        await client.evaluate(`saveNow(); location.reload();`);
+        await reloadAndWait(client, 'saveNow();');
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('it1').value === 'Bow'`);
         equal(await client.evaluate(`document.querySelectorAll('#abilities-list .ability-group').length`), 8, 'added slots survive reload');
         equal(await client.evaluate(`document.getElementById('it1_search').value`), 'Bow', 'searchable selection survives reload');
@@ -1106,7 +1155,7 @@ try {
                 complete: MISSION.active === null && MISSION.history[0].id === missionId,
                 sealed: card.classList.contains('fx-mission-sealed'),
                 cardAnimation: getComputedStyle(card).animationName,
-                persistedEffect: JSON.stringify(collectDocument()).includes('fx-')
+                persistedEffect: JSON.stringify(collectDocument()).includes('fx-mission-sealed')
             };
         })()`);
         equal(missionEffect.complete, true, 'mission completion still moves report to history');
@@ -1204,7 +1253,7 @@ try {
         equal(await client.evaluate(`document.getElementById('s_hpc').value`), '9', 'conditions do not rewrite current Health');
         equal(await client.evaluate(`JSON.stringify(collectDocument().character.conditions)`), '{"poisoned":true,"diseased":true,"hungerThirst":2}', 'conditions enter the character document');
 
-        await client.evaluate(`saveNow(); location.reload();`);
+        await reloadAndWait(client, 'saveNow();');
         await waitFor(client, `document.readyState !== 'loading' && CONDITIONS.poisoned && CONDITIONS.hungerThirst === 2`);
         equal(await client.evaluate(`currentMode()`), 'play', 'condition reload preserves play mode');
         equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 3, 'conditions survive reload');
@@ -1238,7 +1287,7 @@ try {
         equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible in play mode');
         equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), true, 'mode switch preserves collapsed state');
 
-        await client.evaluate(`saveNow(); location.reload();`);
+        await reloadAndWait(client, 'saveNow();');
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('mission_section_content').hidden`);
         equal(await client.evaluate(`currentMode()`), 'play', 'collapsed Mission section reload keeps mode');
         equal(await client.evaluate(`MISSION.active.title`), 'Collapsed patrol', 'collapsed mission survives reload');
@@ -1323,7 +1372,7 @@ try {
         await client.evaluate(`setMode('play')`);
         equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'effect control remains visible in play mode');
 
-        await client.evaluate(`saveNow(); location.reload();`);
+        await reloadAndWait(client, 'saveNow();');
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('s_fig_effective').textContent === '5'`);
         equal(await client.evaluate(`document.getElementById('s_arm_effective').textContent`), '10', 'multiple effects survive an accidental reload');
         equal(await client.evaluate(`document.getElementById('s_fig').value`), '3', 'reload still preserves base Fight');
@@ -1365,17 +1414,138 @@ try {
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'Clear all removes session effect record');
         equal(await client.evaluate(`document.getElementById('s_arm').value`), '12', 'Clear all never changes base Armour');
 
-        await client.evaluate(`sessionStorage.setItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY, '{"s_fig":4,"s_arm":2}'); location.reload();`);
+        await reloadAndWait(client, `sessionStorage.setItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY, '{"s_fig":4,"s_arm":2}');`);
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('s_fig_effective').textContent === '7'`);
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_fig.buff`), 4, 'legacy Ally record migrates to buff effects');
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_fig.debuff`), 0, 'legacy Ally record gains zero debuff');
         equal(await client.evaluate(`sessionStorage.getItem(LEGACY_ALLY_MODIFIER_STORAGE_KEY)`), null, 'legacy Ally key removed after migration');
 
-        await client.evaluate(`clearAllTemporaryEffects(); sessionStorage.setItem(LEGACY_ROUND_ARMOR_STORAGE_KEY, '2'); location.reload();`);
+        await reloadAndWait(client, `clearAllTemporaryEffects(); sessionStorage.setItem(LEGACY_ROUND_ARMOR_STORAGE_KEY, '2');`);
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('s_arm_effective').textContent === '14'`);
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_arm.buff`), 2, 'legacy Armour bonus migrates to buff effect');
         equal(await client.evaluate(`JSON.parse(sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)).s_arm.debuff`), 0, 'legacy Armour bonus gains zero debuff');
         equal(await client.evaluate(`sessionStorage.getItem(LEGACY_ROUND_ARMOR_STORAGE_KEY)`), null, 'legacy Armour key removed after migration');
+    });
+
+    await suite('built-in scenario library', async () => {
+        await freshBrowserState(client);
+
+        await client.evaluate(`startMission()`);
+        equal(await client.evaluate(`document.getElementById('mission_scenario_select').tagName`), 'SELECT', 'scenario picker is a native dropdown');
+        equal(await client.evaluate(`document.getElementById('mission_scenario_select').options.length`), 9, 'scenario picker includes custom plus eight starter scenarios');
+        equal(await client.evaluate(`document.getElementById('mission_scenario_select').querySelectorAll('optgroup').length`), 3, 'starter scenarios are grouped into three missions');
+        equal(await client.evaluate(`document.activeElement.id`), 'mission_scenario_select', 'new mission focuses scenario picker');
+        equal(await client.evaluate(`document.querySelector('.scenario-brief')`), null, 'blank custom mission has no published briefing');
+        equal(await client.evaluate(`document.querySelector('.scenario-progress')`), null, 'blank custom mission has no starter progress');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'starter-m3-s3';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+
+        const selected = await client.evaluate(`(() => ({
+            scenarioId: MISSION.active.scenarioId,
+            scenarioCatalogVersion: MISSION.active.scenarioCatalogVersion,
+            scenario: MISSION.active.scenario,
+            title: MISSION.active.title,
+            titleField: document.getElementById('mission_title').value,
+            referenceReadonly: document.querySelector('input[aria-label="Scenario reference"]').readOnly,
+            brief: document.querySelector('.scenario-brief p').textContent,
+            page: document.querySelector('.scenario-page').textContent,
+            facts: document.querySelector('.scenario-brief-facts').textContent,
+            reminders: document.querySelectorAll('.scenario-brief li').length,
+            progressNodes: document.querySelectorAll('.scenario-progress-node').length,
+            currentNodes: document.querySelectorAll('.scenario-progress-node.current').length,
+            progressText: document.querySelector('.scenario-progress').textContent
+        }))()`);
+        equal(selected.scenarioId, 'starter-m3-s3', 'published scenario id linked');
+        equal(selected.scenarioCatalogVersion, 'rosd-deluxe-starter@1', 'published scenario catalog version linked');
+        equal(selected.scenario, 'Mission 3: Descent into Darkness · Scenario 3', 'published scenario reference snapshotted');
+        equal(selected.title, 'The Last Stand', 'published scenario title snapshotted');
+        equal(selected.titleField, 'The Last Stand', 'published title shown in mission field');
+        equal(selected.referenceReadonly, true, 'linked reference is read-only');
+        check(selected.brief.includes('Lorenthian survivors'), 'published briefing shows concise objective');
+        equal(selected.page, 'Rulebook p. 76', 'published briefing shows printed page');
+        check(selected.facts.includes('12 turns'), 'published briefing shows turn limit');
+        check(selected.facts.includes('except turn 12'), 'published briefing shows event cadence');
+        equal(selected.reminders, 2, 'published briefing shows bounded reminders');
+        equal(selected.progressNodes, 8, 'campaign progress shows every starter scenario');
+        equal(selected.currentNodes, 1, 'campaign progress marks one current scenario');
+        check(selected.progressText.includes('0 / 8 complete'), 'campaign progress starts without synthetic completions');
+
+        const linkedRoundTrip = await client.evaluate(`parseDocument(JSON.stringify(collectDocument())).document.activeMission`);
+        equal(linkedRoundTrip.scenarioId, 'starter-m3-s3', 'scenario id survives document round-trip');
+        equal(linkedRoundTrip.scenarioCatalogVersion, 'rosd-deluxe-starter@1', 'scenario catalog version survives document round-trip');
+        equal(linkedRoundTrip.scenario, 'Mission 3: Descent into Darkness · Scenario 3', 'scenario reference snapshot survives document round-trip');
+
+        await reloadAndWait(client, `setMode('play'); saveNow();`);
+        await waitFor(client, `document.readyState !== 'loading' && MISSION.active?.scenarioId === 'starter-m3-s3'`);
+        equal(await client.evaluate(`currentMode()`), 'play', 'linked scenario reload keeps Play mode');
+        equal(await client.evaluate(`document.querySelector('.scenario-brief')?.offsetParent !== null`), true, 'scenario briefing remains visible in Play mode');
+        equal(await client.evaluate(`document.getElementById('mission_scenario_select').value`), 'starter-m3-s3', 'scenario picker restores linked selection');
+
+        await client.send('Emulation.setDeviceMetricsOverride', {
+            width: 360,
+            height: 1000,
+            deviceScaleFactor: 1,
+            mobile: true
+        });
+        await client.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+        const phoneLayout = await client.evaluate(`(() => ({
+            overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            selectHeight: document.getElementById('mission_scenario_select').getBoundingClientRect().height,
+            briefRight: document.querySelector('.scenario-brief').getBoundingClientRect().right,
+            progressRight: document.querySelector('.scenario-progress').getBoundingClientRect().right,
+            viewportWidth: document.documentElement.clientWidth
+        }))()`);
+        check(phoneLayout.overflow <= 0, 'scenario briefing causes no phone overflow');
+        check(phoneLayout.selectHeight >= 44, 'scenario picker is touch-sized');
+        check(phoneLayout.briefRight <= phoneLayout.viewportWidth, 'scenario briefing fits phone viewport');
+        check(phoneLayout.progressRight <= phoneLayout.viewportWidth, 'campaign progress fits phone viewport');
+        await client.send('Emulation.clearDeviceMetricsOverride');
+        await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+
+        await client.evaluate(`(() => {
+            setMode('edit');
+            const select = document.getElementById('mission_scenario_select');
+            select.value = '';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        equal(await client.evaluate(`MISSION.active.scenarioId`), null, 'custom selection clears published scenario id');
+        equal(await client.evaluate(`MISSION.active.scenarioCatalogVersion`), null, 'custom selection clears scenario catalog version');
+        equal(await client.evaluate(`MISSION.active.title`), '', 'custom selection clears untouched published title');
+        equal(await client.evaluate(`MISSION.active.scenario`), '', 'custom selection clears untouched published reference');
+        equal(await client.evaluate(`document.querySelector('.scenario-brief')`), null, 'custom selection removes published briefing');
+        equal(await client.evaluate(`document.querySelector('input[aria-label="Scenario reference"]').readOnly`), false, 'custom reference remains editable');
+
+        await client.evaluate(`(() => {
+            const input = document.querySelector('input[aria-label="Scenario reference"]');
+            input.value = 'Home campaign interlude';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        })()`);
+        equal(await client.evaluate(`MISSION.active.scenario`), 'Home campaign interlude', 'custom reference remains first-class');
+
+        await client.evaluate(`(() => {
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'starter-m1-s1';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            window.confirm = () => true;
+            completeMission();
+        })()`);
+        equal(await client.evaluate(`MISSION.history[0].scenarioId`), 'starter-m1-s1', 'completed report keeps scenario link');
+        equal(await client.evaluate(`document.querySelectorAll('.scenario-progress-node.complete').length`), 1, 'campaign progress marks completed scenario');
+        check(await client.evaluate(`document.querySelector('.scenario-progress').textContent.includes('1 / 8 complete')`), 'campaign progress count updates on completion');
+
+        await client.evaluate(`(() => {
+            startMission();
+            const select = document.getElementById('mission_scenario_select');
+            select.value = 'starter-m1-s2';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
+        equal(await client.evaluate(`document.querySelectorAll('.scenario-progress-node.complete').length`), 1, 'new mission keeps completed progress');
+        equal(await client.evaluate(`document.querySelectorAll('.scenario-progress-node.current').length`), 1, 'new mission marks next current scenario');
+        equal(await client.evaluate(`document.querySelector('.scenario-progress-node.current').textContent`), '1.2', 'campaign progress identifies current scenario');
     });
 
     await suite('enemy catalog and mission lifecycle', async () => {

@@ -1,0 +1,62 @@
+{
+  "formatVersion": 6,
+  "character": {
+    "fields": {
+      "char_name": "Scenario Ranger"
+    },
+    "heroicSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "innateSlots": [
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false },
+      { "value": "", "used": false }
+    ],
+    "conditions": {
+      "poisoned": false,
+      "diseased": false,
+      "hungerThirst": 0
+    }
+  },
+  "uiState": {
+    "showInnateSection": false,
+    "missionSectionExpanded": true,
+    "mode": "play"
+  },
+  "activeMission": {
+    "id": "mission-v6-active",
+    "title": "The Last Stand",
+    "date": "2026-08-08",
+    "scenario": "Mission 3: Descent into Darkness · Scenario 3",
+    "scenarioId": "starter-m3-s3",
+    "scenarioCatalogVersion": "rosd-deluxe-starter@1",
+    "notes": "Hold the line.",
+    "status": "active",
+    "appliedXp": 0,
+    "kills": [],
+    "objectives": [],
+    "adjustments": []
+  },
+  "missionHistory": [
+    {
+      "id": "mission-v6-complete",
+      "title": "Swampland",
+      "date": "2026-08-01",
+      "scenario": "Mission 3: Descent into Darkness · Scenario 2",
+      "scenarioId": "starter-m3-s2",
+      "scenarioCatalogVersion": "rosd-deluxe-starter@1",
+      "notes": "",
+      "status": "complete",
+      "appliedXp": 0,
+      "kills": [],
+      "objectives": [],
+      "adjustments": []
+    }
+  ],
+  "changeHistory": []
+}

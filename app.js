@@ -5,6 +5,12 @@
         equipment: EQUIPMENT_LIBRARY,
         equipmentCustomValue: EQUIPMENT_CUSTOM_VALUE
     } = RangersRules;
+    const SCENARIO_LIBRARY = RangersScenarios;
+    const SCENARIO_CATALOG_VERSION = `${SCENARIO_LIBRARY.catalogId}@${SCENARIO_LIBRARY.catalogVersion}`;
+    const STARTER_SCENARIOS = Object.freeze(SCENARIO_LIBRARY.missions.flatMap(mission =>
+        mission.scenarios.map(scenario => Object.freeze({ ...scenario, mission }))
+    ));
+    const STARTER_SCENARIOS_BY_ID = new Map(STARTER_SCENARIOS.map(scenario => [scenario.id, scenario]));
 
     const saveFields = document.querySelectorAll('.save-field');
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
@@ -15,7 +21,7 @@
     const LEGACY_ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
     const MAX_TEMP_EFFECT = 99;
     const ENEMY_CATALOG_FORMAT_VERSION = 1;
-    const FORMAT_VERSION = 5;
+    const FORMAT_VERSION = 6;
     const MAX_SLOTS = 50;
     const MAX_MISSION_ROWS = 200;
     const MAX_MISSION_HISTORY = 100;
@@ -1832,6 +1838,8 @@
             title: '',
             date: date,
             scenario: '',
+            scenarioId: null,
+            scenarioCatalogVersion: null,
             notes: '',
             status: 'active',
             appliedXp: 0,
@@ -1866,13 +1874,114 @@
         return missionRowLists(mission)[kind].find(row => row.id === rowId) || null;
     }
 
+    function starterScenarioForMission(mission) {
+        return mission && mission.scenarioId
+            ? STARTER_SCENARIOS_BY_ID.get(mission.scenarioId) || null
+            : null;
+    }
+
+    function starterScenarioReference(scenario) {
+        return `Mission ${scenario.mission.number}: ${scenario.mission.title} · Scenario ${scenario.number}`;
+    }
+
+    function renderScenarioOptions(selectedId) {
+        return SCENARIO_LIBRARY.missions.map(mission => `
+            <optgroup label="Mission ${mission.number} · ${escapeHtml(mission.title)}">
+                ${mission.scenarios.map(scenario => `
+                    <option value="${scenario.id}"${scenario.id === selectedId ? ' selected' : ''}>
+                        Scenario ${scenario.number} — ${escapeHtml(scenario.title)}
+                    </option>
+                `).join('')}
+            </optgroup>
+        `).join('');
+    }
+
+    function selectMissionScenario(missionId, scenarioId) {
+        const mission = findMission(missionId);
+        if (!mission || mission.status !== 'active') return;
+
+        const previousScenario = starterScenarioForMission(mission);
+        const scenario = STARTER_SCENARIOS_BY_ID.get(scenarioId) || null;
+        if (scenario) {
+            mission.scenarioId = scenario.id;
+            mission.scenarioCatalogVersion = SCENARIO_CATALOG_VERSION;
+            mission.scenario = starterScenarioReference(scenario);
+            mission.title = scenario.title;
+        } else {
+            if (previousScenario && mission.title === previousScenario.title) mission.title = '';
+            if (previousScenario && mission.scenario === starterScenarioReference(previousScenario)) mission.scenario = '';
+            mission.scenarioId = null;
+            mission.scenarioCatalogVersion = null;
+        }
+
+        renderMissions();
+        scheduleSave();
+
+        const select = document.getElementById('mission_scenario_select');
+        if (select) select.focus();
+    }
+
+    function renderScenarioBriefing(mission) {
+        const scenario = starterScenarioForMission(mission);
+        if (!scenario) return '';
+
+        const timing = scenario.turnLimit
+            ? `${scenario.turnLimit} turns`
+            : 'No fixed turn limit';
+
+        return `
+            <aside class="scenario-brief" aria-labelledby="scenario_brief_title">
+                <div class="scenario-brief-head">
+                    <div>
+                        <span class="scenario-kicker">Mission ${scenario.mission.number} · Scenario ${scenario.number}</span>
+                        <strong id="scenario_brief_title">${escapeHtml(scenario.title)}</strong>
+                    </div>
+                    <span class="scenario-page">Rulebook p. ${scenario.page}</span>
+                </div>
+                <p>${escapeHtml(scenario.brief)}</p>
+                <div class="scenario-brief-facts">
+                    <span>${escapeHtml(timing)}</span>
+                    <span>${escapeHtml(scenario.eventCue)}</span>
+                </div>
+                <ul>${scenario.reminders.map(reminder => `<li>${escapeHtml(reminder)}</li>`).join('')}</ul>
+                <small>Quick reference only — use the scenario pages for set-up, events, special rules, and rewards.</small>
+            </aside>
+        `;
+    }
+
+    function renderScenarioProgress() {
+        const completed = new Set(
+            MISSION.history
+                .map(mission => mission.scenarioId)
+                .filter(id => STARTER_SCENARIOS_BY_ID.has(id))
+        );
+        const activeId = MISSION.active && STARTER_SCENARIOS_BY_ID.has(MISSION.active.scenarioId)
+            ? MISSION.active.scenarioId
+            : null;
+
+        if (!completed.size && !activeId) return '';
+
+        const nodes = STARTER_SCENARIOS.map(scenario => {
+            const state = scenario.id === activeId ? ' current' : completed.has(scenario.id) ? ' complete' : '';
+            const status = scenario.id === activeId ? 'current' : completed.has(scenario.id) ? 'completed' : 'not completed';
+            return `<span class="scenario-progress-node${state}" aria-label="Mission ${scenario.mission.number}, Scenario ${scenario.number}, ${escapeHtml(scenario.title)}: ${status}">${scenario.mission.number}.${scenario.number}</span>`;
+        }).join('');
+
+        return `
+            <section class="scenario-progress" aria-label="Standard mission progress">
+                <div><span>Standard Missions</span><strong>${completed.size} / ${STARTER_SCENARIOS.length} complete</strong></div>
+                <div class="scenario-progress-track">${nodes}</div>
+            </section>
+        `;
+    }
+
     function startMission() {
         if (MISSION.active) return;
         MISSION.active = createMission();
         renderMissions();
         scheduleSave();
-        const title = document.getElementById('mission_title');
-        if (title) title.focus();
+        const scenario = document.getElementById('mission_scenario_select');
+        if (scenario) scenario.focus();
     }
 
     function addMissionRow(kind) {
@@ -2100,7 +2209,7 @@
         const block = document.getElementById('mission-block');
         const active = MISSION.active;
 
-        const parts = [];
+        const parts = [renderScenarioProgress()];
 
         if (active) parts.push(renderActiveMission(active));
         else parts.push(`
@@ -2127,6 +2236,13 @@
         return `
             <div class="mission-card" data-mission="${id}">
                 <div class="mission-head">
+                    <label class="mission-scenario-picker"><span>Scenario</span>
+                        <select id="mission_scenario_select" aria-label="Published scenario"
+                            onchange="selectMissionScenario('${id}', this.value)">
+                            <option value="">Custom / unlisted scenario</option>
+                            ${renderScenarioOptions(mission.scenarioId)}
+                        </select>
+                    </label>
                     <input type="text" id="mission_title" class="mission-title-input" placeholder="Mission title"
                         value="${escapeHtml(mission.title)}" aria-label="Mission title"
                         oninput="updateMissionField('${id}', 'title', this.value)">
@@ -2134,12 +2250,14 @@
                         <label class="mission-inline"><span>Date</span>
                             <input type="date" value="${escapeHtml(mission.date)}" aria-label="Mission date"
                                 onchange="updateMissionField('${id}', 'date', this.value)"></label>
-                        <label class="mission-inline"><span>Scenario</span>
+                        <label class="mission-inline"><span>${mission.scenarioId ? 'Reference' : 'Custom reference'}</span>
                             <input type="text" value="${escapeHtml(mission.scenario)}" placeholder="optional"
-                                aria-label="Scenario reference"
+                                aria-label="Scenario reference"${mission.scenarioId ? ' readonly' : ''}
                                 oninput="updateMissionField('${id}', 'scenario', this.value)"></label>
                     </div>
                 </div>
+
+                ${renderScenarioBriefing(mission)}
 
                 ${renderKills(mission)}
                 ${renderObjectives(mission)}
