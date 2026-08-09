@@ -350,6 +350,7 @@ try {
         equal(await client.evaluate(`Object.isFrozen(PERSISTENCE)`), true, 'configured persistence interface is immutable');
         equal(await client.evaluate(`typeof RangersStorage.create`), 'function', 'storage module loaded');
         equal(await client.evaluate(`Object.isFrozen(STORAGE)`), true, 'configured storage interface is immutable');
+        equal(await client.evaluate(`document.documentElement.lang`), 'en', 'application language matches the English rulebooks');
         equal(await client.evaluate(`document.querySelector('link[href="styles.css"]') !== null`), true, 'external stylesheet is linked');
         equal(await client.evaluate(`Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles.css'))`), true, 'external stylesheet is loaded');
         equal(await client.evaluate(`document.querySelector('script[src="app.js"]') !== null`), true, 'external application script is linked');
