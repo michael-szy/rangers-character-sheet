@@ -14,6 +14,8 @@ Ein inoffizieller, webbasierter Charakterbogen für *Rangers of Shadow Deep*. Da
 - Alle 42 unterstützten Gegnerprofile ohne zusätzliche Katalogdatei direkt als Kill-Zeile hinzufügen
 - Frei wählbare temporäre Ally-Boni und Debuffs direkt an den effektiven Charakterwerten anzeigen
 - Poisoned, Diseased sowie gestapeltes Hunger & Thirst als aktive Zustände mit Regelerinnerung festhalten
+- Conditions über eine kompakte Statusleiste direkt oberhalb des Charakternamens hinzufügen und überblicken
+- Die ungetesteten Homebrew-Kampfregeln v0.5 über einen getrennten senfgelben Reiter als Tischreferenz öffnen
 - Änderungen automatisch im Browser speichern
 - Fachliche Änderungen in einer filterbaren, exportierbaren Historie nachvollziehen
 - Atmosphärische Rückmeldungen beim Einsetzen von Abilities, Ändern der aktuellen Health und Abschließen einer Mission erhalten
@@ -46,7 +48,9 @@ Der **Turn Tracker** erscheint bei jedem eingebauten Szenario. Große `−/+`-Ta
 
 Temporäre Ally-Boni und Debuffs können direkt an Movement, Fight, Shoot, Armor, Will, Health und Recruitment gesetzt werden. Ein Tippen auf **Effects ±** öffnet den gemeinsamen Dialog; Bonus und Malus haben getrennte Zahlenfelder mit touchfreundlichen `−/+`-Schritten und können gleichzeitig gelten. Aktive Karten zeigen den effektiven Wert sowie die vollständige Rechnung aus Grundwert, Ally-Bonus und Debuff. Grundwerte und Charakterdatei werden nicht verändert. Einzelne oder alle Effekte lassen sich im selben Dialog entfernen. Die Effekte überleben ein versehentliches Neuladen desselben Tabs, aber keine neue Browser-Sitzung.
 
-Unter **Conditions** lassen sich die allgemeinen Regelzustände **Poisoned**, **Diseased** und **Hunger & Thirst** über **+ Add Condition** aktivieren. Aktive Karten zeigen die wichtigsten Auswirkungen, Dauer beziehungsweise Heilungsmöglichkeit und die Regelbuchseite; Hunger & Thirst besitzt einen eigenen Stufenzähler. Zustände werden mit dem Charakter gespeichert und exportiert, verändern Werte oder Würfe aber bewusst nicht automatisch.
+Die kompakte Statusleiste **Conditions** sitzt direkt oberhalb des Charakternamens und nimmt ohne aktiven Zustand nur eine Zeile ein. Über **+ Condition** lassen sich **Poisoned**, **Diseased** und **Hunger & Thirst** aktivieren; erst dann erscheinen die zugehörigen Warnkarten mit Auswirkung, Dauer beziehungsweise Heilungsmöglichkeit, Regelbuchseite und – bei Hunger & Thirst – eigenem Stufenzähler. Zustände werden mit dem Charakter gespeichert und exportiert, verändern Werte oder Würfe aber bewusst nicht automatisch.
+
+Der abgesetzte senfgelbe Reiter **Homebrew v0.5** öffnet eine eigenständige Kurzreferenz für den derzeitigen ersten Test des Official-Scenario Combat Overlay. Sie fasst die feste Initiative-Unterbrechung, Standard-Attack-Opportunities, deklarierte Techniques, Vicious Opportunity, Adversaries und die wichtigsten Stapelgrenzen zusammen. Der Bereich ist ausdrücklich ungetestetes Homebrew, automatisiert keine Regel und wird nicht mit dem Charakter gespeichert; das offizielle Regelwerk bleibt maßgeblich.
 
 Das Sheet besitzt aktuell bewusst nur eine direkt editierbare Ansicht: Jeder sichtbare Wert kann ohne vorherigen Moduswechsel korrigiert werden. Die Überschrift **Mission** bleibt ein Ein-/Ausklappschalter; das Einklappen blendet lediglich die Oberfläche aus, während aktive Mission und Historie gespeichert bleiben.
 

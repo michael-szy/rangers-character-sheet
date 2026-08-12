@@ -1109,6 +1109,28 @@ try {
         equal(await client.evaluate(`collectDocument().uiState.mode`), 'edit', 'documents now persist the single editable mode');
     });
 
+    await suite('Homebrew table reference', async () => {
+        await freshBrowserState(client);
+
+        equal(await client.evaluate(`document.getElementById('homebrew_reference').open`), false, 'Homebrew reference starts closed');
+        equal(await client.evaluate(`document.getElementById('homebrew_reference_tab').offsetParent !== null`), true, 'Homebrew tab remains directly available');
+        check(await client.evaluate(`document.getElementById('homebrew_reference_tab').getBoundingClientRect().height >= 44`), 'Homebrew tab is touch-sized');
+        equal(await client.evaluate(`document.querySelector('.homebrew-version').textContent`), 'v0.5', 'Homebrew version is visible on the tab');
+        equal(await client.evaluate(`document.querySelector('.homebrew-panel').getClientRects().length`), 0, 'Homebrew rules do not lengthen the closed sheet');
+
+        await client.evaluate(`document.getElementById('homebrew_reference_tab').click()`);
+        equal(await client.evaluate(`document.getElementById('homebrew_reference').open`), true, 'Homebrew tab opens the reference');
+        equal(await client.evaluate(`document.querySelector('.homebrew-panel').offsetParent !== null`), true, 'open Homebrew panel is visible');
+        equal(await client.evaluate(`document.querySelectorAll('.homebrew-card').length`), 4, 'reference uses four concise rule cards');
+        check(await client.evaluate(`document.querySelector('.homebrew-setup').textContent.includes('positions 1–4')`), 'fixed initiative breakpoint is included');
+        check(await client.evaluate(`document.querySelector('.homebrew-setup').textContent.includes('no Pressure enemies')`), 'first-test setup excludes Pressure enemies');
+        check(await client.evaluate(`document.querySelector('.homebrew-panel').textContent.includes('natural 18–19')`), 'Opportunity trigger is included');
+        check(await client.evaluate(`document.querySelector('.homebrew-panel').textContent.includes('+4 Shooting damage')`), 'v0.5 ranged Committed value is included');
+        check(await client.evaluate(`document.querySelector('.homebrew-panel').textContent.includes('no push or step back')`), 'v0.5 engagement lock is included');
+        check(await client.evaluate(`document.querySelector('.homebrew-panel').textContent.includes('one shared ready marker each Creature Phase')`), 'phase-capped enemy response is included');
+        equal(await client.evaluate(`JSON.stringify(collectDocument()).includes('homebrew')`), false, 'Homebrew disclosure state never enters the character document');
+    });
+
     await suite('semantic visual effects', async () => {
         await freshBrowserState(client);
 
@@ -1264,8 +1286,10 @@ try {
         await freshBrowserState(client);
 
         equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 0, 'blank Ranger has no active conditions');
-        equal(await client.evaluate(`document.querySelector('#condition_list .condition-empty').textContent`), 'No active conditions.', 'blank condition state explained');
-        equal(await client.evaluate(`document.getElementById('condition_add').offsetParent !== null`), true, 'condition add control is visible in edit mode');
+        equal(await client.evaluate(`document.getElementById('condition_list').hidden`), true, 'blank condition list takes no vertical space');
+        equal(await client.evaluate(`document.getElementById('condition_summary').textContent`), 'None active', 'compact condition status explains the blank state');
+        equal(await client.evaluate(`document.getElementById('conditions_section').getBoundingClientRect().bottom <= document.getElementById('char_name').closest('.grid-top').getBoundingClientRect().top`), true, 'condition dock sits above Ranger identity');
+        equal(await client.evaluate(`document.getElementById('condition_add').offsetParent !== null`), true, 'condition add control is visible in the character header');
         check(await client.evaluate(`document.getElementById('condition_add').getBoundingClientRect().height >= 44`), 'condition add control is touch-sized');
 
         await client.evaluate(`openConditionDialog()`);
@@ -1276,6 +1300,9 @@ try {
         await client.evaluate(`document.getElementById('condition_option_poisoned').click()`);
         equal(await client.evaluate(`document.getElementById('condition_dialog').open`), false, 'adding a condition closes the dialog');
         equal(await client.evaluate(`CONDITIONS.poisoned`), true, 'Poisoned becomes active');
+        equal(await client.evaluate(`document.getElementById('condition_list').hidden`), false, 'active condition cards open beneath the status bar');
+        equal(await client.evaluate(`document.getElementById('condition_summary').textContent`), 'Poisoned', 'header summary names the active condition');
+        equal(await client.evaluate(`document.getElementById('conditions_section').classList.contains('has-active')`), true, 'condition dock gains an active warning state');
         equal(await client.evaluate(`document.querySelector('[data-condition="poisoned"] .condition-rule').textContent.includes('one action per activation')`), true, 'Poisoned rule reminder shown');
         equal(await client.evaluate(`document.querySelector('[data-condition="poisoned"]').classList.contains('fx-condition-marked')`), true, 'adding a condition plays marked effect');
         equal(await client.evaluate(`getComputedStyle(document.querySelector('[data-condition="poisoned"]')).animationName`), 'fx-condition-marked', 'condition uses intended animation');
@@ -1288,12 +1315,13 @@ try {
         equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 3, 'all active core conditions render');
         equal(await client.evaluate(`CONDITIONS.diseased`), true, 'Diseased becomes active');
         equal(await client.evaluate(`CONDITIONS.hungerThirst`), 2, 'Hunger and Thirst stacks');
+        equal(await client.evaluate(`document.getElementById('condition_summary').textContent`), 'Poisoned · Diseased · Hunger & Thirst 2', 'header summary combines all active conditions');
         equal(await client.evaluate(`document.querySelector('[data-condition="hungerThirst"] .condition-title').textContent`), 'Hunger & Thirst · Level 2', 'stack level appears in title');
         equal(await client.evaluate(`document.querySelector('[data-condition="hungerThirst"] .condition-rule').textContent.includes('−4 Health')`), true, 'stacked Health reminder is derived');
         equal(await client.evaluate(`document.querySelector('[data-condition="diseased"] .condition-source').textContent`), 'Standard Edition, pp. 32–33', 'rule source is shown');
 
         await client.evaluate(`document.getElementById('s_hpm').value = '14'; document.getElementById('s_hpc').value = '9';`);
-        equal(await client.evaluate(`document.getElementById('conditions_section').offsetParent !== null`), true, 'conditions remain directly visible');
+        equal(await client.evaluate(`document.getElementById('conditions_section').offsetParent !== null`), true, 'condition dock remains directly visible');
         equal(await client.evaluate(`document.getElementById('s_hpm').value`), '14', 'conditions do not rewrite base Health');
         equal(await client.evaluate(`document.getElementById('s_hpc').value`), '9', 'conditions do not rewrite current Health');
         equal(await client.evaluate(`JSON.stringify(collectDocument().character.conditions)`), '{"poisoned":true,"diseased":true,"hungerThirst":2}', 'conditions enter the character document');
@@ -1897,7 +1925,7 @@ try {
             maxTouchPoints: 5
         });
 
-        await client.evaluate(`startMission(); addSelectedMissionEnemy('giant-rat'); addCondition('hungerThirst');`);
+        await client.evaluate(`startMission(); addSelectedMissionEnemy('giant-rat'); addCondition('hungerThirst'); document.getElementById('homebrew_reference').open = true;`);
 
         const widths = [360, 430, 712, 768, 800, 899, 900, 912, 1080];
         for (const width of widths) {
@@ -1920,6 +1948,8 @@ try {
                 stepHeight: document.querySelector('.mission-step').getBoundingClientRect().height,
                 conditionAddHeight: document.getElementById('condition_add').getBoundingClientRect().height,
                 conditionStepHeight: document.querySelector('.condition-step').getBoundingClientRect().height,
+                homebrewTabHeight: document.getElementById('homebrew_reference_tab').getBoundingClientRect().height,
+                homebrewColumns: getComputedStyle(document.querySelector('.homebrew-grid')).gridTemplateColumns.split(' ').length,
                 historyHeight: document.getElementById('history_open').getBoundingClientRect().height,
                 nameWidth: document.querySelector('.mission-kill-row .mission-grow').getBoundingClientRect().width,
                 overflowElements: Array.from(document.querySelectorAll('body *'))
@@ -1934,6 +1964,8 @@ try {
             check(layout.stepHeight >= 44, `${width}px mission step target is touch-sized`);
             check(layout.conditionAddHeight >= 44, `${width}px condition add target is touch-sized`);
             check(layout.conditionStepHeight >= 44, `${width}px condition step target is touch-sized`);
+            check(layout.homebrewTabHeight >= 44, `${width}px Homebrew tab is touch-sized`);
+            equal(layout.homebrewColumns, width <= 520 ? 1 : 2, `${width}px Homebrew reference column count`);
             check(layout.historyHeight >= 44, `${width}px history target is touch-sized`);
             if (width <= 430) check(layout.nameWidth >= 180, `${width}px enemy name remains usable`);
         }

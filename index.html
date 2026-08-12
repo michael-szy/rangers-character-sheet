@@ -12,6 +12,71 @@
     <h1>Ranger Sheet</h1>
 
     <div class="sheet-container" id="sheet">
+        <details id="homebrew_reference" class="homebrew-reference">
+            <summary id="homebrew_reference_tab" class="homebrew-reference-tab">
+                <span>Homebrew</span>
+                <span class="homebrew-version">v0.5</span>
+            </summary>
+            <section class="homebrew-panel" aria-labelledby="homebrew_reference_title">
+                <div class="homebrew-panel-head">
+                    <div>
+                        <div class="homebrew-kicker">Untested first-test proposal</div>
+                        <h2 id="homebrew_reference_title">Official-Scenario Combat Overlay</h2>
+                        <p>A compact table reference for the current five- or six-Ranger test package. These optional rules are reminders, not automatic enforcement.</p>
+                    </div>
+                    <span class="homebrew-status">Homebrew · v0.5</span>
+                </div>
+
+                <div class="homebrew-setup">
+                    <strong>Use together:</strong>
+                    printed Challenge Level · fixed initiative positions 1–4 · Creature Phase · positions 5–6, then mission companions · no Pressure enemies.
+                </div>
+
+                <div class="homebrew-grid">
+                    <article class="homebrew-card">
+                        <h3>Standard &amp; Opportunities</h3>
+                        <p>Only an acting Ranger making a Standard Attack can earn an Opportunity: roll a natural 18–19 and win, then choose one.</p>
+                        <ul>
+                            <li><strong>Brutal Strike:</strong> normal damage +3.</li>
+                            <li><strong>Staggering Blow:</strong> normal damage −2; −2 Fight and no support until after the target’s next Combat Roll or activation.</li>
+                            <li><strong>Pinning Shot:</strong> the Shooting version of Stagger; normal damage −2 and −2&quot; from the target’s next move action.</li>
+                            <li><strong>Expose Guard:</strong> normal damage −2; the next allied attack gains +2 Combat Score.</li>
+                        </ul>
+                    </article>
+
+                    <article class="homebrew-card">
+                        <h3>Declared Techniques</h3>
+                        <p>Declare before rolling. A Technique cannot create an Opportunity.</p>
+                        <ul>
+                            <li><strong>Guarded:</strong> +2 Combat Score; −5 damage on a win.</li>
+                            <li><strong>Committed:</strong> −2 Combat Score; +5 Fight damage or +4 Shooting damage on a win. If a melee target survives, remain engaged—no push or step back.</li>
+                            <li><strong>Tactical:</strong> normal Combat Score; declare Stagger for Fight or Pin for Shooting. On a win, normal damage −2 and apply that effect.</li>
+                        </ul>
+                    </article>
+
+                    <article class="homebrew-card">
+                        <h3>Enemy Response</h3>
+                        <ul>
+                            <li><strong>Vicious Opportunity:</strong> one shared ready marker each Creature Phase. The first acting evil creature to win on a natural 18–19 may spend it for +3 damage.</li>
+                            <li><strong>Adversaries:</strong> mark one simple elite for five Rangers or two for six. Each gets one Murderous Attack for the scenario.</li>
+                            <li><strong>Murderous Attack:</strong> automatically spend when the wounded Adversary first activates and can attack: −2 Combat Score, +5 damage on a win. A surviving melee target remains engaged.</li>
+                        </ul>
+                    </article>
+
+                    <article class="homebrew-card homebrew-card-guardrails">
+                        <h3>Do Not Stack</h3>
+                        <ul>
+                            <li>Standard/Opportunity and Technique are alternatives.</li>
+                            <li>A natural 20 is only the official player Critical Hit; ignore the Technique.</li>
+                            <li>Vicious Opportunity and Murderous Attack never combine.</li>
+                            <li>Opening, Staggered, and Pinned do not stack with themselves.</li>
+                            <li>Activated official attack effects use their own rules only for this test.</li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+        </details>
+
         <div class="top-utility">
             <div class="save-cluster">
                 <button type="button" id="history_open" class="history-open-btn"
@@ -19,6 +84,19 @@
                 <div id="save_status" class="save-status saved" role="status">Saved</div>
             </div>
         </div>
+
+        <section id="conditions_section" class="conditions-section" aria-labelledby="conditions_heading">
+            <div class="conditions-bar">
+                <div class="conditions-status">
+                    <div class="conditions-label" id="conditions_heading">Conditions</div>
+                    <div id="condition_summary" class="condition-summary">None active</div>
+                </div>
+                <button type="button" id="condition_add" class="condition-add"
+                    aria-haspopup="dialog" onclick="openConditionDialog()">+ Condition</button>
+            </div>
+            <div id="condition_list" class="condition-list" aria-live="polite" hidden></div>
+        </section>
+
         <div class="grid-top">
             <div class="stat-box"><div class="stat-label">Ranger Name</div><input type="text" id="char_name" class="save-field" placeholder="Name the legend walking into the wilds"></div>
             <div class="stat-box"><div class="stat-label">Level</div><input type="number" id="char_lvl" class="save-field"></div>
@@ -115,13 +193,6 @@
                 </div>
             </div>
         </div>
-
-        <section id="conditions_section" class="conditions-section" aria-labelledby="conditions_heading">
-            <div class="section-header" id="conditions_heading">Conditions</div>
-            <div id="condition_list" class="condition-list" aria-live="polite"></div>
-            <button type="button" id="condition_add" class="add-slot-btn"
-                aria-haspopup="dialog" onclick="openConditionDialog()">+ Add Condition</button>
-        </section>
 
         <dialog id="condition_dialog" class="ally-modifier-dialog condition-dialog" aria-labelledby="condition_dialog_title">
             <h2 id="condition_dialog_title">Add condition</h2>

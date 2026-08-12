@@ -1148,13 +1148,22 @@
 
     function renderConditions() {
         const list = document.getElementById('condition_list');
+        const section = document.getElementById('conditions_section');
+        const summary = document.getElementById('condition_summary');
         const active = Object.entries(CONDITION_LIBRARY).filter(([key, config]) =>
             config.stackable ? CONDITIONS[key] > 0 : CONDITIONS[key] === true
         );
 
+        section.classList.toggle('has-active', active.length > 0);
+        list.hidden = active.length === 0;
         if (!active.length) {
-            list.innerHTML = '<p class="condition-empty">No active conditions.</p>';
+            summary.textContent = 'None active';
+            list.innerHTML = '';
         } else {
+            summary.textContent = active.map(([key, config]) => config.stackable
+                ? `${config.label} ${CONDITIONS[key]}`
+                : config.label
+            ).join(' · ');
             list.innerHTML = active.map(([key, config]) => {
                 const level = config.stackable ? CONDITIONS[key] : 1;
                 const title = config.stackable ? `${config.label} · Level ${level}` : config.label;
