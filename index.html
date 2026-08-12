@@ -7,13 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link href="styles.css" rel="stylesheet">
 </head>
-<body data-mode="edit">
+<body>
 
     <h1>Ranger Sheet</h1>
 
     <div class="sheet-container" id="sheet">
         <div class="top-utility">
-            <div class="mode-switch" role="group" aria-label="Sheet mode"><button type="button" id="mode_edit" class="mode-btn active" aria-pressed="true" onclick="setMode('edit')">Edit</button><button type="button" id="mode_play" class="mode-btn" aria-pressed="false" onclick="setMode('play')">Play</button></div>
             <div class="save-cluster">
                 <button type="button" id="history_open" class="history-open-btn"
                     aria-haspopup="dialog" onclick="openChangeHistory()">History <span id="history_count" class="history-count">0</span></button>
@@ -23,13 +22,12 @@
         <div class="grid-top">
             <div class="stat-box"><div class="stat-label">Ranger Name</div><input type="text" id="char_name" class="save-field" placeholder="Name the legend walking into the wilds"></div>
             <div class="stat-box"><div class="stat-label">Level</div><input type="number" id="char_lvl" class="save-field"></div>
-            <div class="stat-box setup-only"><div class="stat-label">Experience</div><input type="number" id="char_xp" class="save-field"></div>
+            <div class="stat-box"><div class="stat-label">Experience</div><input type="number" id="char_xp" class="save-field"></div>
         </div>
 
         <div class="archetype-section">
-            <label class="stat-label setup-only">Archetype</label>
-                <div id="arch_name_play" class="play-only archetype-name"></div>
-            <select id="char_arch" class="save-field setup-only" onchange="updateArchetype()">
+            <label class="stat-label">Archetype</label>
+            <select id="char_arch" class="save-field" onchange="updateArchetype()">
                 </select>
             <div id="arch_toggle_container" style="display:none;">
                 <button type="button" class="archetype-btn" id="arch_btn" aria-expanded="false" aria-controls="arch_details" onclick="toggleArchDetails()">Show Archetype Details</button>
@@ -214,15 +212,14 @@
         </dialog>
 
         <div id="innate-container" style="margin-top: 25px;">
-            <button type="button" class="add-slot-btn setup-only" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" aria-expanded="false" aria-controls="innate-section" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
+            <button type="button" class="add-slot-btn" id="innate_toggle_btn" style="border-style: solid; margin-bottom: 15px; margin-top: 0; padding: 12px; font-weight: bold;" aria-expanded="false" aria-controls="innate-section" onclick="toggleInnateSection()">Show Innate Spells & Abilities</button>
             <div id="innate-section" style="display: none;">
                 <div class="section-header" style="margin-top: 0;">Innate Spells & Abilities</div>
                 <div id="innate-list"></div>
-                <button type="button" class="add-slot-btn setup-only" onclick="addInnateSlot()">+ Add Innate Slot</button>
+                <button type="button" class="add-slot-btn" onclick="addInnateSlot()">+ Add Innate Slot</button>
             </div>
         </div>
 
-        <p class="play-hint">This Ranger has no abilities, equipment or skills recorded yet. Switch to <strong>Edit</strong> to set them up — nothing has been lost.</p>
         <div class="preview-panel" id="selection_preview">
             <div class="preview-label">Selection Preview</div>
             <div id="preview_title" class="preview-title">No selection focused</div>
@@ -236,7 +233,7 @@
                 <div id="abilities-block">
                 <div class="section-header">Heroic Abilities & Spells</div>
                 <div id="abilities-list"></div>
-                <button type="button" class="add-slot-btn setup-only" onclick="addHeroicSlot()">+ Add Ability Slot</button>
+                <button type="button" class="add-slot-btn" onclick="addHeroicSlot()">+ Add Ability Slot</button>
 
                 </div>
                 <div id="equipment-block">
@@ -283,7 +280,6 @@
             <div>
                 <div id="skills-block">
                 <div class="section-header">Skills</div>
-                <button type="button" id="untrained_btn" class="play-only untrained-btn" aria-expanded="false" aria-controls="skills-block" onclick="toggleUntrainedSkills()">Show untrained skills</button>
                 <div class="skill-row"><span class="skill-name">Acrobatics</span><input type="number" id="sk_ac" class="save-field skill-input"></div>
                 <div class="skill-row"><span class="skill-name">Ancient Lore</span><input type="number" id="sk_al" class="save-field skill-input"></div>
                 <div class="skill-row"><span class="skill-name">Armoury</span><input type="number" id="sk_ar" class="save-field skill-input"></div>
@@ -309,33 +305,21 @@
             <span id="mission_section_chevron" class="mission-section-chevron" aria-hidden="true">▾</span>
         </button>
         <div id="mission_section_content">
-            <div id="mission-enemy-tools" class="mission-enemy-tools">
-                <div class="mission-catalog-status">
-                    <span id="enemy-catalog-status">No enemy catalog loaded. Custom entries remain available.</span>
-                    <button type="button" class="setup-only" onclick="document.getElementById('enemy-catalog-file').click()">Load Enemy Catalog</button>
-                    <input type="file" id="enemy-catalog-file" accept="application/json,.json" style="display:none" tabindex="-1" aria-hidden="true" onchange="importEnemyCatalog(event)">
-                </div>
-                <div class="mission-enemy-picker">
-                    <select id="enemy_picker_select" aria-label="Enemy to add"
-                        onchange="updateEnemyPickerAction()">
-                        <option value="">Load an enemy catalog first…</option>
-                    </select>
-                    <button type="button" id="enemy_picker_add" class="mission-primary"
-                        disabled onclick="addSelectedMissionEnemy()">+ Add</button>
-                </div>
-                <p class="mission-note">Catalog XP is a suggestion. The scenario’s Outcome and Experience rules decide which rewards count.</p>
-            </div>
             <div id="mission-block"></div>
         </div>
         <div class="section-header">Quest Log</div>
         <textarea id="quest_notes" class="save-field notes-area" placeholder="Record the omens, the scars, and the trophies of each expedition."></textarea>
 
-        <div class="footer-btns">
-            <button type="button" onclick="downloadJSON()">💾 Save Character File</button>
-            <button type="button" onclick="document.getElementById('import-file').click()">📂 Load Character File</button>
-            <input type="file" id="import-file" style="display:none" tabindex="-1" aria-hidden="true" onchange="importJSONFile(event)">
-            <button type="button" class="setup-only" onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
-        </div>
+        <details class="data-tools">
+            <summary>Character data &amp; backup</summary>
+            <p>Optional tools for moving this Ranger between devices or starting over. No catalog or rules file is required.</p>
+            <div class="footer-btns">
+                <button type="button" onclick="downloadJSON()">💾 Save Character File</button>
+                <button type="button" onclick="document.getElementById('import-file').click()">📂 Restore Character File</button>
+                <input type="file" id="import-file" style="display:none" tabindex="-1" aria-hidden="true" onchange="importJSONFile(event)">
+                <button type="button" onclick="clearSheet()" style="border-color: #555; color: #777;">💀 Obliterate</button>
+            </div>
+        </details>
     </div>
 
 <script src="rules-data.js"></script>

@@ -284,8 +284,7 @@ for (const name of [
     'format-4-conditions',
     'format-5-change-history',
     'format-6-scenario-link',
-    'format-7-turn-tracker',
-    'enemy-catalog'
+    'format-7-turn-tracker'
 ]) {
     fixtures[name] = JSON.parse(await readFile(join(fixtureDir, `${name}.json`), 'utf8'));
 }
@@ -396,7 +395,10 @@ try {
         equal(await client.evaluate('currentMode()'), 'edit', 'blank sheet mode');
         equal(await client.evaluate('MISSION.active'), null, 'blank active mission');
         equal(await client.evaluate('MISSION.history.length'), 0, 'blank mission history');
-        equal(await client.evaluate('ENEMY_CATALOG'), null, 'catalog is optional');
+        equal(await client.evaluate('BUILT_IN_ENEMIES.length'), 42, 'all mission enemy choices are built in');
+        equal(await client.evaluate('Object.isFrozen(BUILT_IN_ENEMIES) && Object.isFrozen(BUILT_IN_ENEMIES[0])'), true, 'built-in mission choices are immutable');
+        equal(await client.evaluate(`document.getElementById('enemy-catalog-file')`), null, 'enemy catalog upload is absent');
+        equal(await client.evaluate(`document.querySelector('.mode-switch')`), null, 'retired mode switch is absent');
         equal(await client.evaluate('JSON.stringify(CONDITIONS)'), '{"poisoned":false,"diseased":false,"hungerThirst":0}', 'blank conditions');
         equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), false, 'blank Mission section is expanded');
 
@@ -755,7 +757,7 @@ try {
             importJSONFile({ target: { files: [file], value: 'selected' } });
         })()`);
         await waitFor(client, `document.getElementById('char_name').value === 'Format One'`);
-        equal(await client.evaluate('currentMode()'), 'play', 'file import applies UI mode');
+        equal(await client.evaluate('currentMode()'), 'edit', 'file import uses the single editable mode');
         equal(await client.evaluate(`JSON.parse(localStorage.getItem(STORAGE_KEY)).formatVersion`), 7, 'file import persists current format');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'file import clears temporary stat effects');
         equal(await client.evaluate(`CHANGE_HISTORY.length`), 1, 'file import records one system event');
@@ -781,10 +783,10 @@ try {
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), beforeInvalid, 'invalid history import leaves storage unchanged');
         equal(await client.evaluate(`document.getElementById('char_name').value`), 'Format One', 'invalid history import leaves sheet unchanged');
 
-        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, ${JSON.stringify(JSON.stringify(fixtures['enemy-catalog']))}); setTemporaryEffects('s_fig', 3, 2); window.confirm = () => true; clearSheet();`);
+        await client.evaluate(`localStorage.setItem('unrelated_test_key', 'keep'); localStorage.setItem('rosd_ranger_enemy_catalog', 'legacy catalog'); setTemporaryEffects('s_fig', 3, 2); window.confirm = () => true; clearSheet();`);
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('char_name').value === ''`);
         equal(await client.evaluate(`localStorage.getItem('unrelated_test_key')`), 'keep', 'obliterate keeps unrelated storage');
-        equal(await client.evaluate(`localStorage.getItem(ENEMY_CATALOG_STORAGE_KEY) !== null`), true, 'obliterate keeps catalog');
+        equal(await client.evaluate(`localStorage.getItem('rosd_ranger_enemy_catalog')`), 'legacy catalog', 'obliterate leaves legacy unrelated catalog data untouched');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_KEY)`), null, 'obliterate removes character');
         equal(await client.evaluate(`localStorage.getItem(STORAGE_RECOVERY_KEY)`), null, 'obliterate removes recovery');
         equal(await client.evaluate(`sessionStorage.getItem(TEMP_EFFECT_STORAGE_KEY)`), null, 'obliterate clears temporary stat effects');
@@ -1084,38 +1086,27 @@ try {
         equal(await client.evaluate(`document.getElementById('it1_search').value`), 'Bow', 'searchable selection survives reload');
     });
 
-    await suite('play mode', async () => {
+    await suite('single editable mode', async () => {
         await freshBrowserState(client);
 
         await client.evaluate(`(() => {
-            document.getElementById('char_name').value = 'Play Ranger';
+            document.getElementById('char_name').value = 'Table Ranger';
             document.getElementById('s_hpc').value = '11';
             document.getElementById('sk_ac').value = '2';
             const first = slotGroups('heroic')[0].dataset.slotId;
             applySearchableValue(first, 'Dash', true);
             setMode('play');
         })()`);
-        equal(await client.evaluate('currentMode()'), 'play', 'play mode activated');
-        equal(await client.evaluate(`document.body.dataset.mode`), 'play', 'body mode state');
-        equal(await client.evaluate(`document.getElementById('mode_play').getAttribute('aria-pressed')`), 'true', 'play button announced');
-        equal(await client.evaluate(`document.getElementById('char_arch').offsetParent === null`), true, 'archetype selector hidden');
-        equal(await client.evaluate(`document.getElementById('s_hpc').disabled`), false, 'current health remains editable');
-        equal(await client.evaluate(`document.getElementById('stat-grid').firstElementChild.classList.contains('current-hp')`), true, 'current health leads DOM order');
-        equal(await client.evaluate(`document.getElementById('skills-block').offsetParent !== null`), true, 'skills disclosure remains reachable');
-        equal(await client.evaluate(`document.querySelector('#abilities-list .ability-group:not(.is-empty)').offsetParent !== null`), true, 'filled ability remains visible');
-        equal(await client.evaluate(`document.querySelector('#abilities-list .ability-group.is-empty').offsetParent === null`), true, 'empty ability hidden');
-
-        await client.evaluate(`setMode('edit')`);
-        equal(await client.evaluate(`document.getElementById('char_arch').offsetParent !== null`), true, 'edit mode restores setup control');
-        equal(await client.evaluate(`document.querySelector('#abilities-list .ability-group.is-empty').offsetParent !== null`), true, 'edit mode restores empty slots');
-
-        await freshBrowserState(client);
-        await client.evaluate(`setMode('play')`);
-        equal(await client.evaluate(`document.body.classList.contains('play-empty')`), true, 'empty play mode marked');
-        equal(await client.evaluate(`document.querySelector('.play-hint').offsetParent !== null`), true, 'empty play hint visible');
-
-        await client.evaluate(`setMode('edit'); openSearchMenu('it1'); setMode('play')`);
-        equal(await client.evaluate(`document.getElementById('it1_box').classList.contains('open')`), false, 'mode switch closes combobox');
+        equal(await client.evaluate('currentMode()'), 'edit', 'legacy play request resolves to editable mode');
+        equal(await client.evaluate(`document.body.hasAttribute('data-mode')`), false, 'body has no presentation mode state');
+        equal(await client.evaluate(`document.querySelector('.mode-switch')`), null, 'no mode control is rendered');
+        equal(await client.evaluate(`document.getElementById('char_arch').offsetParent !== null`), true, 'archetype selector remains directly editable');
+        equal(await client.evaluate(`document.getElementById('s_hpc').disabled`), false, 'current health remains directly editable');
+        equal(await client.evaluate(`document.getElementById('stat-grid').children[6].classList.contains('current-hp')`), true, 'current health keeps standard DOM order');
+        equal(await client.evaluate(`document.getElementById('skills-block').offsetParent !== null`), true, 'all skills remain visible');
+        equal(await client.evaluate(`slotGroups('heroic')[0].offsetParent !== null`), true, 'filled ability remains visible');
+        equal(await client.evaluate(`slotGroups('heroic')[1].offsetParent !== null`), true, 'empty ability remains available for direct editing');
+        equal(await client.evaluate(`collectDocument().uiState.mode`), 'edit', 'documents now persist the single editable mode');
     });
 
     await suite('semantic visual effects', async () => {
@@ -1301,16 +1292,15 @@ try {
         equal(await client.evaluate(`document.querySelector('[data-condition="hungerThirst"] .condition-rule').textContent.includes('−4 Health')`), true, 'stacked Health reminder is derived');
         equal(await client.evaluate(`document.querySelector('[data-condition="diseased"] .condition-source').textContent`), 'Standard Edition, pp. 32–33', 'rule source is shown');
 
-        await client.evaluate(`document.getElementById('s_hpm').value = '14'; document.getElementById('s_hpc').value = '9'; setMode('play');`);
-        equal(await client.evaluate(`document.getElementById('conditions_section').offsetParent !== null`), true, 'conditions remain visible in play mode');
-        equal(await client.evaluate(`document.body.classList.contains('play-empty')`), false, 'active conditions count as play content');
+        await client.evaluate(`document.getElementById('s_hpm').value = '14'; document.getElementById('s_hpc').value = '9';`);
+        equal(await client.evaluate(`document.getElementById('conditions_section').offsetParent !== null`), true, 'conditions remain directly visible');
         equal(await client.evaluate(`document.getElementById('s_hpm').value`), '14', 'conditions do not rewrite base Health');
         equal(await client.evaluate(`document.getElementById('s_hpc').value`), '9', 'conditions do not rewrite current Health');
         equal(await client.evaluate(`JSON.stringify(collectDocument().character.conditions)`), '{"poisoned":true,"diseased":true,"hungerThirst":2}', 'conditions enter the character document');
 
         await reloadAndWait(client, 'saveNow();');
         await waitFor(client, `document.readyState !== 'loading' && CONDITIONS.poisoned && CONDITIONS.hungerThirst === 2`);
-        equal(await client.evaluate(`currentMode()`), 'play', 'condition reload preserves play mode');
+        equal(await client.evaluate(`currentMode()`), 'edit', 'condition reload uses the editable mode');
         equal(await client.evaluate(`document.querySelectorAll('#condition_list .condition-card').length`), 3, 'conditions survive reload');
 
         await client.evaluate(`clearCondition('poisoned'); stepCondition('hungerThirst', -1);`);
@@ -1338,13 +1328,11 @@ try {
         equal(await client.evaluate(`MISSION.active.title`), 'Collapsed patrol', 'collapse preserves active mission state');
         equal(await client.evaluate(`collectDocument().uiState.missionSectionExpanded`), false, 'collapsed preference enters document');
 
-        await client.evaluate(`setMode('play')`);
-        equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible in play mode');
-        equal(await client.evaluate(`document.getElementById('mission_section_content').hidden`), true, 'mode switch preserves collapsed state');
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible');
 
         await reloadAndWait(client, 'saveNow();');
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('mission_section_content').hidden`);
-        equal(await client.evaluate(`currentMode()`), 'play', 'collapsed Mission section reload keeps mode');
+        equal(await client.evaluate(`currentMode()`), 'edit', 'collapsed Mission section reload uses editable mode');
         equal(await client.evaluate(`MISSION.active.title`), 'Collapsed patrol', 'collapsed mission survives reload');
 
         await client.evaluate(`toggleMissionSection()`);
@@ -1353,8 +1341,7 @@ try {
         equal(await client.evaluate(`document.getElementById('mission_section_chevron').textContent`), '▾', 'expanded chevron updates');
         equal(await client.evaluate(`document.getElementById('mission_title').value`), 'Collapsed patrol', 'expanded view restores mission fields');
 
-        await client.evaluate(`setMode('edit')`);
-        equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible after returning to edit');
+        equal(await client.evaluate(`document.getElementById('mission_section_toggle').offsetParent !== null`), true, 'Mission toggle remains visible after expanding');
     });
 
     await suite('temporary stat effects', async () => {
@@ -1424,8 +1411,7 @@ try {
         equal(await client.evaluate(`collectDocument().character.fields.s_arm`), '12', 'character document keeps base Armour');
         equal(await client.evaluate(`JSON.stringify(collectDocument()).includes(TEMP_EFFECT_STORAGE_KEY)`), false, 'character export excludes temporary effects');
 
-        await client.evaluate(`setMode('play')`);
-        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'effect control remains visible in play mode');
+        equal(await client.evaluate(`document.getElementById('s_fig_ally').offsetParent !== null`), true, 'effect control remains directly visible');
 
         await reloadAndWait(client, 'saveNow();');
         await waitFor(client, `document.readyState !== 'loading' && document.getElementById('s_fig_effective').textContent === '5'`);
@@ -1522,7 +1508,8 @@ try {
             enemyNames: Array.from(document.querySelectorAll('.scenario-enemy-head strong'), node => node.textContent),
             trollStats: Array.from(document.querySelector('[data-enemy-id="troll"] .scenario-enemy-stats').querySelectorAll('dd'), node => node.textContent),
             archerContexts: document.querySelector('[data-enemy-id="gnoll-archer"] .scenario-enemy-contexts').textContent,
-            catalogLoaded: ENEMY_CATALOG !== null,
+            enemyPickerCount: document.getElementById('enemy_picker_select').options.length,
+            enemyPickerGroups: document.getElementById('enemy_picker_select').querySelectorAll('optgroup').length,
             progressNodes: document.querySelectorAll('.scenario-progress-node').length,
             currentNodes: document.querySelectorAll('.scenario-progress-node.current').length,
             progressText: document.querySelector('.scenario-progress').textContent
@@ -1548,7 +1535,8 @@ try {
         check(selected.enemyNames.includes('Burrow Worm') && selected.enemyNames.includes('Troll'), 'event enemies are named without an import');
         equal(selected.trollStats.join(','), '4,+4,+0,14,+2,16', 'enemy stat line is shown in play order');
         check(selected.archerContexts.includes('Events') && selected.archerContexts.includes('Challenge'), 'enemy appearance sources remain distinct');
-        equal(selected.catalogLoaded, false, 'built-in enemy profiles need no imported catalog');
+        equal(selected.enemyPickerCount, 43, 'enemy picker contains all built-in profiles plus its prompt');
+        equal(selected.enemyPickerGroups, 2, 'linked scenario enemies are prioritized above the full catalog');
         equal(selected.progressNodes, 8, 'campaign progress shows every starter scenario');
         equal(selected.currentNodes, 1, 'campaign progress marks one current scenario');
         check(selected.progressText.includes('0 / 8 complete'), 'campaign progress starts without synthetic completions');
@@ -1698,14 +1686,15 @@ try {
         await client.evaluate(`document.getElementById('scenario_turn_previous').click()`);
         equal(await client.evaluate(`MISSION.active.currentTurn`), 12, 'previous control corrects the current turn');
 
-        await reloadAndWait(client, `setMode('play'); saveNow();`);
+        await reloadAndWait(client, `saveNow();`);
         await waitFor(client, `document.readyState !== 'loading' && MISSION.active?.scenarioId === 'starter-m3-s3'`);
-        equal(await client.evaluate(`currentMode()`), 'play', 'linked scenario reload keeps Play mode');
-        equal(await client.evaluate(`document.querySelector('.scenario-brief')?.offsetParent !== null`), true, 'scenario briefing remains visible in Play mode');
-        equal(await client.evaluate(`document.querySelector('.scenario-turn-tracker')?.offsetParent !== null`), true, 'turn tracker remains visible in Play mode');
+        equal(await client.evaluate(`currentMode()`), 'edit', 'linked scenario reload keeps the editable mode');
+        equal(await client.evaluate(`document.querySelector('.mission-support').open`), false, 'scenario reference stays compact by default');
+        equal(await client.evaluate(`document.querySelector('.scenario-brief') !== null`), true, 'scenario briefing remains available in the reference disclosure');
+        equal(await client.evaluate(`document.querySelector('.scenario-turn-tracker')?.offsetParent !== null`), true, 'turn tracker remains directly visible');
         equal(await client.evaluate(`MISSION.active.currentTurn`), 12, 'turn tracker survives reload');
         check(await client.evaluate(`document.getElementById('scenario_turn_event').textContent.includes('No Event Card')`), 'reloaded final turn restores event state');
-        equal(await client.evaluate(`document.querySelector('.scenario-enemies')?.offsetParent !== null`), true, 'scenario enemy profiles remain visible in Play mode');
+        equal(await client.evaluate(`document.querySelector('.scenario-enemies') !== null`), true, 'scenario enemy profiles remain available in the reference disclosure');
         equal(await client.evaluate(`document.getElementById('mission_scenario_select').value`), 'starter-m3-s3', 'scenario picker restores linked selection');
 
         await client.evaluate(`(() => {
@@ -1713,7 +1702,7 @@ try {
             select.value = 'agoh-ghost-stone-s4';
             select.dispatchEvent(new Event('change', { bubbles: true }));
         })()`);
-        equal(await client.evaluate(`document.querySelectorAll('.scenario-enemy-card').length`), 13, 'largest Gathering encounter reference renders every profile in Play mode');
+        equal(await client.evaluate(`document.querySelectorAll('.scenario-enemy-card').length`), 13, 'largest Gathering encounter reference renders every profile');
 
         await client.send('Emulation.setDeviceMetricsOverride', {
             width: 360,
@@ -1789,70 +1778,36 @@ try {
         equal(await client.evaluate(`document.querySelector('.scenario-progress-node.current').textContent`), '1.2', 'campaign progress identifies current scenario');
     });
 
-    await suite('enemy catalog and mission lifecycle', async () => {
+    await suite('built-in enemy choices and mission lifecycle', async () => {
         await freshBrowserState(client);
+        await client.evaluate(`startMission()`);
 
-        const catalogValidation = await client.evaluate(`(() => {
-            const valid = normalizeEnemyCatalog(${JSON.stringify(fixtures['enemy-catalog'])});
-            const invalids = [
-                { formatVersion: 2, catalogId: 'x', catalogVersion: '1', enemies: [] },
-                { formatVersion: 1, catalogId: '', catalogVersion: '1', enemies: [] },
-                { formatVersion: 1, catalogId: 'x', catalogVersion: '', enemies: [] },
-                { formatVersion: 1, catalogId: 'x', catalogVersion: '1', enemies: [{ id: 'a', name: '', xp: 1 }] },
-                { formatVersion: 1, catalogId: 'x', catalogVersion: '1', enemies: [{ id: 'a', name: 'A', xp: -1 }] },
-                { formatVersion: 1, catalogId: 'x', catalogVersion: '1', enemies: [{ id: 'a', name: 'A', xp: 1 }, { id: 'a', name: 'B', xp: 2 }] }
-            ];
-            return {
-                count: valid.enemies.length,
-                zero: valid.enemies[2].xp,
-                rejected: invalids.map(value => {
-                    try { normalizeEnemyCatalog(value); return false; }
-                    catch { return true; }
-                })
-            };
-        })()`);
-        equal(catalogValidation.count, 3, 'synthetic catalog count');
-        equal(catalogValidation.zero, 0, 'zero-XP enemy accepted');
-        equal(catalogValidation.rejected.every(Boolean), true, 'invalid catalogs rejected');
-
-        await client.evaluate(`(() => {
-            ENEMY_CATALOG = normalizeEnemyCatalog(${JSON.stringify(fixtures['enemy-catalog'])});
-            refreshEnemyPickerOptions();
-            startMission();
-        })()`);
         equal(await client.evaluate(`document.getElementById('enemy_picker_select').tagName`), 'SELECT', 'enemy picker is a native dropdown');
-        equal(await client.evaluate(`document.getElementById('enemy_picker_select').options.length - 1`), 3, 'picker receives catalog options');
-        equal(await client.evaluate(`document.getElementById('enemy_picker_add').disabled`), true, 'add waits for an enemy selection');
-        equal(await client.evaluate(`getComputedStyle(document.getElementById('mission-enemy-tools')).display !== 'none'`), true, 'enemy tools visible');
-        equal(await client.evaluate(`document.getElementById('enemy-catalog-status').textContent.includes('3 enemies')`), true, 'catalog status count');
+        equal(await client.evaluate(`document.getElementById('enemy_picker_select').options.length`), 43, 'picker offers all 42 built-in profiles');
+        equal(await client.evaluate(`document.getElementById('enemy_picker_add')`), null, 'enemy selection adds without a second button');
+        equal(await client.evaluate(`document.getElementById('enemy-catalog-file')`), null, 'mission tracking requires no catalog file');
 
         await client.evaluate(`(() => {
             const select = document.getElementById('enemy_picker_select');
-            select.value = 'fixture-ghoul';
+            select.value = 'giant-rat';
             select.dispatchEvent(new Event('change', { bubbles: true }));
-            document.getElementById('enemy_picker_add').click();
         })()`);
         let kill = await client.evaluate(`MISSION.active.kills[0]`);
-        equal(kill.name, 'Fixture Ghoul', 'catalog enemy name added');
-        equal(kill.value, 3, 'catalog enemy XP added');
-        equal(kill.enemyId, 'fixture-ghoul', 'catalog enemy id linked');
-        equal(kill.catalogVersion, 'fixture-enemies@1', 'catalog version linked');
-        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('1 kill')`), true, 'live summary shows one defeated enemy');
-        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('Kill XP 3')`), true, 'live summary separates initial kill XP');
+        equal(kill.name, 'Giant Rat', 'built-in enemy name added');
+        equal(kill.value, 2, 'built-in enemy XP added');
+        equal(kill.enemyId, 'giant-rat', 'built-in enemy id linked');
+        equal(kill.catalogVersion, 'rosd-built-in-scenario-enemies@1', 'built-in catalog version linked');
 
-        await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] .mission-count .mission-step:last-child').click()`);
+        await client.evaluate(`(() => {
+            const select = document.getElementById('enemy_picker_select');
+            select.value = 'giant-rat';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        })()`);
         kill = await client.evaluate(`MISSION.active.kills[0]`);
-        equal(kill.count, 2, 'kill count updates through plus button');
-        equal(await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] [data-field="count"]').value`), '2', 'visible kill counter updates through plus button');
+        equal(await client.evaluate(`MISSION.active.kills.length`), 1, 'choosing the same linked enemy reuses its row');
+        equal(kill.count, 2, 'choosing the same enemy increases its count');
         equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('2 kills')`), true, 'live summary updates defeated-enemy count');
-        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('Kill XP 6')`), true, 'live summary updates kill XP separately');
-        equal(kill.enemyId, 'fixture-ghoul', 'count edit preserves enemy linkage');
-        equal(kill.catalogVersion, 'fixture-enemies@1', 'count edit preserves version linkage');
-        await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] .mission-count .mission-step:first-child').click()`);
-        equal(await client.evaluate(`MISSION.active.kills[0].count`), 1, 'minus button decreases kill count');
-        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('1 kill')`), true, 'minus button updates defeated-enemy summary');
-        await client.evaluate(`document.querySelector('[data-row="' + MISSION.active.kills[0].id + '"] .mission-count .mission-step:last-child').click()`);
-        equal(await client.evaluate(`MISSION.active.kills[0].count`), 2, 'plus button restores kill count');
+        equal(await client.evaluate(`document.querySelector('.mission-total').textContent.includes('Kill XP 4')`), true, 'live summary updates kill XP');
 
         await client.evaluate(`updateMissionRow(MISSION.active.id, 'kills', MISSION.active.kills[0].id, 'value', 4)`);
         kill = await client.evaluate(`MISSION.active.kills[0]`);
@@ -1864,75 +1819,71 @@ try {
             addMissionRow('kills');
             const row = MISSION.active.kills[1];
             updateMissionRow(MISSION.active.id, 'kills', row.id, 'name', 'Campaign Beast');
+            addSelectedMissionEnemy('ogre');
         })()`);
         const customKill = await client.evaluate(`MISSION.active.kills[1]`);
-        equal(customKill.name, 'Campaign Beast', 'custom enemy name');
+        equal(customKill.name, 'Campaign Beast', 'custom enemy name remains available');
         equal(customKill.value, 0, 'custom enemy default XP');
         equal(customKill.enemyId, null, 'custom enemy has no link');
+        equal(await client.evaluate(`MISSION.active.kills[2].value`), 5, 'built-in Ogre XP is snapshotted');
 
         await client.evaluate(`(() => {
-            const select = document.getElementById('enemy_picker_select');
-            select.value = 'fixture-ogre';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            document.getElementById('enemy_picker_add').click();
-            ENEMY_CATALOG.enemies.find(enemy => enemy.id === 'fixture-ogre').xp = 99;
+            addMissionPreset('objectives', 'primary');
+            addMissionPreset('objectives', 'optional');
+            updateMissionRow(MISSION.active.id, 'objectives', MISSION.active.objectives[0].id, 'value', 7);
+            addMissionPreset('adjustments', 'clue');
+            updateMissionRow(MISSION.active.id, 'adjustments', MISSION.active.adjustments[0].id, 'value', -2);
+            addMissionPreset('adjustments', 'objectiveTotal');
+            updateMissionRow(MISSION.active.id, 'adjustments', MISSION.active.adjustments[1].id, 'value', 5);
         })()`);
-        equal(await client.evaluate(`MISSION.active.kills[2].value`), 5, 'catalog change does not rewrite snapshot');
-
-        await client.evaluate(`(() => {
-            addMissionRow('objectives');
-            const row = MISSION.active.objectives[0];
-            updateMissionRow(MISSION.active.id, 'objectives', row.id, 'title', 'Find the marker');
-            updateMissionRow(MISSION.active.id, 'objectives', row.id, 'value', 7);
-            toggleObjective(MISSION.active.id, row.id);
-            addMissionRow('adjustments');
-            const adjustment = MISSION.active.adjustments[0];
-            updateMissionRow(MISSION.active.id, 'adjustments', adjustment.id, 'label', 'Scenario penalty');
-            updateMissionRow(MISSION.active.id, 'adjustments', adjustment.id, 'value', -2);
-        })()`);
-        const totals = await client.evaluate(`missionTotals(MISSION.active)`);
-        equal(totals.killCount, 4, 'defeated-enemy count derived');
-        equal(totals.killXp, 13, 'kill XP total derived');
-        equal(totals.objectives, 7, 'completed objective total derived');
-        equal(totals.adjustments, -2, 'negative adjustment total derived');
-        equal(totals.total, 18, 'mission total derived');
+        const entries = await client.evaluate(`({
+            objectives: MISSION.active.objectives,
+            adjustments: MISSION.active.adjustments,
+            totals: missionTotals(MISSION.active)
+        })`);
+        equal(entries.objectives[0].title, 'Primary objective', 'primary objective preset needs no typing');
+        equal(entries.objectives[0].completed, true, 'quick-added objective starts completed');
+        equal(entries.objectives[1].type, 'optional', 'optional objective preset keeps its category');
+        equal(entries.adjustments[0].label, 'Clue / investigation token', 'individual token preset needs no label typing');
+        equal(entries.adjustments[1].label, 'Bonus objectives (total)', 'combined bonus preset is available');
+        equal(entries.totals.killCount, 4, 'defeated-enemy count derived');
+        equal(entries.totals.killXp, 13, 'kill XP total derived');
+        equal(entries.totals.objectives, 7, 'completed objective total derived');
+        equal(entries.totals.adjustments, 3, 'individual and combined bonuses total together');
+        equal(entries.totals.total, 23, 'mission total derived');
 
         const removal = await client.evaluate(`(() => {
             const id = MISSION.active.kills[1].id;
             removeMissionRow('kills', id);
             const afterRemove = MISSION.active.kills.map(row => row.name);
             undoMissionRemoval();
-            return {
-                afterRemove,
-                afterUndo: MISSION.active.kills.map(row => row.name)
-            };
+            return { afterRemove, afterUndo: MISSION.active.kills.map(row => row.name) };
         })()`);
         equal(removal.afterRemove.includes('Campaign Beast'), false, 'row removal applies');
         equal(removal.afterUndo[1], 'Campaign Beast', 'undo restores original index');
 
         const roundTrip = await client.evaluate(`parseDocument(JSON.stringify(collectDocument())).document.activeMission`);
         equal(roundTrip.kills.length, 3, 'mission kills survive round-trip');
-        equal(roundTrip.kills[2].enemyId, 'fixture-ogre', 'catalog linkage survives round-trip');
-        equal(roundTrip.objectives[0].completed, true, 'objective state survives round-trip');
-        equal(roundTrip.adjustments[0].value, -2, 'adjustment survives round-trip');
+        equal(roundTrip.kills[2].enemyId, 'ogre', 'built-in linkage survives round-trip');
+        equal(roundTrip.objectives[0].completed, true, 'objective preset survives round-trip');
+        equal(roundTrip.adjustments[1].value, 5, 'combined bonus survives round-trip');
 
         await client.evaluate(`window.confirm = () => true; completeMission()`);
         equal(await client.evaluate(`MISSION.active`), null, 'completion clears active mission');
         equal(await client.evaluate(`MISSION.history.length`), 1, 'completion adds history');
         equal(await client.evaluate(`MISSION.history[0].kills[2].value`), 5, 'history keeps XP snapshot');
         equal(await client.evaluate(`document.querySelector('.mission-past-summary').textContent.includes('4 kills')`), true, 'history keeps defeated-enemy count');
-        equal(await client.evaluate(`getComputedStyle(document.getElementById('mission-enemy-tools')).display`), 'none', 'tools hide after completion');
+        equal(await client.evaluate(`document.getElementById('enemy_picker_select')`), null, 'enemy picker leaves the UI after completion');
         equal(await client.evaluate(`document.getElementById('char_xp').value`), '', 'completion does not apply XP');
 
         await client.evaluate(`applyMissionXp(MISSION.history[0].id)`);
-        equal(await client.evaluate(`Number(document.getElementById('char_xp').value)`), 18, 'explicit XP application updates ranger');
-        equal(await client.evaluate(`MISSION.history[0].appliedXp`), 18, 'applied XP recorded');
+        equal(await client.evaluate(`Number(document.getElementById('char_xp').value)`), 23, 'explicit XP application updates ranger');
+        equal(await client.evaluate(`MISSION.history[0].appliedXp`), 23, 'applied XP recorded');
         equal(await client.evaluate(`document.querySelector('.mission-card.past').classList.contains('fx-xp-applied')`), true, 'applying XP plays mission-card effect');
         equal(await client.evaluate(`document.getElementById('char_xp').closest('.stat-box').classList.contains('fx-xp-total')`), true, 'applying XP highlights Ranger total');
-        equal(await client.evaluate(`getComputedStyle(document.querySelector('.mission-card.past'), '::after').animationName`), 'fx-xp-badge', 'XP feedback uses intended badge animation');
         equal(await client.evaluate(`JSON.stringify(collectDocument()).includes('fx-xp-applied')`), false, 'XP effect never enters character document');
         await client.evaluate(`applyMissionXp(MISSION.history[0].id)`);
-        equal(await client.evaluate(`Number(document.getElementById('char_xp').value)`), 18, 'XP cannot double-apply');
+        equal(await client.evaluate(`Number(document.getElementById('char_xp').value)`), 23, 'XP cannot double-apply');
 
         await client.evaluate(`reopenMission(MISSION.history[0].id)`);
         equal(await client.evaluate(`MISSION.active.status`), 'active', 'history can reopen');
@@ -1946,16 +1897,7 @@ try {
             maxTouchPoints: 5
         });
 
-        await client.evaluate(`(() => {
-            ENEMY_CATALOG = normalizeEnemyCatalog(${JSON.stringify(fixtures['enemy-catalog'])});
-            refreshEnemyPickerOptions();
-            startMission();
-            const select = document.getElementById('enemy_picker_select');
-            select.value = 'fixture-ghoul';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            document.getElementById('enemy_picker_add').click();
-            addCondition('hungerThirst');
-        })()`);
+        await client.evaluate(`startMission(); addSelectedMissionEnemy('giant-rat'); addCondition('hungerThirst');`);
 
         const widths = [360, 430, 712, 768, 800, 899, 900, 912, 1080];
         for (const width of widths) {
@@ -1974,7 +1916,7 @@ try {
                 overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
                 mainColumns: getComputedStyle(document.querySelector('.main-grid')).gridTemplateColumns.split(' ').length,
                 statColumns: getComputedStyle(document.getElementById('stat-grid')).gridTemplateColumns.split(' ').length,
-                addHeight: document.querySelector('.mission-enemy-picker > button').getBoundingClientRect().height,
+                addHeight: document.getElementById('enemy_picker_select').getBoundingClientRect().height,
                 stepHeight: document.querySelector('.mission-step').getBoundingClientRect().height,
                 conditionAddHeight: document.getElementById('condition_add').getBoundingClientRect().height,
                 conditionStepHeight: document.querySelector('.condition-step').getBoundingClientRect().height,

@@ -442,7 +442,7 @@ button:focus-visible, select:focus-visible {
 .info-toggle:disabled { opacity: 0.3; cursor: default; }
 .top-utility {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
@@ -625,7 +625,17 @@ button:focus-visible, select:focus-visible {
 
 .notes-area { height: 180px; margin-top: 15px; background: rgba(0,0,0,0.2); font-style: italic; }
 
-.footer-btns { margin-top: 40px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+.data-tools {
+    margin-top: 36px; padding: 0 14px 14px;
+    border: 1px solid #35414a; border-radius: 8px; background: rgba(0,0,0,0.16);
+}
+.data-tools summary {
+    min-height: 44px; display: flex; align-items: center; cursor: pointer;
+    color: #91a0b0; font-family: var(--fantasy-font); font-size: 0.76em;
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+.data-tools p { margin: 0 0 12px; color: #6f7d8c; font-size: 0.8em; line-height: 1.5; }
+.footer-btns { margin-top: 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
 button { 
     background:
         linear-gradient(180deg, rgba(255,255,255,0.035), rgba(0,0,0,0.08)),
@@ -1054,11 +1064,19 @@ button:active {
     .history-tools select { min-width: 0; flex: 1 1 auto; }
 }
 @media (max-width: 520px) {
+    .mission-quick-add { flex-direction: column; }
+    .mission-quick-add .mission-add { width: 100%; }
     .mission-kill-row { flex-wrap: wrap; }
     .mission-kill-row .mission-grow { flex: 1 1 calc(100% - 52px); order: 1; }
     .mission-kill-row .mission-remove { order: 2; }
     .mission-kill-row .mission-count { order: 3; margin-left: auto; }
     .mission-kill-row .mission-value { order: 4; }
+    .mission-row:not(.mission-kill-row) { flex-wrap: wrap; }
+    .mission-row:not(.mission-kill-row) .mission-check { order: 1; }
+    .mission-row:not(.mission-kill-row) .mission-grow { flex: 1 1 calc(100% - 96px); order: 2; }
+    .mission-row:not(.mission-kill-row) .mission-remove { order: 3; }
+    .mission-row:not(.mission-kill-row) .mission-type { flex: 1 1 auto; order: 4; margin-left: 42px; }
+    .mission-row:not(.mission-kill-row) .mission-value { order: 5; }
 }
 .add-slot-btn { 
     background: transparent; color: #91a0b0; border: 1px dashed #555; 
@@ -1288,23 +1306,9 @@ button:active {
 }
 .mission-hint { color: #6f7d8c; font-size: 0.75em; }
 .mission-none { color: #6f7d8c; font-size: 0.85em; font-style: italic; margin: 8px 0 0; }
-.mission-enemy-tools {
-    display: none;
-    margin: 14px 0 18px; padding: 12px 14px;
-    border: 1px solid var(--border-col); border-radius: 8px;
-    background: rgba(0,0,0,0.2);
-}
-.mission-catalog-status {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-    color: #91a0b0; font-size: 0.78em;
-}
-.mission-catalog-status button { min-height: 0; padding: 7px 12px; font-size: 0.78em; }
-.mission-enemy-picker { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; }
-.mission-enemy-picker select { flex: 1 1 auto; min-width: 0; min-height: 48px; }
-.mission-enemy-picker > button { flex: 0 0 auto; }
-.mission-enemy-picker button:disabled {
-    border-color: #46505a; color: #65717d; cursor: not-allowed; opacity: 0.75;
-}
+.mission-quick-add { display: flex; align-items: stretch; gap: 8px; margin-top: 10px; }
+.mission-quick-add select { flex: 1 1 auto; min-width: 0; min-height: 48px; }
+.mission-quick-add .mission-add { flex: 0 0 auto; margin-top: 0; }
 .mission-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .mission-grow { flex: 1 1 120px; min-width: 0; }
 .mission-value { flex: 0 0 74px; text-align: center; }
@@ -1331,6 +1335,17 @@ button:active {
     border: 1px dashed #555; border-radius: 6px; background: transparent; color: #91a0b0;
     font-family: var(--fantasy-font); font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.06em;
 }
+.mission-support {
+    margin-top: 16px; padding: 0 12px 12px;
+    border: 1px solid #35414a; border-radius: 8px; background: rgba(0,0,0,0.15);
+}
+.mission-support > summary {
+    min-height: 44px; display: flex; align-items: center; cursor: pointer;
+    color: #91a0b0; font-family: var(--fantasy-font); font-size: 0.72em;
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+.mission-reference-field { margin-top: 4px; }
+.mission-progress-disclosure .scenario-progress { margin-top: 2px; }
 .mission-notes-label {
     display: block; margin-top: 18px;
     font-family: var(--fantasy-font); font-size: 0.7em; color: var(--accent-teal);
@@ -1373,95 +1388,6 @@ button:active {
 .mission-past-summary strong { color: var(--accent-teal); font-family: var(--fantasy-font); }
 .mission-applied { color: #2ecc71; font-size: 0.85em; }
 .mission-past-notes { color: #91a0b0; font-size: 0.85em; line-height: 1.5; margin: 10px 0 0; font-style: italic; }
-
-/* --- Play mode ---
-   One DOM, two presentations. Play mode removes what is never touched mid-scenario; it
-   deliberately does not lock anything, so a correction at the table stays one tap away.
-*/
-.mode-switch {
-    display: inline-flex;
-    border: 1px solid var(--border-col);
-    border-radius: 999px;
-    overflow: hidden;
-}
-.mode-btn {
-    min-height: 34px; padding: 6px 16px; border: none; border-radius: 0;
-    background: transparent; color: #91a0b0;
-    font-family: var(--fantasy-font); font-weight: bold; font-size: 0.72em;
-    text-transform: uppercase; letter-spacing: 0.08em;
-}
-.mode-btn.active { background: var(--accent-teal); color: #000; }
-
-.play-only { display: none; }
-[data-mode="play"] .play-only { display: block; }
-.archetype-name {
-    font-family: var(--fantasy-font);
-    font-size: 1.15em;
-    color: var(--accent-teal);
-    padding: 4px 0 2px;
-}
-.untrained-btn {
-    min-height: 34px; padding: 4px 12px; margin: 8px 0 4px;
-    border: 1px dashed #555; border-radius: 6px;
-    background: transparent; color: #91a0b0;
-    font-family: var(--fantasy-font); font-size: 0.72em;
-    text-transform: uppercase; letter-spacing: 0.06em;
-}
-
-/*
-   Untrained skills are hidden by default but stay one tap away: a scenario can call for any
-   skill roll, and a +0 is real information rather than a missing row.
-*/
-[data-mode="play"] #skills-block:not(.show-untrained) .skill-row.is-empty { display: none; }
-
-/*
-   Only Current Health keeps its steppers during play. The other values do not change inside a
-   scenario, and a row of large +/- targets next to Health invites the wrong tap. Typing into
-   the field still works, so nothing is locked.
-*/
-[data-mode="play"] .stepper-btn { display: none; }
-
-/*
-   Skills are deliberately absent here: their rows are governed by the disclosure below, and
-   the block itself always stays visible so the disclosure is reachable even when no skill is
-   trained. `#skills-block.is-empty` therefore only feeds the empty-sheet hint.
-*/
-[data-mode="play"] .setup-only,
-[data-mode="play"] .archetype-section.is-empty,
-[data-mode="play"] .ability-group.is-empty,
-[data-mode="play"] .equipment-group.is-empty,
-[data-mode="play"] #abilities-block.is-empty,
-[data-mode="play"] #equipment-block.is-empty,
-[data-mode="play"] #innate-container.is-empty { display: none; }
-
-/* Play mode can legitimately hide everything, so say why instead of showing a bare page. */
-.play-hint {
-    display: none;
-    margin: 24px 0 0;
-    padding: 14px 16px;
-    border: 1px dashed var(--border-col);
-    border-radius: 8px;
-    color: #91a0b0;
-    font-size: 0.9em;
-    line-height: 1.5;
-}
-.play-hint strong { color: var(--accent-teal); }
-body[data-mode="play"].play-empty .play-hint { display: block; }
-
-[data-mode="play"] h1 { font-size: 1.5em; letter-spacing: 3px; margin-bottom: 14px; }
-[data-mode="play"] .grid-top { grid-template-columns: 2fr 1fr; }
-
-/* Current Health is the most-touched control, so it leads on a full-width row of its own. */
-[data-mode="play"] .grid-8 { display: flex; flex-wrap: wrap; gap: 10px; }
-/*
-   Fixed basis rather than grow, so a partly filled second row keeps the column widths.
-   Leave a few pixels of slack: a basis that adds up to exactly 100% wraps to three per row
-   as soon as sub-pixel rounding goes the wrong way.
-*/
-[data-mode="play"] .grid-8 .stat-box { flex: 0 1 calc(25% - 9px); box-sizing: border-box; }
-[data-mode="play"] .grid-8 .current-hp { flex-basis: 100%; }
-[data-mode="play"] .current-hp input { font-size: 2.4em; height: 56px; }
-[data-mode="play"] .current-hp .stat-label { font-size: 1em; }
 
 /* Hover decoration only where a real hover pointer exists; taps must not leave it stuck. */
 @media (hover: hover) {
@@ -1528,15 +1454,11 @@ body[data-mode="play"].play-empty .play-hint { display: block; }
     .info-toggle { width: 44px; height: 44px; }
     .archetype-btn { min-height: 44px; padding: 8px 16px; }
     .add-slot-btn { min-height: 44px; }
-    .mode-btn { min-height: 44px; padding: 6px 20px; }
     .history-open-btn, .history-close, .history-actions button { min-height: 44px; }
-    .untrained-btn { min-height: 44px; }
     .ally-modifier-btn { min-height: 44px; }
     .mission-step, .mission-check { width: 44px; height: 44px; min-height: 44px; }
     .mission-add, .mission-undo button { min-height: 44px; }
     .mission-remove { min-height: 44px; padding: 0 12px; }
-    /* The one stepper play mode keeps. */
-    [data-mode="play"] .current-hp .stepper-btn { display: flex; }
     /*
        Full height, but only ~38px wide: a 44px-wide remove control would eat the ability
        name field on a phone, and widening its hit area with a pseudo-element would overlap

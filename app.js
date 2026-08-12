@@ -20,16 +20,24 @@
         notes: 'Scenario notes',
         challenge: 'Challenge'
     });
+    const BUILT_IN_ENEMY_CATALOG_VERSION = `${SCENARIO_ENEMY_LIBRARY.catalogId}@${SCENARIO_ENEMY_LIBRARY.catalogVersion}`;
+    const BUILT_IN_ENEMIES = Object.freeze(Object.entries(SCENARIO_ENEMY_LIBRARY.profiles)
+        .map(([id, profile]) => Object.freeze({
+            id,
+            name: profile.name,
+            xp: Number.isFinite(profile.xp) ? profile.xp : 0,
+            hasListedXp: Number.isFinite(profile.xp)
+        }))
+        .sort((left, right) => left.name.localeCompare(right.name)));
+    const BUILT_IN_ENEMIES_BY_ID = new Map(BUILT_IN_ENEMIES.map(enemy => [enemy.id, enemy]));
 
     const saveFields = document.querySelectorAll('.save-field');
     const STORAGE_KEY = 'rosd_ranger_v_archetypes';
     const STORAGE_RECOVERY_KEY = `${STORAGE_KEY}_recovery`;
-    const ENEMY_CATALOG_STORAGE_KEY = 'rosd_ranger_enemy_catalog';
     const TEMP_EFFECT_STORAGE_KEY = 'rosd_ranger_round_stat_effects';
     const LEGACY_ALLY_MODIFIER_STORAGE_KEY = 'rosd_ranger_round_stat_modifiers';
     const LEGACY_ROUND_ARMOR_STORAGE_KEY = 'rosd_ranger_round_armor_bonus';
     const MAX_TEMP_EFFECT = 99;
-    const ENEMY_CATALOG_FORMAT_VERSION = 1;
     const FORMAT_VERSION = 7;
     const MAX_SLOTS = 50;
     const MAX_MISSION_ROWS = 200;
@@ -40,6 +48,22 @@
     const HISTORY_COALESCE_MS = 3000;
     const HISTORY_CATEGORIES = ['character', 'abilities', 'mission', 'conditions', 'system', 'mixed'];
     const OBJECTIVE_TYPES = ['primary', 'optional', 'custom'];
+    const MISSION_PRESETS = Object.freeze({
+        objectives: Object.freeze({
+            primary: Object.freeze({ title: 'Primary objective', type: 'primary' }),
+            optional: Object.freeze({ title: 'Optional objective', type: 'optional' }),
+            rescue: Object.freeze({ title: 'Rescue / escort objective', type: 'optional' }),
+            custom: Object.freeze({ title: '', type: 'custom' })
+        }),
+        adjustments: Object.freeze({
+            clue: Object.freeze({ label: 'Clue / investigation token' }),
+            treasure: Object.freeze({ label: 'Treasure / loot' }),
+            bonus: Object.freeze({ label: 'Scenario bonus' }),
+            objectiveTotal: Object.freeze({ label: 'Bonus objectives (total)' }),
+            tokenTotal: Object.freeze({ label: 'Tokens / clues (total)' }),
+            custom: Object.freeze({ label: '' })
+        })
+    });
     const DEFAULT_HEROIC_SLOTS = 5;
     const DEFAULT_INNATE_SLOTS = 4;
     const SLOT_TYPES = {
@@ -187,7 +211,6 @@
        this object; collectDocument() serializes it.
     */
     let MISSION = { active: null, history: [] };
-    let ENEMY_CATALOG = null;
     let CONDITIONS = blankConditions();
     let CHANGE_HISTORY = [];
     let lastTrackedState = null;
@@ -315,139 +338,6 @@
         }
     }
 
-    function normalizeEnemyCatalog(parsed) {
-        if (!isPlainObject(parsed)) throw new Error('The enemy catalog is not a JSON object.');
-        if (parsed.formatVersion !== ENEMY_CATALOG_FORMAT_VERSION) {
-            throw new Error(`The enemy catalog must use format version ${ENEMY_CATALOG_FORMAT_VERSION}.`);
-        }
-        if (typeof parsed.catalogId !== 'string' || !parsed.catalogId.trim()) {
-            throw new Error('The enemy catalog has no catalog id.');
-        }
-        if (typeof parsed.catalogVersion !== 'string' || !parsed.catalogVersion.trim()) {
-            throw new Error('The enemy catalog has no catalog version.');
-        }
-        if (!Array.isArray(parsed.enemies) || parsed.enemies.length > MAX_MISSION_ROWS) {
-            throw new Error(`The enemy catalog must contain at most ${MAX_MISSION_ROWS} enemies.`);
-        }
-
-        const ids = new Set();
-        const enemies = parsed.enemies.map((entry, index) => {
-            if (!isPlainObject(entry)) throw new Error(`Enemy ${index + 1} is not a record.`);
-            const id = typeof entry.id === 'string' ? entry.id.trim() : '';
-            const name = typeof entry.name === 'string' ? entry.name.trim() : '';
-            const xp = Number(entry.xp);
-
-            if (!id || ids.has(id)) throw new Error(`Enemy ${index + 1} has a missing or duplicate id.`);
-            if (!name) throw new Error(`Enemy ${index + 1} has no name.`);
-            if (!Number.isFinite(xp) || xp < 0 || xp > 9999) {
-                throw new Error(`Enemy ${index + 1} has an invalid XP value.`);
-            }
-
-            ids.add(id);
-            return {
-                id,
-                name,
-                xp,
-                source: typeof entry.source === 'string' ? entry.source.trim() : '',
-                page: Number.isInteger(entry.page) && entry.page > 0 ? entry.page : null
-            };
-        });
-
-        return {
-            formatVersion: ENEMY_CATALOG_FORMAT_VERSION,
-            catalogId: parsed.catalogId.trim(),
-            catalogVersion: parsed.catalogVersion.trim(),
-            title: typeof parsed.title === 'string' && parsed.title.trim() ? parsed.title.trim() : 'Enemy catalog',
-            enemies
-        };
-    }
-
-    function updateEnemyCatalogStatus(message = '') {
-        const status = document.getElementById('enemy-catalog-status');
-        if (message) status.textContent = message;
-        else if (ENEMY_CATALOG) {
-            status.textContent = `${ENEMY_CATALOG.title}: ${ENEMY_CATALOG.enemies.length} enemies loaded.`;
-        } else {
-            status.textContent = 'No enemy catalog loaded. Custom entries remain available.';
-        }
-    }
-
-    function loadEnemyCatalog() {
-        let raw;
-        try {
-            raw = localStorage.getItem(ENEMY_CATALOG_STORAGE_KEY);
-            ENEMY_CATALOG = raw ? normalizeEnemyCatalog(JSON.parse(raw)) : null;
-        } catch (error) {
-            console.error('The stored enemy catalog could not be loaded.', error);
-            ENEMY_CATALOG = null;
-            refreshEnemyPickerOptions();
-            updateEnemyCatalogStatus('The stored enemy catalog is invalid. Load it again to replace it.');
-            return;
-        }
-        refreshEnemyPickerOptions();
-    }
-
-    function refreshEnemyPickerOptions() {
-        const select = document.getElementById('enemy_picker_select');
-        if (!select) return;
-
-        select.innerHTML = '';
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = ENEMY_CATALOG && ENEMY_CATALOG.enemies.length
-            ? 'Choose an enemy…'
-            : 'Load an enemy catalog first…';
-        select.appendChild(placeholder);
-
-        if (ENEMY_CATALOG) {
-            ENEMY_CATALOG.enemies.forEach(enemy => {
-                const option = document.createElement('option');
-                option.value = enemy.id;
-                option.textContent = `${enemy.name} · ${enemy.xp} XP`;
-                select.appendChild(option);
-            });
-        }
-
-        select.value = '';
-        select.disabled = !ENEMY_CATALOG || !ENEMY_CATALOG.enemies.length;
-        updateEnemyPickerAction();
-        updateEnemyCatalogStatus();
-    }
-
-    function updateEnemyPickerAction() {
-        const select = document.getElementById('enemy_picker_select');
-        const button = document.getElementById('enemy_picker_add');
-        if (!select || !button) return;
-        button.disabled = !MISSION.active || !select.value;
-    }
-
-    function importEnemyCatalog(event) {
-        const input = event.target;
-        const file = input.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = e => {
-            input.value = '';
-            try {
-                const catalog = normalizeEnemyCatalog(JSON.parse(e.target.result));
-                localStorage.setItem(ENEMY_CATALOG_STORAGE_KEY, JSON.stringify(catalog));
-                ENEMY_CATALOG = catalog;
-                refreshEnemyPickerOptions();
-                alert(`${catalog.title} was loaded with ${catalog.enemies.length} enemies.`);
-            } catch (error) {
-                console.error('The enemy catalog could not be imported.', error);
-                alert(`The enemy catalog could not be imported.\n\n${describeDataError(error)}`);
-            }
-        };
-        reader.onerror = () => {
-            input.value = '';
-            console.error('The enemy catalog file could not be read.', reader.error);
-            alert('The enemy catalog file could not be read.');
-        };
-        reader.readAsText(file);
-    }
-
     function initSearchables() {
         const equipmentOptions = buildEquipmentOptions();
 
@@ -497,7 +387,7 @@
                         <div id="${id}_menu" class="search-select-menu" role="listbox"></div>
                     </div>
                     <button type="button" class="info-toggle" data-info-for="${id}" aria-expanded="false" aria-controls="desc_${id}" disabled onclick="toggleDescVisibility('${id}', this)">ℹ</button>
-                    <button type="button" class="remove-slot-btn setup-only" onclick="removeSlot('${id}', '${type}')">✕</button>
+                    <button type="button" class="remove-slot-btn" onclick="removeSlot('${id}', '${type}')">✕</button>
                 </div>
                 <div id="meta_${id}" class="selection-meta"></div>
                 <div id="desc_${id}" class="ability-desc"></div>
@@ -928,8 +818,6 @@
     function saveNow(options = {}) {
         clearTimeout(saveTimer);
 
-        refreshEmptyMarkers();
-
         try {
             const nextDocument = collectDocument();
             const nextTrackedState = snapshotTrackedDocument(nextDocument);
@@ -1258,10 +1146,6 @@
         closeTemporaryEffects();
     }
 
-    function hasActiveConditions() {
-        return CONDITIONS.poisoned || CONDITIONS.diseased || CONDITIONS.hungerThirst > 0;
-    }
-
     function renderConditions() {
         const list = document.getElementById('condition_list');
         const active = Object.entries(CONDITION_LIBRARY).filter(([key, config]) =>
@@ -1298,8 +1182,6 @@
                 `;
             }).join('');
         }
-
-        refreshEmptyMarkers();
     }
 
     function openConditionDialog() {
@@ -1355,11 +1237,6 @@
         const detailsDiv = document.getElementById('arch_details');
         const container = document.getElementById('arch_toggle_container');
 
-        // Play mode hides the selector but keeps the name and the traits/limitations disclosure,
-        // because several archetype traits change how a scenario is played.
-        document.getElementById('arch_name_play').textContent = val || '';
-        document.querySelector('.archetype-section').classList.toggle('is-empty', !val);
-
         if (val && val !== "") {
             container.style.display = "block";
             let html = '<div class="type-label">Traits:</div><ul class="trait-list">';
@@ -1407,89 +1284,21 @@
     }
 
     function currentMode() {
-        return document.body.dataset.mode === 'play' ? 'play' : 'edit';
+        return 'edit';
     }
 
-    // Play mode hides what is not needed mid-scenario; it never locks a field, so a correction
-    // at the table is always one tap away.
-    function setMode(mode, persist = true) {
-        const next = MODES.includes(mode) ? mode : 'edit';
-        const previous = document.activeElement;
-
-        // Anything open may belong to a row that is about to disappear.
-        Object.keys(SEARCHABLE_STATE).forEach(closeSearchMenu);
-
-        document.body.dataset.mode = next;
-        orderStatBoxes(next);
-
-        MODES.forEach(name => {
-            const btn = document.getElementById('mode_' + name);
-            btn.setAttribute('aria-pressed', String(name === next));
-            btn.classList.toggle('active', name === next);
-        });
-
-        refreshEmptyMarkers();
-
-        if (activePreviewId && !isVisible(getSearchBox(activePreviewId))) hidePreviewPanel();
-
-        if (previous && previous !== document.body && isVisible(previous)) {
-            previous.focus({ preventScroll: true });
-            previous.scrollIntoView({ block: 'center' });
-        } else {
-            window.scrollTo({ top: 0 });
-        }
-
+    // Formats 1–7 may still contain the retired `play` preference. Keep this global function as
+    // a compatibility sink, but always present and persist the single directly editable sheet.
+    function setMode(_mode, persist = true) {
+        document.body.removeAttribute('data-mode');
+        orderStatBoxes();
         if (persist) scheduleSave();
     }
 
-    function isVisible(element) {
-        return !!element && element.offsetParent !== null;
-    }
-
-    // Current Health leads the stat row in play mode. Moving the node rather than using CSS
-    // `order` keeps the tab sequence matching what is on screen.
-    function orderStatBoxes(mode) {
+    function orderStatBoxes() {
         const grid = document.getElementById('stat-grid');
         const current = grid.querySelector('.current-hp');
-
-        if (mode === 'play') grid.insertBefore(current, grid.firstElementChild);
-        else grid.insertBefore(current, document.getElementById('s_rec').closest('.stat-box'));
-    }
-
-    function toggleUntrainedSkills() {
-        const block = document.getElementById('skills-block');
-        const btn = document.getElementById('untrained_btn');
-        const shown = block.classList.toggle('show-untrained');
-
-        btn.textContent = shown ? 'Hide untrained skills' : 'Show untrained skills';
-        btn.setAttribute('aria-expanded', String(shown));
-    }
-
-    // Marks what play mode may hide. Nothing else reads these classes.
-    function refreshEmptyMarkers() {
-        document.querySelectorAll('.ability-group, .equipment-group').forEach(group => {
-            const field = group.querySelector('input.save-field');
-            group.classList.toggle('is-empty', !field || !field.value.trim());
-        });
-
-        document.querySelectorAll('.skill-row').forEach(row => {
-            const value = (row.querySelector('input.save-field') || {}).value || '';
-            row.classList.toggle('is-empty', !value.trim() || Number(value) === 0);
-        });
-
-        const blocks = ['abilities-block', 'equipment-block', 'skills-block', 'innate-container'];
-        const rowSelectors = ['.ability-group', '.equipment-group', '.skill-row', '.ability-group'];
-        blocks.forEach((blockId, index) => markBlockEmpty(blockId, rowSelectors[index]));
-
-        document.body.classList.toggle('play-empty',
-            !hasActiveConditions() &&
-            blocks.every(blockId => document.getElementById(blockId).classList.contains('is-empty')));
-    }
-
-    function markBlockEmpty(blockId, rowSelector) {
-        const block = document.getElementById(blockId);
-        const rows = Array.from(block.querySelectorAll(rowSelector));
-        block.classList.toggle('is-empty', rows.every(row => row.classList.contains('is-empty')));
+        grid.insertBefore(current, document.getElementById('s_rec').closest('.stat-box'));
     }
 
     function setInnateSectionExpanded(expanded) {
@@ -2238,7 +2047,25 @@
         scheduleSave();
     }
 
-    function addSelectedMissionEnemy() {
+    function renderEnemyPickerOptions(mission) {
+        const scenarioMappings = mission.scenarioId
+            ? SCENARIO_ENEMY_LIBRARY.scenarios[mission.scenarioId] || []
+            : [];
+        const scenarioIds = new Set(scenarioMappings.map(mapping => mapping.enemyId));
+        const scenarioEnemies = Array.from(scenarioIds, id => BUILT_IN_ENEMIES_BY_ID.get(id)).filter(Boolean);
+        const remainingEnemies = BUILT_IN_ENEMIES.filter(enemy => !scenarioIds.has(enemy.id));
+        const renderOptions = enemies => enemies.map(enemy => `
+            <option value="${enemy.id}">${escapeHtml(enemy.name)} · ${enemy.hasListedXp ? `${enemy.xp} XP` : 'Scenario XP'}</option>
+        `).join('');
+
+        return `
+            <option value="">Choose an enemy to add…</option>
+            ${scenarioEnemies.length ? `<optgroup label="This scenario">${renderOptions(scenarioEnemies)}</optgroup>` : ''}
+            <optgroup label="All built-in enemies">${renderOptions(remainingEnemies)}</optgroup>
+        `;
+    }
+
+    function addSelectedMissionEnemy(enemyId) {
         const mission = MISSION.active;
         if (!mission) return;
         if (mission.kills.length >= MAX_MISSION_ROWS) {
@@ -2246,28 +2073,57 @@
             return;
         }
 
-        const select = document.getElementById('enemy_picker_select');
-        const enemy = ENEMY_CATALOG
-            ? ENEMY_CATALOG.enemies.find(entry => entry.id === select.value)
-            : null;
+        const enemy = BUILT_IN_ENEMIES_BY_ID.get(enemyId);
+        if (!enemy) return;
 
-        if (!enemy) {
-            select.focus();
+        const existing = mission.kills.find(row =>
+            row.enemyId === enemy.id && row.catalogVersion === BUILT_IN_ENEMY_CATALOG_VERSION
+        );
+        if (existing) {
+            existing.count += 1;
+            renderMissions();
+            scheduleSave();
             return;
         }
 
         mission.kills.push({
             id: newMissionId(),
             enemyId: enemy.id,
-            catalogVersion: `${ENEMY_CATALOG.catalogId}@${ENEMY_CATALOG.catalogVersion}`,
+            catalogVersion: BUILT_IN_ENEMY_CATALOG_VERSION,
             name: enemy.name,
             count: 1,
             value: enemy.xp
         });
 
-        select.value = '';
-        updateEnemyPickerAction();
         renderMissions();
+        scheduleSave();
+    }
+
+    function addMissionPreset(kind, presetKey) {
+        const mission = MISSION.active;
+        const presets = MISSION_PRESETS[kind];
+        const preset = presets && presets[presetKey];
+        if (!mission || !preset) return;
+
+        const rows = missionRowLists(mission)[kind];
+        if (rows.length >= MAX_MISSION_ROWS) {
+            alert(`A mission can hold at most ${MAX_MISSION_ROWS} entries of one kind.`);
+            return;
+        }
+
+        const id = newMissionId();
+        if (kind === 'objectives') {
+            rows.push({ id, title: preset.title, type: preset.type, completed: true, value: 0 });
+        } else {
+            rows.push({ id, label: preset.label, value: 0 });
+        }
+
+        renderMissions();
+        const row = document.querySelector(`[data-row="${id}"]`);
+        const field = presetKey === 'custom'
+            ? row && row.querySelector('input[type="text"]')
+            : row && row.querySelector('[data-field="value"]');
+        if (field) field.focus();
         scheduleSave();
     }
 
@@ -2441,8 +2297,7 @@
     function renderMissions() {
         const block = document.getElementById('mission-block');
         const active = MISSION.active;
-
-        const parts = [renderScenarioProgress()];
+        const parts = [];
 
         if (active) parts.push(renderActiveMission(active));
         else parts.push(`
@@ -2454,12 +2309,15 @@
 
         if (MISSION.history.length) parts.push(renderMissionHistory());
 
+        const progress = renderScenarioProgress();
+        if (progress) parts.push(`
+            <details class="mission-support mission-progress-disclosure">
+                <summary>Campaign progress</summary>
+                ${progress}
+            </details>
+        `);
+
         block.innerHTML = parts.join('');
-        block.classList.toggle('is-empty', !active && !MISSION.history.length);
-        document.getElementById('mission-enemy-tools').style.display = active ? 'block' : 'none';
-        if (!active) document.getElementById('enemy_picker_select').value = '';
-        updateEnemyPickerAction();
-        refreshEmptyMarkers();
     }
 
     function renderActiveMission(mission) {
@@ -2483,24 +2341,27 @@
                         <label class="mission-inline"><span>Date</span>
                             <input type="date" value="${escapeHtml(mission.date)}" aria-label="Mission date"
                                 onchange="updateMissionField('${id}', 'date', this.value)"></label>
-                        <label class="mission-inline"><span>${mission.scenarioId ? 'Reference' : 'Custom reference'}</span>
-                            <input type="text" value="${escapeHtml(mission.scenario)}" placeholder="optional"
-                                aria-label="Scenario reference"${mission.scenarioId ? ' readonly' : ''}
-                                oninput="updateMissionField('${id}', 'scenario', this.value)"></label>
                     </div>
                 </div>
 
-                ${renderScenarioBriefing(mission)}
                 ${renderScenarioTurnTracker(mission)}
-                ${renderScenarioEnemies(mission)}
 
                 ${renderKills(mission)}
                 ${renderObjectives(mission)}
                 ${renderAdjustments(mission)}
 
-                <label class="mission-notes-label" for="mission_notes">Mission notes</label>
-                <textarea id="mission_notes" class="mission-notes" placeholder="What happened out there?"
-                    oninput="updateMissionField('${id}', 'notes', this.value)">${escapeHtml(mission.notes)}</textarea>
+                <details class="mission-support">
+                    <summary>Scenario reference &amp; mission notes</summary>
+                    <label class="mission-inline mission-reference-field"><span>${mission.scenarioId ? 'Reference' : 'Custom reference'}</span>
+                        <input type="text" value="${escapeHtml(mission.scenario)}" placeholder="optional"
+                            aria-label="Scenario reference"${mission.scenarioId ? ' readonly' : ''}
+                            oninput="updateMissionField('${id}', 'scenario', this.value)"></label>
+                    ${renderScenarioBriefing(mission)}
+                    ${renderScenarioEnemies(mission)}
+                    <label class="mission-notes-label" for="mission_notes">Mission notes</label>
+                    <textarea id="mission_notes" class="mission-notes" placeholder="Optional notes"
+                        oninput="updateMissionField('${id}', 'notes', this.value)">${escapeHtml(mission.notes)}</textarea>
+                </details>
 
                 ${renderTotals(totals)}
                 ${renderUndoNotice()}
@@ -2527,7 +2388,7 @@
                     <button type="button" class="mission-step" aria-label="One more ${escapeHtml(row.name || 'enemy')}"
                         onclick="stepMissionCount('${id}', '${row.id}', 1)">+</button>
                 </div>
-                <input type="number" class="mission-value" value="${row.value}" aria-label="Experience each"
+                <input type="number" class="mission-value" data-field="value" value="${row.value}" aria-label="Experience each"
                     oninput="updateMissionRow('${id}', 'kills', '${row.id}', 'value', this.value)">
                 <button type="button" class="mission-remove" aria-label="Remove ${escapeHtml(row.name || 'this enemy')}"
                     onclick="removeMissionRow('kills', '${row.id}')">✕</button>
@@ -2536,9 +2397,16 @@
 
         return `
             <div class="mission-group">
-                <div class="mission-group-head"><h3>Kills</h3><span class="mission-hint">enemy · number · XP each</span></div>
+                <div class="mission-group-head"><h3>Defeated enemies</h3><span class="mission-hint">choose once to add; choose again to increase the count</span></div>
+                <div class="mission-quick-add">
+                    <select id="enemy_picker_select" aria-label="Add a defeated enemy"
+                        onchange="if (this.value) addSelectedMissionEnemy(this.value)">
+                        ${renderEnemyPickerOptions(mission)}
+                    </select>
+                    <button type="button" class="mission-add" onclick="addMissionRow('kills')">+ Custom enemy</button>
+                </div>
                 ${rows || '<p class="mission-none">Nothing recorded yet.</p>'}
-                <button type="button" class="mission-add" onclick="addMissionRow('kills')">+ Add blank enemy</button>
+                <p class="mission-note">All 42 built-in profiles are available here without loading a catalog. Listed XP remains editable because each scenario decides what counts.</p>
             </div>
         `;
     }
@@ -2556,7 +2424,7 @@
                     onchange="updateMissionRow('${id}', 'objectives', '${row.id}', 'type', this.value)">
                     ${OBJECTIVE_TYPES.map(type => `<option value="${type}"${type === row.type ? ' selected' : ''}>${type}</option>`).join('')}
                 </select>
-                <input type="number" class="mission-value" value="${row.value}" aria-label="Experience when completed"
+                <input type="number" class="mission-value" data-field="value" value="${row.value}" aria-label="Experience when completed"
                     oninput="updateMissionRow('${id}', 'objectives', '${row.id}', 'value', this.value)">
                 <button type="button" class="mission-remove" aria-label="Remove ${escapeHtml(row.title || 'this objective')}"
                     onclick="removeMissionRow('objectives', '${row.id}')">✕</button>
@@ -2565,9 +2433,17 @@
 
         return `
             <div class="mission-group">
-                <div class="mission-group-head"><h3>Objectives</h3><span class="mission-hint">only completed ones count</span></div>
+                <div class="mission-group-head"><h3>Mission objectives</h3><span class="mission-hint">quick additions start completed; tap ✓ to change that</span></div>
+                <div class="mission-quick-add">
+                    <select aria-label="Add an objective" onchange="if (this.value) addMissionPreset('objectives', this.value)">
+                        <option value="">Add an achieved objective…</option>
+                        <option value="primary">Primary objective</option>
+                        <option value="optional">Optional / bonus objective</option>
+                        <option value="rescue">Rescue / escort objective</option>
+                        <option value="custom">Custom objective…</option>
+                    </select>
+                </div>
                 ${rows || '<p class="mission-none">Nothing recorded yet.</p>'}
-                <button type="button" class="mission-add" onclick="addMissionRow('objectives')">+ Add objective</button>
             </div>
         `;
     }
@@ -2578,7 +2454,7 @@
             <div class="mission-row" data-row="${row.id}">
                 <input type="text" class="mission-grow" placeholder="Reason" value="${escapeHtml(row.label)}"
                     aria-label="Adjustment reason" oninput="updateMissionRow('${id}', 'adjustments', '${row.id}', 'label', this.value)">
-                <input type="number" class="mission-value" value="${row.value}" aria-label="Experience change"
+                <input type="number" class="mission-value" data-field="value" value="${row.value}" aria-label="Experience change"
                     oninput="updateMissionRow('${id}', 'adjustments', '${row.id}', 'value', this.value)">
                 <button type="button" class="mission-remove" aria-label="Remove ${escapeHtml(row.label || 'this adjustment')}"
                     onclick="removeMissionRow('adjustments', '${row.id}')">✕</button>
@@ -2587,9 +2463,23 @@
 
         return `
             <div class="mission-group">
-                <div class="mission-group-head"><h3>Adjustments</h3><span class="mission-hint">bonuses or penalties, negative allowed</span></div>
+                <div class="mission-group-head"><h3>Bonuses &amp; tokens</h3><span class="mission-hint">record individual finds or one combined total</span></div>
+                <div class="mission-quick-add">
+                    <select aria-label="Add a bonus or token" onchange="if (this.value) addMissionPreset('adjustments', this.value)">
+                        <option value="">Add a bonus or token…</option>
+                        <optgroup label="Individual entries">
+                            <option value="clue">Clue / investigation token</option>
+                            <option value="treasure">Treasure / loot</option>
+                            <option value="bonus">Scenario bonus</option>
+                        </optgroup>
+                        <optgroup label="Enter one total">
+                            <option value="objectiveTotal">All bonus objectives — total</option>
+                            <option value="tokenTotal">All tokens / clues — total</option>
+                        </optgroup>
+                        <option value="custom">Custom entry…</option>
+                    </select>
+                </div>
                 ${rows || '<p class="mission-none">Nothing recorded yet.</p>'}
-                <button type="button" class="mission-add" onclick="addMissionRow('adjustments')">+ Add adjustment</button>
             </div>
         `;
     }
@@ -2643,7 +2533,7 @@
                         ${outstanding
                             ? `<button type="button" class="mission-primary" onclick="applyMissionXp('${mission.id}')">Apply ${outstanding} XP to Ranger</button>`
                             : '<span class="mission-note">Experience already applied.</span>'}
-                        <button type="button" class="mission-secondary setup-only" onclick="reopenMission('${mission.id}')">Reopen to correct</button>
+                        <button type="button" class="mission-secondary" onclick="reopenMission('${mission.id}')">Reopen to correct</button>
                     </div>
                 </div>
             `;
@@ -2833,7 +2723,6 @@
 
     function initializeApp() {
         populateDropdowns();
-        loadEnemyCatalog();
         initSearchables();
         loadTemporaryEffects();
         attachSaveListeners();
